@@ -1,0 +1,241 @@
+***************************************
+** SAGE library V1.0
+** Functions reference
+** February 2021
+*****************************************
+
+0 - Preambule
+SAGE library is still in a development phase, some functions can change in future versions.
+
+1 - Library management functions
+
+- BOOL SAGE_Init(LONG modules) : init the SAGE library and activate modules, return TRUE on success, FALSE on error.
+  Available modules : SMOD_NONE           - No module, only core functions
+                      SMOD_VIDEO          - Video module (screen, layers, sprites...)
+                      SMOD_AUDIO          - Audio module (music & sound)
+                      SMOD_INPUT          - Input module (keyboard, mouse & joystick)
+                      SMOD_INTERRUPTION   - Interruption module (Timer & IT)
+                      SMOD_NETWORK        - Network module (UDP & TCP sockets)
+- BOOL SAGE_Exit(VOID) : exit SAGE library and release all resources, return TRUE on success, FALSE on error.
+- BOOL SAGE_LoadedModule(LONG module) : tell if a module has been loaded.
+- STRPTR SAGE_GetVersion(VOID) : return the library version string.
+- VOID SAGE_UseAMMX(BOOL activate) : activate/desactivate the AMMX acceleration.
+- VOID SAGE_Pause(ULONG ticks) : pause the program for ticks*1/50 of seconds.
+
+
+2 - Error management functions
+
+- VOID SAGE_SetError(LONG error) : set the current error code.
+- LONG SAGE_GetErrorCode(VOID) : get the last error code.
+- STRPTR SAGE_GetErrorString(VOID) : get the last error string.
+- VOID SAGE_DisplayError(VOID) : display the last error in console.
+
+
+3 - Console log functions
+
+- VOID SAGE_SetLogLevel(LONG level) : set the application log level.
+  Available levels : SLOG_ALL          - Activate all level
+                     SLOG_TRACE        - Trace level
+                     SLOG_DEBUG        - Debug level
+                     SLOG_INFO         - Information level
+                     SLOG_WARNING      - Warning level
+                     SLOG_ERROR        - Error level
+                     SLOG_FATAL        - Fatal level
+                     SLOG_OFF          - Desactivate all level
+                     SLOG_APPLICATION  - Application level is not maskable
+- VOID SAGE_AppliLog(char * format, args...) : Display application log in console.
+- VOID SAGE_FatalLog(char * format, args...);
+- VOID SAGE_ErrorLog(char * format, args...);
+- VOID SAGE_WarningLog(char * format, args...);
+- VOID SAGE_InfoLog(char * format, args...);
+- VOID SAGE_DebugLog(char * format, args...);
+- VOID SAGE_TraceLog(char * format, args...);
+- BOOL SAGE_HasLogLevel(LONG level) : tell if the log level is active.
+
+
+4 - Memory management functions
+
+- APTR SAGE_AllocMem(ULONG size) : allocate public memory bloc, return NULL on error.
+- APTR SAGE_AllocAlignMem(ULONG size, ULONG align) : allocate aligned public memory bloc, return NULL on error.
+- APTR SAGE_AllocChipMem(ULONG size) : allocate chip memory bloc, return NULL on error.
+- APTR SAGE_AllocAlignChipMem(ULONG size, ULONG align) : allocate aligned chip memory bloc, return NULL on error.
+- APTR SAGE_AllocFastMem(ULONG size) : allocate fast memory bloc, return NULL on error.
+- APTR SAGE_AllocAlignFastMem(ULONG size, ULONG align) : allocate aligned fast memory bloc, return NULL on error.
+- VOID SAGE_FreeMem(APTR bloc) : release a memory bloc.
+- VOID SAGE_ReleaseMem(VOID) : release all reserved memory.
+- VOID SAGE_DumpMemory(VOID) : dump the memory list in console.
+- ULONG SAGE_AvailMem(VOID) : return the available memory size.
+- ULONG SAGE_AvailChipMem(VOID) : return the available chip memory size.
+- ULONG SAGE_AvailFastMem(VOID) : return the available fast memory size.
+
+
+5 - Timer functions
+
+- SAGE_Timer * SAGE_AllocTimer(VOID) : allocate a timer.
+- VOID SAGE_ReleaseTimer(SAGE_Timer * timer) : release a timer.
+- BOOL SAGE_GetSysTime(SAGE_Timer * timer) : get the system time (seconds & microseconds) in the timer structure, return FALSE on error, .
+- ULONG SAGE_ElapsedTime(SAGE_Timer * timer) : get the elapsed time between two calls (12 bits for seconds & 20 bits for microseconds).
+- BOOL SAGE_Delay(SAGE_Timer * timer, ULONG duration) : wait for a certain duration  (12 bits for seconds & 20 bits for microseconds).
+
+
+6 - Thread functions
+
+** Warning : actually you can't use log functions in a thread.
+- SAGE_Thread * SAGE_CreateThread(LONG (*fn)(APTR), APTR userdata) : create a thread with the function fn and pass it the userdata.
+- VOID SAGE_WaitThread(SAGE_Thread * thread) : wait for a thread to finish.
+- VOID SAGE_KillThread(SAGE_Thread * thread) : send a break signal to a thread.
+- BOOL SAGE_RemoveThread(SAGE_Thread * thread) : remove a thread from the thread list.
+- BOOL SAGE_BreakThread(VOID) : check if the current thread has receive a break signal.
+
+
+7 - Vampire functions
+
+- BOOL SAGE_ApolloPresence(VOID) : check if vampire card is present.
+- BOOL SAGE_AMMX2Available(VOID) : check if AMMX extension is available.
+- BOOL SAGE_SetVampireFrameBuffer(APTR adr) : set the vampire frame buffer address (prefer the system function), return FALSE on error.
+- APTR SAGE_GetVampireFrameBuffer(VOID) : get the vampire frame buffer address.
+
+
+8 - Video functions
+
+ a) Screen
+- BOOL SAGE_IsSupportedPixFormat(ULONG pixformat) : tell if a pixel format is supported.
+  Supported format : PIXFMT_CLUT
+                     PIXFMT_RGB15
+                     PIXFMT_RGB16
+                     PIXFMT_RGB16PC
+                     PIXFMT_RGB24
+                     PIXFMT_BGR24
+                     PIXFMT_ARGB32
+                     PIXFMT_RGBA32
+- BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONG flags) : open a screen of width*height pixels in depth bits (8, 16, 24 or 32) with special flags.
+  Available flags : SSCR_DOUBLEBUF        - Activate double buffer (default choice)
+                    SSCR_TRIPLEBUF        - Activate triple buffer
+                    SSCR_STRICTRES        - Open only the requested resolution
+                    SSCR_NOWINDOWEVT      - Don't listen for windows events
+- SAGE_Screen * SAGE_GetScreen(VOID) : return the SAGE screen structure (don't use it directly)
+- BOOL SAGE_CloseScreen(VOID) : close the screen, return FALSE on error.
+- BOOL SAGE_ClearScreen(VOID) : clear the screen (fill with color 0), return FALSE on error.
+- BOOL SAGE_SetScreenClip(ULONG left, ULONG top, ULONG width, ULONG height) : set the clipping window, return FALSE on error.
+- BOOL SAGE_ClearView(VOID) : clear the current clipping view, return FALSE on error.
+- BOOL SAGE_ClearArea(ULONG left, ULONG top, ULONG width, ULONG height) : clear a part of the screen, return FALSE on error.
+- BOOL SAGE_VerticalSynchro(BOOL sync) : activate/desactivate the vertical synchronization, return FALSE on error.
+- BOOL SAGE_MaximumFPS(ULONG fps) : set the maximum frame per second if vertical synchro is desactivate (default 30), return FALSE on error.
+- BOOL SAGE_RefreshScreen(VOID) : refresh the screen view, switch the screen buffers, return FALSE on error.
+- BOOL SAGE_WaitVBlank(VOID) : wait for vertical blank, return FALSE on error.
+- SAGE_Event * SAGE_GetEvent(VOID) : get the screen's window events (non blocking).
+- BOOL SAGE_IsFrontMostScreen(VOID) : tell if our screen is in front.
+- SAGE_Bitmap * SAGE_GetFrontBitmap(VOID) : get the bitmap of the front screen buffer.
+- SAGE_Bitmap * SAGE_GetBackBitmap(VOID) : get the bitmap of the back screen buffer.
+- ULONG SAGE_GetPixelFormat(VOID) : get the screen pixel format.
+- BOOL SAGE_RefreshColors(UWORD start, UWORD len) : refresh the screen colors from start color for len colors, return FALSE on error.
+- BOOL SAGE_SetColor(UWORD index, ULONG color) : set a screen color value, you should RefreshColors to see it, return FALSE on error.
+- BOOL SAGE_SetColorMap(ULONG * colors, UWORD start, UWORD len) : set multiple screen color values, you should RefreshColors to see them, return FALSE on error.
+- ULONG SAGE_GetColor(UWORD index) : get a screen color value (for CLUT pixel format).
+- BOOL SAGE_SetDrawColor(ULONG back, ULONG front) : set the back and front color, return FALSE on error.
+- BOOL SAGE_HideMouse(VOID) : hide the mouse pointer, return FALSE on error.
+- BOOL SAGE_ShowMouse(VOID) : show the mouse pointer, return FALSE on error.
+- BOOL SAGE_SetFont(STRPTR font, UWORD size) : set the active font of size, return FALSE on error.
+- BOOL SAGE_SetTextColor(UBYTE front, UBYTE back) : set the text colors, return FALSE on error.
+- BOOL SAGE_SetDrawingMode(UBYTE mode) : set the text drawing mode (SSCR_TXTTRANSP or SSCR_TXTREPLACE), return FALSE on error.
+- BOOL SAGE_PrintText(STRPTR text, UWORD left, UWORD top) : print a text at a screen position (on back buffer), return FALSE on error.
+- BOOL SAGE_PrintDirectText(STRPTR text, UWORD left, UWORD top) : print a text at screen position (on front buffer), return FALSE on error.
+- BOOL SAGE_EnableFrameCount(BOOL flag) : enabale the frame rate counter (module SMOD_INTERRUPTION should be activated), return FALSE on error.
+- UWORD SAGE_GetFps(VOID) : get the frame rate value (frame per second).
+
+ b) Pictures
+- SAGE_Picture * SAGE_LoadPicture(STRPTR picture) : load a picture and remap it to screen pixel format (use datatypes), return NULL on error.
+- BOOL SAGE_SetPictureTransparency(SAGE_Picture * picture, ULONG color) : set the transparent color of a picture, return FALSE on error.
+- BOOL SAGE_LoadPictureColorMap(SAGE_Picture * picture) : load picture colormap into screen colors, return FALSE on error.
+- BOOL SAGE_BlitPictureToScreen(SAGE_Picture * picture, ULONG left, ULONG top, ULONG width, ULONG height, ULONG x, ULONG y) : copy a part of a picture to a screen position, return FALSE on error.
+ 
+ c) Layers
+** A layer is a buffer that support wrap technic, imagine you have a layer of 300*300, you can set a view like 100,100,300,300 and library will automatically clip on the right side and copy the missing pixels from the left side
+- BOOL SAGE_CreateLayer(UWORD index, ULONG width, ULONG height) : create a new layer of width*height at index (you have 8 available layers), return FALSE on error.
+- BOOL SAGE_CreateLayerFromPicture(UWORD index, SAGE_Picture * picture) : create a layer directly from a picture, return FALSE on error.
+- BOOL SAGE_ReleaseLayer(UWORD index) : release layer resources, return FALSE on error.
+- BOOL SAGE_SetLayerView(UWORD index, ULONG left, ULONG top, ULONG width, ULONG height) : set the active view of the layer, return FALSE on error.
+- BOOL SAGE_SetLayerTransparency(UWORD index, ULONG color) : set the transparent color of the layer, return FALSE on error.
+- BOOL SAGE_BlitPictureToLayer(SAGE_Picture * picture, ULONG left, ULONG top, ULONG width, ULONG height, UWORD index, ULONG x, ULONG y) : copy a part of a picture to a layer position, return FALSE on error.
+- BOOL SAGE_BlitLayerToScreen(UWORD index, ULONG x, ULONG y) : copy the current layer view to a screen position, return FALSE on error.
+
+ d) Sprites
+- BOOL SAGE_CreateSpriteBank(UWORD index, UWORD nb, SAGE_Picture * picture) : create the sprite bank at index (you have 128 available banks) of nb sprites from picture, return FALSE on error.
+- BOOL SAGE_ReleaseSpriteBank(UWORD index) : release a sprite bank and all the resources, return FALSE on error.
+- BOOL SAGE_SetSpriteBankTransparency(UWORD index, ULONG color) : set the sprite bank transparent color, return FALSE on error.
+- BOOL SAGE_AddSpriteToBank(UWORD index, UWORD sprite, ULONG left, ULONG top, ULONG width, ULONG height, UWORD hotspot) : add a sprite to the sprite bank, return FALSE on error.
+- BOOL SAGE_BlitSpriteToScreen(UWORD index, UWORD sprite, LONG x, LONG y) : copy the sprite of a sprite bank to a screen position, return FALSE on error.
+ 
+ e) Tiles
+
+ f) Tilemap
+
+
+9 - Audio functions
+
+ a) Music
+- SAGE_Music * SAGE_LoadMusic(STRPTR filename) : load a music module, return NULL on error.
+- VOID SAGE_ReleaseMusic(SAGE_Music * music) : release the music resource.
+- BOOL SAGE_AddMusic(UWORD bank, SAGE_Music * music) : add a music to the music bank (you have 4 bank available), return FALSE on error.
+- SAGE_Music * SAGE_RemoveMusic(UWORD bank) : remove the music from the music bank, return the music structure.
+- BOOL SAGE_FreeMusic(UWORD bank) : remove the music from the bank and release the music resource, return FALSE on error.
+- BOOL SAGE_ClearMusic(VOID) : remove and release all musics from music banks, return FALSE on error.
+- BOOL SAGE_PlayMusic(UWORD bank) : play the music of the bank, return FALSE on error.
+- BOOL SAGE_StopMusic(VOID) : stop the current music, return FALSE on error.
+- BOOL SAGE_PauseMusic(VOID) : pause the current music, return FALSE on error.
+- BOOL SAGE_ResumeMusic(VOID) : resume the current music, return FALSE on error.
+
+ b) Sound
+- SAGE_Sound * SAGE_LoadSound(STRPTR filename) : load a sound sample, return NULL on error.
+- VOID SAGE_ReleaseSound(SAGE_Sound * sound) : release the sound resource.
+- BOOL SAGE_AddSound(UWORD bank, SAGE_Sound * sound) : add the sound in the sound bank (you have 128 bank available), return FALSE on error.
+- SAGE_Sound * SAGE_RemoveSound(UWORD bank) : remove the sound from the bank, return the sound structure.
+- BOOL SAGE_FreeSound(UWORD bank) : remove the sound from the bank and release the sound resource, return FALSE on error.
+- BOOL SAGE_ClearSound(VOID) : remove and release all sounds from sound banks, return FALSE on error.
+- BOOL SAGE_PlaySound(UWORD bank, UWORD channel) : play the sound of the bank on the channel, return FALSE on error.
+
+
+10 - Input functions
+- BOOL SAGE_HandleInputEvents(VOID) : handle all input events, return FALSE on error.
+
+ a) Keyboard
+- BOOL SAGE_ScanKeyboard(SAGE_KeyScan * keys, UBYTE nbkey) : scan nbkey of the keyboard defined in keys, return FALSE on error.
+- BOOL SAGE_AddKeyboardHandler(UWORD keycode, VOID (*handler)(BOOL)) : add and handler on the keycode event, return FALSE on error.
+- BOOL SAGE_RemoveKeyboardHandler(UWORD keycode) : remove the handler of the keycode event, return FALSE on error.
+- BOOL SAGE_ClearKeyboardHandlers(VOID) : clear all keyboard handlers, return FALSE on error.
+- BOOL SAGE_InstallKeyboardHandlers(VOID) : prepare all keyboard handlers, return FALSE on error.
+
+ b) Joyport
+- UWORD SAGE_GetPortType(UWORD port) : return the type of device connected to the port.
+  Type could be : SINP_NOTAVAIL         nothing connected
+                  SINP_MOUSE            mouse connected
+                  SINP_JOYSTICK         joystick connected
+                  SINP_GAMEPAD          gamepad connected
+                  SINP_UNKNOWN          unknown device
+- BOOL SAGE_ScanPort(SAGE_PortScan * scan, UWORD port) : scan the port and get the port state, return FALSE on error.
+- BOOL SAGE_AddJoyportHandler(UWORD port, VOID (*handler)(SAGE_PortScan * scan)) : add an handler on the joyport port, return FALSE on error.
+- BOOL SAGE_RemoveJoyportHandler(UWORD port) : remove the handler of the joyport port, return FALSE on error.
+- BOOL SAGE_ClearJoyportHanlders(VOID) : clear all handlers of joyport, return FALSE on error.
+
+
+11 - Interruption functions
+- BOOL SAGE_AddInterruptionHandler(UWORD index, VOID __asm (*f)(register __a5 APTR), APTR userdata) : create a new interruptoin handler (you have 8 handlers available), return FALSE on error.
+- BOOL SAGE_RemoveInterruptionHandler(UWORD index) : remove an interruption handler, return FALSE on error.
+- BOOL SAGE_StartInterruption(UWORD index, UWORD ticks) : start interruption each tick (1 tick = 0,05 second), return FALSE on error.
+- BOOL SAGE_StopInterruption(UWORD index) : stop an interruption, return FALSE on error.
+- BOOL SAGE_StopAllInterruptions(VOID) : stop all running interruptions, return FALSE on error.
+
+
+12 - Network functions
+
+- SAGE_BsdSocket * SAGE_OpenServer(UWORD protocol, UWORD port) : create a server of protocol (SNET_TCP_PROTOCOL or SNET_UDP_PROTOCOL) on port, return NULL on error.
+- SAGE_BsdSocket * SAGE_OpenClient(UWORD protocol, STRPTR ip, UWORD port) : create a client of protocol to ip and port, return NULL on error.
+- BOOL SAGE_CloseSocket(SAGE_BsdSocket * socket) : close a socket, return FALSE on error.
+- BOOL SAGE_SetNonBlockingSocket(SAGE_BsdSocket * socket, BOOL flag) : set a socket to non blocking mode, return FALSE on error.
+- SAGE_BsdSocket * SAGE_AcceptClient(SAGE_BsdSocket * socket) : accept a new client from a server socket, return NULL on error.
+- LONG SAGE_SendData(SAGE_BsdSocket * socket, APTR data, LONG len) : send data of len to a socket, return data size sent.
+- LONG SAGE_ReceiveData(SAGE_BsdSocket * socket, APTR buffer, LONG len) : receive data from a socket, return data size received.
+- LONG SAGE_SendString(SAGE_BsdSocket * socket, STRPTR text) : send a string to a socket, return string len sent.
+- LONG SAGE_ReceiveString(SAGE_BsdSocket * socket, STRPTR buffer, LONG len) : receive  a string from a socket, return string len received.
+- LONG SAGE_GetLastNetworkError(VOID) : get the last network error.
+- LONG SAGE_GetLastSocketError(SAGE_BsdSocket * socket) : get the last socket error.

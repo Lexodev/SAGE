@@ -1,0 +1,41 @@
+#----------------------------------------------------------
+# SAGE tutorial makefile
+# Fabrice Labrador <fabrice.labrador@gmail.com>
+# V2.0 January 2021
+#----------------------------------------------------------
+
+# Build options
+OPT=CPU=68040 IDIR=libinclude: MATH=standard NOICONS
+LIB=/lib/sage.lib
+
+# Files
+TUTOG1EXE=tuto1_screen tuto2_event tuto3_picture8 tuto4_picture16 tuto5_scrolling tuto6_parallax
+
+# Build all tutorials
+all: $(TUTOG1EXE) cleanobj
+
+tuto1_screen: tuto1_screen.c $(LIB)
+  sc LINK tuto1_screen.c $(OPT) $(LIB)
+
+tuto2_event: tuto2_event.c $(LIB)
+  sc LINK tuto2_event.c $(OPT) $(LIB)
+
+tuto3_picture8: tuto3_picture8.c $(LIB)
+  sc LINK tuto3_picture8.c $(OPT) $(LIB)
+
+tuto4_picture16: tuto4_picture16.c $(LIB)
+  sc LINK tuto4_picture16.c $(OPT) $(LIB)
+
+tuto5_scrolling: tuto5_scrolling.c $(LIB)
+  sc LINK tuto5_scrolling.c $(OPT) $(LIB)
+
+tuto6_parallax: tuto6_parallax.c $(LIB)
+  sc LINK tuto6_parallax.c $(OPT) $(LIB)
+
+# Clean files
+clean: cleanobj
+  -@delete $(TUTOG1EXE)
+
+cleanobj:
+  -@delete \#?.o
+  -@delete \#?.lnk

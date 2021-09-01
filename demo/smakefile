@@ -1,0 +1,47 @@
+#----------------------------------------------------------
+# SAGE demos makefile
+# Fabrice Labrador <fabrice.labrador@gmail.com>
+# V2.0 January 2021
+#----------------------------------------------------------
+
+# Build options
+OPT=CPU=68040 IDIR=libinclude: MATH=standard NOICONS
+LIB=/lib/sage.lib
+
+# Files
+EXE=dragon_crown fire_effect troll_run odysseus runner blood cube sotb
+
+# Build all demos
+all: $(EXE) cleanobj
+
+dragon_crown: dragon_crown.c dragon_crown.h $(LIB)
+  sc LINK dragon_crown.c $(OPT) $(LIB)
+
+fire_effect: fire_effect.c $(LIB)
+  sc LINK fire_effect.c $(OPT) $(LIB)
+
+troll_run: troll_run.c $(LIB)
+  sc LINK troll_run.c $(OPT) $(LIB)
+
+odysseus: odysseus.c $(LIB)
+  sc LINK odysseus.c $(OPT) $(LIB)
+
+runner: runner.c $(LIB)
+  sc LINK runner.c $(OPT) $(LIB) DATA=far
+
+cube: cube.c $(LIB)
+  sc LINK cube.c $(OPT) $(LIB) DATA=far
+
+sotb: sotb_plus.c $(LIB)
+  sc LINK sotb_plus.c $(OPT) $(LIB)
+
+blood: blood.c blood.h blood_engine.c blood_engine.h blood_control.c blood_control.h $(LIB)
+  sc LINK blood.c blood_engine.c blood_control.c $(OPT) $(LIB) CODE=far DATA=far
+
+# Clean files
+clean: cleanobj
+  -@delete $(EXE)
+
+cleanobj:
+  -@delete \#?.o
+  -@delete \#?.lnk

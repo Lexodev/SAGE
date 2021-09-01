@@ -1,0 +1,7 @@
+** TODO LIST
+
+- Sources
+  . Implémenter le zoom des sprites
+  . Implémenter le mirroring des sprites
+  . Implémenter le moteur 3D
+  . Implémenter le support des formats PIXFMT_BGR24 et PIXFMT_RGBA32

@@ -1,0 +1,164 @@
+#----------------------------------------------------------
+# SAGE tests makefile
+# Fabrice Labrador <fabrice.labrador@gmail.com>
+# V2.0 January 2021
+#----------------------------------------------------------
+
+# Build options
+OPT=CPU=68040 IDIR=libinclude: MATH=standard NOICONS
+LIB=/lib/sage.lib
+
+# Files
+COREEXE=core_logger core_error core_memory core_timer core_thread core_vampire
+VIDEOEXE=video_video video_screen video_dblbuf video_event video_bitmap video_layer video_sprite video_tile video_picture video_text video_draw video_line video_triangle
+INPUTEXE=input_input input_keyboard input_joyport input_handler
+AUDIOEXE=audio_audio audio_sound audio_music audio_mix
+INTEXE=interrupt_interrupt interrupt_handler
+3DEEXE=3dengine_3dengine 3dengine_3ddevice
+NETEXE=network_network network_tcpsocket network_udpsocket network_handler
+
+# Build all tests
+build: core video input audio interrupt 3dengine network cleanobj
+  @echo "** Build complete **"
+
+# Build core tests
+core: $(COREEXE)
+
+core_logger: core_logger.c $(LIB)
+  sc LINK core_logger.c $(OPT) $(LIB)
+
+core_error: core_error.c $(LIB)
+  sc LINK core_error.c $(OPT) $(LIB)
+
+core_memory: core_memory.c $(LIB)
+  sc LINK core_memory.c $(OPT) $(LIB)
+
+core_timer: core_timer.c $(LIB)
+  sc LINK core_timer.c $(OPT) $(LIB)
+
+core_thread: core_thread.c $(LIB)
+  sc LINK core_thread.c $(OPT) $(LIB)
+
+core_vampire: core_vampire.c $(LIB)
+  sc LINK core_vampire.c $(OPT) $(LIB)
+
+# Build video tests
+video: $(VIDEOEXE)
+
+video_video: video_video.c $(LIB)
+  sc LINK video_video.c $(OPT) $(LIB)
+
+video_screen: video_screen.c $(LIB)
+  sc LINK video_screen.c $(OPT) $(LIB)
+
+video_dblbuf: video_dblbuf.c $(LIB)
+  sc LINK video_dblbuf.c $(OPT) $(LIB)
+
+video_text: video_text.c $(LIB)
+  sc LINK video_text.c $(OPT) $(LIB)
+
+video_event: video_event.c $(LIB)
+  sc LINK video_event.c $(OPT) $(LIB)
+
+video_bitmap: video_bitmap.c $(LIB)
+  sc LINK video_bitmap.c $(OPT) $(LIB)
+
+video_picture: video_picture.c $(LIB)
+  sc LINK video_picture.c $(OPT) $(LIB)
+
+video_layer: video_layer.c $(LIB)
+  sc LINK video_layer.c $(OPT) $(LIB)
+
+video_sprite: video_sprite.c $(LIB)
+  sc LINK video_sprite.c $(OPT) $(LIB)
+
+video_tile: video_tile.c $(LIB)
+  sc LINK video_tile.c $(OPT) $(LIB)
+
+video_draw: video_draw.c $(LIB)
+  sc LINK video_draw.c $(OPT) $(LIB)
+
+video_line: video_line.c $(LIB)
+  sc LINK video_line.c $(OPT) $(LIB)
+
+video_triangle: video_triangle.c $(LIB)
+  sc LINK video_triangle.c $(OPT) $(LIB)
+
+# Build input tests
+input: $(INPUTEXE)
+
+input_input: input_input.c $(LIB)
+  sc LINK input_input.c $(OPT) $(LIB)
+
+input_keyboard: input_keyboard.c $(LIB)
+  sc LINK input_keyboard.c $(OPT) $(LIB)
+
+input_joyport: input_joyport.c $(LIB)
+  sc LINK input_joyport.c $(OPT) $(LIB)
+
+input_handler: input_handler.c $(LIB)
+  sc LINK input_handler.c $(OPT) $(LIB)
+
+# Build audio tests
+audio: $(AUDIOEXE)
+
+audio_audio: audio_audio.c $(LIB)
+  sc LINK audio_audio.c $(OPT) $(LIB)
+
+audio_sound: audio_sound.c $(LIB)
+  sc LINK audio_sound.c $(OPT) $(LIB)
+
+audio_music: audio_music.c $(LIB)
+  sc LINK audio_music.c $(OPT) $(LIB)
+
+audio_mix: audio_mix.c $(LIB)
+  sc LINK audio_mix.c $(OPT) $(LIB)
+
+# Build interruption tests
+interrupt: $(INTEXE)
+
+interrupt_interrupt: interrupt_interrupt.c $(LIB)
+  sc LINK interrupt_interrupt.c $(OPT) $(LIB)
+
+interrupt_handler: interrupt_handler.c $(LIB)
+  sc LINK interrupt_handler.c $(OPT) $(LIB)
+
+# Build 3D engine tests
+3dengine: $(3DEEXE)
+
+3dengine_3dengine: 3dengine_3dengine.c $(LIB)
+  sc LINK 3dengine_3dengine.c $(OPT) $(LIB)
+
+3dengine_3ddevice: 3dengine_3ddevice.c $(LIB)
+  sc LINK 3dengine_3ddevice.c $(OPT) $(LIB)
+
+# Build network tests
+network: $(NETEXE)
+
+network_network: network_network.c $(LIB)
+  sc LINK network_network.c $(OPT) $(LIB)
+
+network_tcpsocket: network_tcpsocket.c $(LIB)
+  sc LINK network_tcpsocket.c $(OPT) $(LIB)
+
+network_udpsocket: network_udpsocket.c $(LIB)
+  sc LINK network_udpsocket.c $(OPT) $(LIB)
+
+network_handler: network_handler.c $(LIB)
+  sc LINK network_handler.c $(OPT) $(LIB)
+
+# Clean files
+clean: cleanobj cleanexe
+
+cleanexe:
+  -@delete $(COREEXE)
+  -@delete $(VIDEOEXE)
+  -@delete $(INPUTEXE)
+  -@delete $(AUDIOEXE)
+  -@delete $(INTEXE)
+  -@delete $(3DEEXE)
+  -@delete $(NETEXE)
+
+cleanobj:
+  -@delete \#?.o
+  -@delete \#?.lnk
