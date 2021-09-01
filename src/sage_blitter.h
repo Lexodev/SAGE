@@ -71,6 +71,17 @@ extern BOOL __asm SAGE_AMMXBlitTranspCopy8Bits(
   register __d4 ULONG color
 );
 
+/** External function for 8 bits bitmap transparent copy using AMMX cookie cut instruction */
+extern BOOL __asm SAGE_AMMXBlitCookieCut8Bits(
+  register __a0 ULONG source,
+  register __a1 ULONG destination,
+  register __d0 UWORD lines,
+  register __d1 UWORD pixels,
+  register __d2 ULONG src_offset,
+  register __d3 ULONG dst_offset,
+  register __d4 ULONG color
+);
+
 /** External function for 16 bits bitmap clear */
 extern BOOL __asm SAGE_BlitClear16Bits(
   register __a0 ULONG source,
@@ -102,6 +113,17 @@ extern BOOL __asm SAGE_BlitTransparentCopy16Bits(
 
 /** External function for 16 bits bitmap transparent copy using AMMX */
 extern BOOL __asm SAGE_AMMXBlitTranspCopy16Bits(
+  register __a0 ULONG source,
+  register __a1 ULONG destination,
+  register __d0 UWORD lines,
+  register __d1 UWORD pixels,
+  register __d2 ULONG src_offset,
+  register __d3 ULONG dst_offset,
+  register __d4 ULONG color
+);
+
+/** External function for 16 bits bitmap transparent copy using AMMX cookie cut instruction */
+extern BOOL __asm SAGE_AMMXBlitCookieCut16Bits(
   register __a0 ULONG source,
   register __a1 ULONG destination,
   register __d0 UWORD lines,

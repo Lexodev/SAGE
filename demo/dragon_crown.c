@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include "dragon_crown.h"
 
+UBYTE string_buffer[256];
+
 SpriteInfo sprite_info[NBSPRITES] = {
   {"/data/fighter.bmp", SPRFIGHTER, SPR1FRAME, SPR1WIDTH, SPR1HEIGHT, -SPR1WIDTH, SPR1POSY, SPR1STEPX, 0, 0 },
   {"/data/amazon.bmp", SPRAMAZON, SPR2FRAME, SPR2WIDTH, SPR2HEIGHT, -SPR2WIDTH, SPR2POSY, SPR2STEPX, 0, 0 },
@@ -158,10 +160,10 @@ BOOL InitSprite(UWORD index)
   UWORD sprite;
   ULONG crdy = 0;
 
-  printf("Load font and create sprite bank\n");
-      SAGE_PrintText(screen, "Loading fonts...", 0, 70);
+  SAGE_AppliLog("Load font and create sprite bank");
+  SAGE_PrintDirectText("Loading fonts...", 0, 70);
   if ((picture = SAGE_LoadPicture("/data/fonts.bmp")) != NULL) {
-    if ((bank = SAGE_CreateSpriteBankFromPicture(picture, SCREENDEPTH, FONTFRAME)) != NULL) {
+    if ((bank = SAGE_CreateSpriteBank(picture, SCREENDEPTH, FONTFRAME)) != NULL) {
       SAGE_SetSpriteBankTransparency(bank, TRANSPCOLOR);
       for (sprite = 0;sprite < FONTFRAME;sprite++) {
         SAGE_AddSpriteToBank(bank, sprite, 0, crdy, FONTWIDTH, FONTHEIGHT);
@@ -226,6 +228,9 @@ BOOL InitGraphx(VOID)
     if (!InitSprite(sprite)) {
       return FALSE;
     }
+  }
+  if (!SAGE_EnableFrameCount(TRUE)) {
+    SAGE_ErrorLog("Can't activate frame rate counter !");
   }
   SAGE_SetFont("diamond.font", 12);
   return TRUE;
@@ -306,10 +311,10 @@ void main(void)
   ULONG bg_posx = 0, logo_posy = LOGOPOSY, frame_count = 0, elapsed_time = 0, avg_render = 0;
   UWORD index = 0, show_sprite = 5; //, fps = 0, mouse_cursor = 0;
 
-  SAGE_SetLogLevel(SLOG_WARNING);
+  //SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("** SAGE library dragon crown demo V1.2 **");
   SAGE_AppliLog("Initialize SAGE");
-  if (SAGE_Init(SMOD_VIDEO|SMOD_AUDIO)) {
+  if (SAGE_Init(SMOD_VIDEO|SMOD_AUDIO|SMOD_INTERRUPTION)) {
     if (SAGE_AMMX2Available()) {
       SAGE_AppliLog("AMMX detected !!!");
     } else {
@@ -446,13 +451,9 @@ void main(void)
                 SAGE_DisplayError();
               }
             }
-            // Render the FPS counter
-            /*fps = SAGE_GetFps();
-            if (fps > 99) {
-              fps = 99;
-            }
-            SAGE_BlitSpriteToScreen(fonts, fps / 10, screen, FONTPOSX + BGPOSX, FONTPOSY);
-            SAGE_BlitSpriteToScreen(fonts, fps % 10, screen, FONTPOSX + FONTWIDTH + BGPOSX, FONTPOSY);*/
+            // Draw the fps counter
+            sprintf(string_buffer, "%d fps", SAGE_GetFps());
+            SAGE_PrintText(string_buffer, 10, 10);
             // Update the mouse cursor
             /*SAGE_SetMouseSprite(screen, mouse_cursor);
             if ((frame_count % SPRFRAMERATE) == 0) {

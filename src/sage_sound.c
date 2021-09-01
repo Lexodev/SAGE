@@ -241,10 +241,14 @@ BOOL SAGE_FreeSound(UWORD index)
  */
 BOOL SAGE_ClearSound()
 {
+  SAGE_Sound * sound;
   UWORD index;
 
   for (index = 0;index < SSND_MAX_SOUNDS;index++) {
-    SAGE_FreeSound(index);
+    sound = SAGE_RemoveSound(index);
+    if (sound != NULL) {
+      SAGE_ReleaseSound(sound);
+    }
   }
   return TRUE;
 }
