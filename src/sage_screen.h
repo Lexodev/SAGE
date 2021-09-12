@@ -89,8 +89,8 @@ typedef struct {
   SAGE_ScreenBuffer screen_buffer;
   /** Screen bitmaps */
   SAGE_Bitmap * front_bitmap, * back_bitmap, * wait_bitmap;
-  /** Drawing mode */
-  UBYTE drawing_mode;
+  /** Drawing mode and text color */
+  UBYTE drawing_mode, frontpen, backpen;
   /** Mouse status */
   BOOL hidden_mouse;
   /** Timer instance */

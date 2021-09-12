@@ -427,6 +427,8 @@ BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONG flags)
   screen->back_bitmap = NULL;
   screen->wait_bitmap = NULL;
   screen->drawing_mode = SSCR_TXTREPLACE;
+  screen->frontpen = 1;
+  screen->backpen = 0;
   screen->event = NULL;
   screen->timer = NULL;
   screen->back_color = 0;
@@ -1352,6 +1354,8 @@ BOOL SAGE_SetTextColor(UBYTE frontpen, UBYTE backpen)
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
   }
+  screen->frontpen = frontpen;
+  screen->backpen = backpen;
   SetAPen(&(screen->screen_buffer.work_rastport), frontpen);
   SetBPen(&(screen->screen_buffer.work_rastport), backpen);
   return TRUE;
@@ -1419,6 +1423,8 @@ BOOL SAGE_PrintDirectText(STRPTR text, UWORD posx, UWORD posy)
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
   }
+  SetAPen(&(screen->system_screen->RastPort), screen->frontpen);
+  SetBPen(&(screen->system_screen->RastPort), screen->backpen);
   Move(&(screen->system_screen->RastPort), posx, posy);
   SetDrMd(&(screen->system_screen->RastPort), screen->drawing_mode);
   Text(&(screen->system_screen->RastPort), text, strlen(text));

@@ -9,7 +9,7 @@ OPT=CPU=68040 IDIR=libinclude: MATH=standard NOICONS
 LIB=/lib/sage.lib
 
 # Files
-EXE=dragon_crown fire_effect troll_run odysseus runner blood cube sotb_ehanced
+EXE=dragon_crown fire_effect troll_run odysseus runner blood cube sotb mandelbrot
 
 # Build all demos
 all: $(EXE) cleanobj
@@ -32,8 +32,11 @@ runner: runner.c $(LIB)
 cube: cube.c $(LIB)
   sc LINK cube.c $(OPT) $(LIB) DATA=far
 
-sotb_ehanced: sotb_ehanced.c $(LIB)
-  sc LINK sotb_ehanced.c $(OPT) $(LIB)
+mandelbrot: mandelbrot.c $(LIB)
+  sc LINK mandelbrot.c $(OPT) $(LIB)
+
+sotb: sotb_plus.c $(LIB)
+  sc LINK sotb_plus.c $(OPT) $(LIB)
 
 blood: blood.c blood.h blood_engine.c blood_engine.h blood_control.c blood_control.h $(LIB)
   sc LINK blood.c blood_engine.c blood_control.c $(OPT) $(LIB) CODE=far DATA=far
