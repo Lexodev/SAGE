@@ -5,7 +5,7 @@
  * Demo of SOTB ehanced
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 November 2020
+ * @version 1.1 September 2021
  */
 
 #include <proto/dos.h>        // For Delay function

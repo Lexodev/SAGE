@@ -5,7 +5,7 @@
 #----------------------------------------------------------
 
 # Build options
-OPT=CPU=68040 IDIR=libinclude: MATH=standard NOICONS
+OPT=CPU=68040 IDIR=libinclude: MATH=68882 NOICONS
 LIB=/lib/sage.lib
 
 # Files

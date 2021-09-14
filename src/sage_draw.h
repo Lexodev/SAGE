@@ -46,6 +46,15 @@ extern BOOL __asm SAGE_FastLine16Bits(
   register __d3 LONG color
 );
 
+/** External function for 32bits line draw */
+extern BOOL __asm SAGE_FastLine32Bits(
+  register __a0 ULONG * buffer,
+  register __d0 LONG dx,
+  register __d1 LONG dy,
+  register __d2 ULONG offset,
+  register __d3 LONG color
+);
+
 /** Fast left edge X coord calculation */
 extern BOOL __asm SAGE_FastLeftEdgeCalculation(
   register __a0 LONG * buffer,

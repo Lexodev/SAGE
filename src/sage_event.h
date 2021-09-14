@@ -30,6 +30,11 @@
 #define SEVT_JOYSTICK         5
 #define SEVT_PADDLE           6
 
+#define SMBT_LMBUP            SELECTUP
+#define SMBT_LMBDOWN          SELECTDOWN
+#define SMBT_RMBUP            MENUUP
+#define SMBT_RMBDOWN          MENUDOWN
+
 /** SAGE event */
 typedef struct {
   /** Event type */

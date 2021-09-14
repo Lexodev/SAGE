@@ -1297,9 +1297,25 @@ BOOL SAGE_ResetMouse()
   return TRUE;
 }
 
-/** Track mouse movement */
+/**
+ * Enable/disable the mouse movement tracking
+ *
+ * @param flag Track mouse movement
+ *
+ * @return Operation success
+ */
 BOOL SAGE_TrackMouse(BOOL flag)
 {
+  SAGE_Screen * screen;
+  
+  screen = SAGE_GetScreen();
+  if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return FALSE;
+  }
+  if (screen->system_window != NULL) {
+    ReportMouse(flag, screen->system_window);
+  }
   return TRUE;
 }
 

@@ -361,6 +361,13 @@ BOOL SAGE_DrawLine(LONG x1, LONG y1, LONG x2, LONG y2, LONG color)
     buffer16 = (UWORD *) bitmap->bitmap_buffer;
     buffer16 += (y1 * bitmap->width) + x1;
     SAGE_FastLine16Bits(buffer16, dx, dy, bitmap->bpr, color);
+  } else if (bitmap->depth == SBMP_DEPTH24) {
+    SAGE_SetError(SERR_NOT_AVAILABLE);
+    return FALSE;
+  } else if (bitmap->depth == SBMP_DEPTH32) {
+    buffer32 = (ULONG *) bitmap->bitmap_buffer;
+    buffer32 += (y1 * bitmap->width) + x1;
+    SAGE_FastLine32Bits(buffer32, dx, dy, bitmap->bpr, color);
   }
   return TRUE;
 }
@@ -392,7 +399,19 @@ BOOL SAGE_DrawLineArray(SAGE_Line * lines, ULONG nblines)
   return TRUE;
 }
 
-/** Draw a triangle */
+/**
+ * Draw a triangle
+ *
+ * @param x1    First point X
+ * @param y1    First point Y
+ * @param x2    Second point X
+ * @param y2    Second point Y
+ * @param x3    Third point X
+ * @param y3    Third point Y
+ * @param color Triangle color
+ *
+ * @return Operation success
+ */
 BOOL SAGE_DrawTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG y3, LONG color)
 {
   SAGE_Bitmap * bitmap;
@@ -486,7 +505,19 @@ BOOL SAGE_DrawTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG y3, LON
   return TRUE;
 }
 
-/** Draw a clipped triangle */
+/**
+ * Draw a clipped triangle
+ *
+ * @param x1    First point X
+ * @param y1    First point Y
+ * @param x2    Second point X
+ * @param y2    Second point Y
+ * @param x3    Third point X
+ * @param y3    Third point Y
+ * @param color Triangle color
+ *
+ * @return Operation success
+ */
 BOOL SAGE_DrawClippedTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG y3, LONG color)
 {
   SAGE_Screen * screen;

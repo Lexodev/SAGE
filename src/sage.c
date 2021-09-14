@@ -17,7 +17,7 @@
 #include "sage.h"
 
 /** @var Library version */
-STRPTR SAGE_Version = "$VER: SAGE V1.6 February 2021";
+STRPTR SAGE_Version = "$VER: SAGE V1.8 September 2021";
 
 /** @var Application context */
 SAGE_Context SageContext;

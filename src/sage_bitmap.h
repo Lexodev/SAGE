@@ -25,7 +25,6 @@
 #define SBMP_NO_PROPERTY      0UL
 #define SBMP_TRANSPARENT      1UL
 #define SBMP_CUSTOM           2UL
-#define SBMP_FASTCOPY         4UL
 
 // Bitmap size constraint (in pixels)
 #define SBMP_SIZE8BITS        8UL
@@ -80,6 +79,9 @@ BOOL SAGE_AllocateFastDrawBuffers(SAGE_Bitmap *);
 /** Allocate a bitmap structure */
 SAGE_Bitmap * SAGE_AllocBitmap(ULONG, ULONG, ULONG, ULONG, APTR);
 
+/** Get the bitmap buffer address */
+APTR * SAGE_GetBitmapBuffer(SAGE_Bitmap *);
+
 /** Release a bitmap structure */
 VOID SAGE_ReleaseBitmap(SAGE_Bitmap *);
 
@@ -100,6 +102,8 @@ ULONG SAGE_GetBitmapAddress(struct BitMap *);
 
 /** Get the system bitmap bytes per row */
 ULONG SAGE_GetBitmapBPR(struct BitMap *);
+
+/** Only for debug purpose, don't use it in your code */
 
 /** DEBUG : Display the pixel format */
 VOID SAGE_DumpPixelFormat(ULONG);

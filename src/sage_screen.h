@@ -184,7 +184,7 @@ BOOL SAGE_SetMouseCursor(UWORD *, WORD, WORD, WORD);
 /** Reset the mouse cursor */
 BOOL SAGE_ResetMouse(VOID);
 
-/** Track mouse movement */
+/** Enable/disable the mouse movement tracking */
 BOOL SAGE_TrackMouse(BOOL);
 
 /** Set the screen text font */

@@ -179,7 +179,7 @@ _SAGE_FastLine16Bits:
   adda.l  d2,a0                         ; next row
   sub.l   d0,d5                         ; e - dx
   bge.s   .NextHardPositive
-  adda.l  #1,a0                         ; next column
+  adda.l  #2,a0                         ; next column
   add.l   d1,d5                         ; e + dy
 .NextHardPositive:
   dbf     d4,.DrawHardPositive
@@ -188,7 +188,7 @@ _SAGE_FastLine16Bits:
   neg.l   d0                            ; d0 * -1
   tst.l   d1                            ; dy == 0 ?
   bne.s   .DyNotZeroNegative
-  adda.l  #1,a0
+  adda.l  #2,a0
 .DyZeroNegative:                        ; horizontal line
   move.w  d3,-(a0)                      ; draw pixel
   dbf     d0,.DyZeroNegative
@@ -200,7 +200,7 @@ _SAGE_FastLine16Bits:
   move.l  d0,d5                         ; e
   add.l   d0,d0                         ; dx * 2
   add.l   d1,d1                         ; dy * 2
-  adda.l  #1,a0
+  adda.l  #2,a0
 .DrawSoftNegative:
   move.w  d3,-(a0)                      ; draw pixel
   sub.l   d1,d5                         ; e - dy
@@ -220,7 +220,113 @@ _SAGE_FastLine16Bits:
   adda.l  d2,a0                         ; change line
   sub.l   d0,d5                         ; e - dx
   bge.s   .NextHardNegative
-  suba.l  #1,a0                         ; previous column
+  suba.l  #2,a0                         ; previous column
+  add.l   d1,d5                         ; e + dy
+.NextHardNegative:
+  dbf     d4,.DrawHardNegative
+.EndDraw:
+  movem.l (sp)+,d1-d5/a0
+  move.l  #-1,d0
+  rts
+
+;--------------------------------------
+; Draw a line on a 32bits screen
+;
+; @in a0.l line start address
+; @in d0.l delta x
+; @in d1.l delta y
+; @in d2.l offset to the next line in bytes
+; @in d3.l color
+;
+; @out d0.l operation success
+;--------------------------------------
+  xdef _SAGE_FastLine32Bits
+
+_SAGE_FastLine32Bits:
+  movem.l d1-d5/a0,-(sp)
+  tst.l   d0                            ; dx > 0 ?
+  blt     .DxNegative
+  bne.s   .DxPositive
+.DxZero:                                ; vertical line
+  move.l  d3,(a0)                       ; draw pixel
+  adda.l  d2,a0                         ; next row
+  dbf     d1,.DxZero
+  bra     .EndDraw
+.DxPositive:
+  tst.l   d1                            ; dy == 0 ?
+  bne.s   .DyNotZeroPositive
+.DyZeroPositive:                        ; horizontal line
+  move.l  d3,(a0)+                      ; draw pixel
+  dbf     d0,.DyZeroPositive
+  bra     .EndDraw
+.DyNotZeroPositive:
+  cmp.l   d0,d1                         ; dx >= dy ?
+  bgt.s   .DySupDxPos
+  move.l  d0,d4                         ; line len
+  move.l  d0,d5                         ; e
+  add.l   d0,d0                         ; dx * 2
+  add.l   d1,d1                         ; dy * 2
+.DrawSoftPositive:
+  move.l  d3,(a0)+                      ; draw pixel
+  sub.l   d1,d5                         ; e - dy
+  bge.s   .NextSoftPositive
+  adda.l  d2,a0                         ; next row
+  add.l   d0,d5                         ; e + dx
+.NextSoftPositive:
+  dbf     d4,.DrawSoftPositive
+  bra     .EndDraw
+.DySupDxPos:
+  move.l  d1,d4                         ; line len
+  move.l  d1,d5                         ; e
+  add.l   d0,d0                         ; dx * 2
+  add.l   d1,d1                         ; dy * 2
+.DrawHardPositive:
+  move.l  d3,(a0)                       ; draw pixel
+  adda.l  d2,a0                         ; next row
+  sub.l   d0,d5                         ; e - dx
+  bge.s   .NextHardPositive
+  adda.l  #4,a0                         ; next column
+  add.l   d1,d5                         ; e + dy
+.NextHardPositive:
+  dbf     d4,.DrawHardPositive
+  bra     .EndDraw
+.DxNegative:
+  neg.l   d0                            ; d0 * -1
+  tst.l   d1                            ; dy == 0 ?
+  bne.s   .DyNotZeroNegative
+  adda.l  #4,a0
+.DyZeroNegative:                        ; horizontal line
+  move.l  d3,-(a0)                      ; draw pixel
+  dbf     d0,.DyZeroNegative
+  bra     .EndDraw
+.DyNotZeroNegative:
+  cmp.l   d0,d1                         ; dx >= dy
+  bgt.s   .DySupDxNeg
+  move.l  d0,d4                         ; line len
+  move.l  d0,d5                         ; e
+  add.l   d0,d0                         ; dx * 2
+  add.l   d1,d1                         ; dy * 2
+  adda.l  #4,a0
+.DrawSoftNegative:
+  move.l  d3,-(a0)                      ; draw pixel
+  sub.l   d1,d5                         ; e - dy
+  bge.s   .NextSoftNegative
+  adda.l  d2,a0                         ; change line
+  add.l   d0,d5                         ; e + dx
+.NextSoftNegative:
+  dbf     d4,.DrawSoftNegative
+  bra     .EndDraw
+.DySupDxNeg:
+  move.l  d1,d4                         ; line len
+  move.l  d1,d5                         ; e
+  add.l   d0,d0                         ; dx * 2
+  add.l   d1,d1                         ; dy * 2
+.DrawHardNegative:
+  move.l  d3,(a0)                       ; draw pixel
+  adda.l  d2,a0                         ; change line
+  sub.l   d0,d5                         ; e - dx
+  bge.s   .NextHardNegative
+  suba.l  #4,a0                         ; previous column
   add.l   d1,d5                         ; e + dy
 .NextHardNegative:
   dbf     d4,.DrawHardNegative
@@ -231,7 +337,7 @@ _SAGE_FastLine16Bits:
 
 ;--------------------------------------
 ; Calculate the X coords for a left
-;  edge line (one point per row)
+; edge line (one point per row)
 ;
 ; @in a0.l buffer for coords
 ; @in d0.l x1
@@ -355,7 +461,7 @@ _SAGE_FastLeftEdgeCalculation:
 
 ;--------------------------------------
 ; Calculate the X coords for a right
-;  edge line (one point per row)
+; edge line (one point per row)
 ;
 ; @in a0.l buffer for coords
 ; @in d0.l x1
@@ -465,7 +571,7 @@ _SAGE_FastRightEdgeCalculation:
 
 ;--------------------------------------
 ; Calculate the X coords for a clipped
-;  left edge line (one point per row)
+; left edge line (one point per row)
 ;
 ; @in a0.l buffer for coords
 ; @in d0.l x1
@@ -730,7 +836,7 @@ _SAGE_FastClippedLeftEdgeCalc:
 
 ;--------------------------------------
 ; Calculate the X coords for a
-;  right clipped line
+; right clipped line
 ;
 ; @in a0.l buffer for coords
 ; @in d0.l x1
@@ -995,7 +1101,7 @@ _SAGE_FastClippedRightEdgeCalc:
 
 ;--------------------------------------
 ; Draw a flat quad for 8bits screen
-;  upper and lower segments are horizontal
+; upper and lower segments are horizontal
 ;
 ; @in a0.l first line address
 ; @in a1.l array of left coords
@@ -1052,7 +1158,7 @@ _SAGE_DrawFlatQuad8Bits:
 
 ;--------------------------------------
 ; Draw a flat quad for 16bits screen
-;  upper and lower segments are horizontal
+; upper and lower segments are horizontal
 ;
 ; @in a0.l first line address
 ; @in a1.l array of left coords
@@ -1106,7 +1212,7 @@ _SAGE_DrawFlatQuad16Bits:
 
 ;--------------------------------------
 ; Draw a flat quad for 32bits screen
-;  upper and lower segments are horizontal
+; upper and lower segments are horizontal
 ;
 ; @in a0.l first line address
 ; @in a1.l array of left coords
@@ -1132,8 +1238,7 @@ _SAGE_DrawFlatQuad32Bits:
   move.l  (a2)+,d4                      ; right coord
   blt.s   .SkipRow                      ; outside of clip area
   sub.l   d3,d4                         ; pixels to draw
-  add.l   d3,d3                         ; 4 bytes per pixel
-  add.l   d3,d3                         ; -
+  lsl.l   #2,d3                         ; 4 bytes per pixel
   add.l   d3,a3                         ; start address
   btst    #0,d4                         ; look for a multiple of 2
   beq.s   .DrawFastLine                 ; draw only block of eight pixels

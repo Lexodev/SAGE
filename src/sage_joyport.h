@@ -5,7 +5,7 @@
  * Joyport input management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 April 2020
+ * @version 1.1 September 2021
  */
 
 #ifndef _SAGE_JOYPORT_H_
@@ -60,6 +60,6 @@ BOOL SAGE_AddJoyportHandler(UWORD, VOID (*handler)(SAGE_PortScan *));
 BOOL SAGE_RemoveJoyportHandler(UWORD);
 
 /** Clear all joyport handlers */
-BOOL SAGE_ClearJoyportHanlders(VOID);
+BOOL SAGE_ClearJoyportHandlers(VOID);
 
 #endif
