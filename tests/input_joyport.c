@@ -1,7 +1,7 @@
 /**
  * input_joyport.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test input joyport
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

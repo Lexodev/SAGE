@@ -1,7 +1,7 @@
 /**
  * sage_sprite.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Sprite management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -26,24 +26,28 @@
 #define SSPR_HS_BOTMID        7
 #define SSPR_HS_BOTRIGHT      8
 
+#define SSPR_STANDARD         1
+#define SSPR_HFLIPPED         2
+#define SSPR_VFLIPPED         4
+#define SSPR_ZOOMED           8
+#define SSPR_STMASK           0xFFF0
+
 /** SAGE Sprite structure */
 typedef struct {
   /** Sprite flipping */
   BOOL horizontal_flip, vertical_flip;
   /** Sprite zoom factor */
   FLOAT horizontal_zoom, vertical_zoom;
-  BOOL zoomed;
   ULONG real_width, real_height;
   /** Sprite rotation angle */
   FLOAT rotation_angle;
   /** Sprite bitmap coordinates */
   ULONG left, top, width, height;
   /** Sprite hot spot */
+  UWORD hotspot;
   LONG hs_x, hs_y;
   /** Sprite flags */
   LONGBITS flags;
-  /** Sprite user data */
-  APTR user_data;
 } SAGE_Sprite;
 
 /** SAGE Sprite bank structure */
@@ -78,7 +82,7 @@ BOOL SAGE_SetSpriteFlipping(UWORD, UWORD, BOOL, BOOL);
 BOOL SAGE_SetSpriteZoom(UWORD, UWORD, FLOAT, FLOAT);
 
 /** Set the sprite hotspot */
-BOOL SAGE_SetSpriteHotspot(UWORD, UWORD, WORD, WORD);
+BOOL SAGE_SetSpriteHotspot(UWORD, UWORD, UWORD);
 
 /** Blit a sprite to the screen */
 BOOL SAGE_BlitSpriteToScreen(UWORD, UWORD, LONG, LONG);

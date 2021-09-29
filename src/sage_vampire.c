@@ -1,7 +1,7 @@
 /**
  * sage_vampire.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Vampire & AMMX support
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

@@ -1,7 +1,7 @@
 /**
  * core_vampire.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test Vampire presence
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

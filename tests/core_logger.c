@@ -1,7 +1,7 @@
 /**
  * core_logger.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test logger functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

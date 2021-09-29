@@ -1,7 +1,7 @@
 /**
  * core_error.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test error display
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

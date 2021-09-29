@@ -1,7 +1,7 @@
 /**
  * interrupt_interrupt.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test interruption functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

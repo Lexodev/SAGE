@@ -1,7 +1,7 @@
 /**
  * input_input.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test input module
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

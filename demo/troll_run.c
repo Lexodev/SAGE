@@ -1,7 +1,7 @@
 /**
  * troll_run.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Demo of troll animation
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

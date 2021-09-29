@@ -1,7 +1,7 @@
 /**
  * sage_thread.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Thread management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

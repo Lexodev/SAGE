@@ -1,7 +1,7 @@
 /**
  * sage_loadtracker.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Module tracker loading
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

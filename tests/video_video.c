@@ -1,7 +1,7 @@
 /**
  * video_video.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test video module initialization
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

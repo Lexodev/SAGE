@@ -1,7 +1,7 @@
 /**
  * sage_draw.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Graphics primitive drawing
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -40,6 +40,15 @@ extern BOOL __asm SAGE_FastLine8Bits(
 /** External function for 16bits line draw */
 extern BOOL __asm SAGE_FastLine16Bits(
   register __a0 UWORD * buffer,
+  register __d0 LONG dx,
+  register __d1 LONG dy,
+  register __d2 ULONG offset,
+  register __d3 LONG color
+);
+
+/** External function for 32bits line draw */
+extern BOOL __asm SAGE_FastLine32Bits(
+  register __a0 ULONG * buffer,
   register __d0 LONG dx,
   register __d1 LONG dy,
   register __d2 ULONG offset,

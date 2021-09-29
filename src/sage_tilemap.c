@@ -1,7 +1,7 @@
 /**
  * sage_tilemap.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Tilemap management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

@@ -1,7 +1,7 @@
 ;--------------------------------------
 ; sage_blitter.asm
 ;
-; SAGE (Small Amiga Game Engine) project
+; SAGE (Simple Amiga Game Engine) project
 ; Bitmap copy functions
 ; 
 ; @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -161,7 +161,59 @@ _SAGE_BlitCopy8Bits:
 
 ;--------------------------------------
 ; Copy a 8bits bitmap to another 8bits bitmap
-;  with transparency
+; with zoom
+;
+; @in a0.l source buffer address
+; @in a1.l destination buffer address
+; @in d0.l source width in pixels
+; @in d1.l source height in pixels
+; @in d2.l offset to next source line
+; @in d3.l destination width in pixels
+; @in d4.l destination height in pixels
+; @in d5.l offset to next destination line
+;
+; @out d0.l Operation success
+;--------------------------------------
+  xdef _SAGE_BlitZoomCopy8Bits
+
+_SAGE_BlitZoomCopy8Bits:
+  movem.l d1-d7/a0-a2,-(sp)
+  tst.l   d4
+  beq.s   .EndOfCopy                    ; Nothing to copy
+  tst.l   d3
+  beq.s   .EndOfCopy                    ; Nothing to copy
+  fmove.l d0,fp0
+  fmove.l d3,fp2
+  fdiv    fp2,fp0                       ; x_step
+  fmove.l d1,fp1
+  fmove.l d4,fp2
+  fdiv    fp2,fp1                       ; y_step
+  fmove.s #0.0,fp3                      ; y_pixel
+  subq.l  #1,d3
+  subq.l  #1,d4
+.NextLine:
+  fmove.s #0.0,fp2                      ; x_pixel
+  fmove.l fp3,d1                        ; y_pixel
+  mulu.w  d2,d1                         ; src_offset * y_pixel
+  movea.l a0,a2
+  add.l   d1,a2                         ; src_buffer + (src_offset * y_pixel)
+  move.w  d3,d7
+.NextPixel:
+  fmove.l fp2,d0                        ; x_pixel
+  move.b  0(a2,d0),(a1)+                ; pixel
+  fadd    fp0,fp2                       ; x_pixel + x_step
+  dbf     d7,.NextPixel
+  adda.l  d5,a1                         ; dst_buffer + dst_offset
+  fadd    fp1,fp3                       ; y_pixel + y_step
+  dbf     d4,.NextLine
+.EndOfCopy:
+  movem.l (sp)+,d1-d7/a0-a2
+  move.l  #-1,d0
+  rts
+
+;--------------------------------------
+; Copy a 8bits bitmap to another 8bits bitmap
+; with transparency
 ;
 ; @in a0.l source buffer address
 ; @in a1.l destination buffer address
@@ -320,6 +372,64 @@ _SAGE_BlitTransparentCopy8Bits:
   rts
 
 ;--------------------------------------
+; Copy a 8bits bitmap to another 8bits bitmap
+; with zoom and transparency
+;
+; @in a0.l source buffer address
+; @in a1.l destination buffer address
+; @in d0.l source width in pixels
+; @in d1.l source height in pixels
+; @in d2.l offset to next source line
+; @in d3.l destination width in pixels
+; @in d4.l destination height in pixels
+; @in d5.l offset to next destination line
+; @in d6.l transparent color index
+;
+; @out d0.l Operation success
+;--------------------------------------
+  xdef _SAGE_BlitTranspZoomCopy8Bits
+
+_SAGE_BlitTranspZoomCopy8Bits:
+  movem.l d1-d7/a0-a2,-(sp)
+  tst.l   d4
+  beq.s   .EndOfCopy                    ; Nothing to copy
+  tst.l   d3
+  beq.s   .EndOfCopy                    ; Nothing to copy
+  fmove.l d0,fp0
+  fmove.l d3,fp2
+  fdiv    fp2,fp0                       ; x_step
+  fmove.l d1,fp1
+  fmove.l d4,fp2
+  fdiv    fp2,fp1                       ; y_step
+  fmove.s #0.0,fp3                      ; y_pixel
+  subq.l  #1,d3
+  subq.l  #1,d4
+.NextLine:
+  fmove.s #0.0,fp2                      ; x_pixel
+  fmove.l fp3,d1                        ; y_pixel
+  mulu.w  d2,d1                         ; src_offset * y_pixel
+  movea.l a0,a2
+  add.l   d1,a2                         ; src_buffer + (src_offset * y_pixel)
+  move.w  d3,d7
+.NextPixel:
+  fmove.l fp2,d0                        ; x_pixel
+  move.b  0(a2,d0),d1                   ; pixel
+  cmp.b   d1,d6                         ; transparent ?
+  beq.s   .SkipPixel
+  move.b  d1,(a1)                       ; copy pixel
+.SkipPixel:
+  addq.l  #1,a1
+  fadd    fp0,fp2                       ; x_pixel + x_step
+  dbf     d7,.NextPixel
+  adda.l  d5,a1                         ; dst_buffer + dst_offset
+  fadd    fp1,fp3                       ; y_pixel + y_step
+  dbf     d4,.NextLine
+.EndOfCopy:
+  movem.l (sp)+,d1-d7/a0-a2
+  move.l  #-1,d0
+  rts
+
+;--------------------------------------
 ; Clear a 16bits bitmap
 ;
 ; @in a0.l frame buffer address
@@ -407,6 +517,58 @@ _SAGE_BlitCopy16Bits:
   dbf     d0,.NextLine
 .EndOfCopy:
   movem.l (sp)+,d1-d6/a0-a1
+  move.l  #-1,d0
+  rts
+
+;--------------------------------------
+; Copy a 16bits bitmap to another 16bits bitmap
+; with zoom
+;
+; @in a0.l source buffer address
+; @in a1.l destination buffer address
+; @in d0.l source width in pixels
+; @in d1.l source height in pixels
+; @in d2.l offset to next source line
+; @in d3.l destination width in pixels
+; @in d4.l destination height in pixels
+; @in d5.l offset to next destination line
+;
+; @out d0.l Operation success
+;--------------------------------------
+  xdef _SAGE_BlitZoomCopy16Bits
+
+_SAGE_BlitZoomCopy16Bits:
+  movem.l d1-d7/a0-a2,-(sp)
+  tst.l   d4
+  beq.s   .EndOfCopy                    ; Nothing to copy
+  tst.l   d3
+  beq.s   .EndOfCopy                    ; Nothing to copy
+  fmove.l d0,fp0
+  fmove.l d3,fp2
+  fdiv    fp2,fp0                       ; x_step
+  fmove.l d1,fp1
+  fmove.l d4,fp2
+  fdiv    fp2,fp1                       ; y_step
+  fmove.s #0.0,fp3                      ; y_pixel
+  subq.l  #1,d3
+  subq.l  #1,d4
+.NextLine:
+  fmove.s #0.0,fp2                      ; x_pixel
+  fmove.l fp3,d1                        ; y_pixel
+  mulu.w  d2,d1                         ; src_offset * y_pixel
+  movea.l a0,a2
+  add.l   d1,a2                         ; src_buffer + (src_offset * y_pixel)
+  move.w  d3,d7
+.NextPixel:
+  fmove.l fp2,d0                        ; x_pixel
+  move.w  0(a2,d0*2),(a1)+              ; pixel
+  fadd    fp0,fp2                       ; x_pixel + x_step
+  dbf     d7,.NextPixel
+  adda.l  d5,a1                         ; dst_buffer + dst_offset
+  fadd    fp1,fp3                       ; y_pixel + y_step
+  dbf     d4,.NextLine
+.EndOfCopy:
+  movem.l (sp)+,d1-d7/a0-a2
   move.l  #-1,d0
   rts
 
@@ -519,6 +681,64 @@ _SAGE_BlitTransparentCopy16Bits:
   dbf     d0,.NextLine
 .EndOfCopy:
   movem.l (sp)+,d1-d7/a0-a1
+  move.l  #-1,d0
+  rts
+
+;--------------------------------------
+; Copy a 16bits bitmap to another 16bits bitmap
+; with zoom and transparency
+;
+; @in a0.l source buffer address
+; @in a1.l destination buffer address
+; @in d0.l source width in pixels
+; @in d1.l source height in pixels
+; @in d2.l offset to next source line
+; @in d3.l destination width in pixels
+; @in d4.l destination height in pixels
+; @in d5.l offset to next destination line
+; @in d6.l transparent color index
+;
+; @out d0.l Operation success
+;--------------------------------------
+  xdef _SAGE_BlitTranspZoomCopy16Bits
+
+_SAGE_BlitTranspZoomCopy16Bits:
+  movem.l d1-d7/a0-a2,-(sp)
+  tst.l   d4
+  beq.s   .EndOfCopy                    ; Nothing to copy
+  tst.l   d3
+  beq.s   .EndOfCopy                    ; Nothing to copy
+  fmove.l d0,fp0
+  fmove.l d3,fp2
+  fdiv    fp2,fp0                       ; x_step
+  fmove.l d1,fp1
+  fmove.l d4,fp2
+  fdiv    fp2,fp1                       ; y_step
+  fmove.s #0.0,fp3                      ; y_pixel
+  subq.l  #1,d3
+  subq.l  #1,d4
+.NextLine:
+  fmove.s #0.0,fp2                      ; x_pixel
+  fmove.l fp3,d1                        ; y_pixel
+  mulu.w  d2,d1                         ; src_offset * y_pixel
+  movea.l a0,a2
+  add.l   d1,a2                         ; src_buffer + (src_offset * y_pixel)
+  move.w  d3,d7
+.NextPixel:
+  fmove.l fp2,d0                        ; x_pixel
+  move.w  0(a2,d0*2),d1                 ; pixel
+  cmp.w   d1,d6                         ; transparent ?
+  beq.s   .SkipPixel
+  move.w  d1,(a1)                       ; copy pixel
+.SkipPixel:
+  addq.l  #2,a1
+  fadd    fp0,fp2                       ; x_pixel + x_step
+  dbf     d7,.NextPixel
+  adda.l  d5,a1                         ; dst_buffer + dst_offset
+  fadd    fp1,fp3                       ; y_pixel + y_step
+  dbf     d4,.NextLine
+.EndOfCopy:
+  movem.l (sp)+,d1-d7/a0-a2
   move.l  #-1,d0
   rts
 

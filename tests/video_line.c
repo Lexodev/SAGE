@@ -1,7 +1,7 @@
 /**
  * video_line.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test line drawing
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

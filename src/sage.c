@@ -1,7 +1,7 @@
 /**
  * sage.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
  * @version 1.1 April 2020
@@ -17,7 +17,7 @@
 #include "sage.h"
 
 /** @var Library version */
-STRPTR SAGE_Version = "$VER: SAGE V1.6 February 2021";
+STRPTR SAGE_Version = "$VER: SAGE V1.8 September 2021";
 
 /** @var Application context */
 SAGE_Context SageContext;

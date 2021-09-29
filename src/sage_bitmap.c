@@ -1,7 +1,7 @@
 /**
  * sage_bitmap.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Bitmap management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -171,15 +171,15 @@ BOOL SAGE_CheckSizeConstraint(ULONG width, ULONG depth)
 BOOL SAGE_AllocateFastDrawBuffers(SAGE_Bitmap * bitmap)
 {
   if (bitmap != NULL) {
-    if (bitmap->left_coords != NULL) {
-      SAGE_FreeMem(bitmap->left_coords);
+    if (bitmap->first_buffer != NULL) {
+      SAGE_FreeMem(bitmap->first_buffer);
     }
-    if (bitmap->right_coords != NULL) {
-      SAGE_FreeMem(bitmap->right_coords);
+    if (bitmap->second_buffer != NULL) {
+      SAGE_FreeMem(bitmap->second_buffer);
     }
-    bitmap->left_coords = (LONG *) SAGE_AllocMem((bitmap->height + 2) * sizeof(LONG));
-    bitmap->right_coords = (LONG *) SAGE_AllocMem((bitmap->height + 2) * sizeof(LONG));
-    if (bitmap->left_coords != NULL && bitmap->right_coords != NULL) {
+    bitmap->first_buffer = (LONG *) SAGE_AllocMem(SBMP_DRAWBUFSIZE);
+    bitmap->second_buffer = (LONG *) SAGE_AllocMem(SBMP_DRAWBUFSIZE);
+    if (bitmap->first_buffer != NULL && bitmap->second_buffer != NULL) {
       return TRUE;
     }
   } else {
@@ -218,8 +218,8 @@ SAGE_Bitmap * SAGE_AllocBitmap(ULONG width, ULONG height, ULONG depth, ULONG pix
     bitmap->transparency = 0;
     bitmap->pixformat = pixformat;
     bitmap->bitmap_buffer = NULL;
-    bitmap->left_coords = NULL;
-    bitmap->right_coords = NULL;
+    bitmap->first_buffer = NULL;
+    bitmap->second_buffer = NULL;
     if (custom_bitmap != NULL) {
       bitmap->properties |= SBMP_CUSTOM;
       bitmap->bitmap_buffer = custom_bitmap;
@@ -237,6 +237,22 @@ SAGE_Bitmap * SAGE_AllocBitmap(ULONG width, ULONG height, ULONG depth, ULONG pix
 }
 
 /**
+ * Get the bitmap buffer address
+ * 
+ * @param bitmap SAGE bitmap pointer
+ *
+ * @return Bitmap buffer address
+ */
+APTR * SAGE_GetBitmapBuffer(SAGE_Bitmap * bitmap)
+{
+  if (bitmap != NULL) {
+    return bitmap->bitmap_buffer;
+  }
+  SAGE_SetError(SERR_NULL_POINTER);
+  return NULL;
+}
+
+/**
  * Release a bitmap resource
  *
  * @param bitmap SAGE bitmap pointer
@@ -244,11 +260,11 @@ SAGE_Bitmap * SAGE_AllocBitmap(ULONG width, ULONG height, ULONG depth, ULONG pix
 VOID SAGE_ReleaseBitmap(SAGE_Bitmap * bitmap)
 {
   if (bitmap != NULL) {
-    if (bitmap->left_coords != NULL) {
-      SAGE_FreeMem(bitmap->left_coords);
+    if (bitmap->first_buffer != NULL) {
+      SAGE_FreeMem(bitmap->first_buffer);
     }
-    if (bitmap->right_coords != NULL) {
-      SAGE_FreeMem(bitmap->right_coords);
+    if (bitmap->second_buffer != NULL) {
+      SAGE_FreeMem(bitmap->second_buffer);
     }
     if (!(bitmap->properties & SBMP_CUSTOM) && bitmap->bitmap_buffer != NULL) {
       SAGE_FreeMem(bitmap->bitmap_buffer);
@@ -715,6 +731,148 @@ BOOL SAGE_BlitBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, ULONG width, U
       SAGE_Blit24BitsBitmap(source, left, top, width, height, destination, x_start, y_start);
     } else if (source->depth == SBMP_DEPTH32) {
       SAGE_Blit32BitsBitmap(source, left, top, width, height, destination, x_start, y_start);
+    } else {
+      SAGE_SetError(SERR_UNKNOWN_DEPTH);
+      return FALSE;
+    }
+  } else {
+    SAGE_SetError(SERR_BM_BLITFMT);
+    return FALSE;
+  }
+  return TRUE;
+}
+
+/**
+ * Copy a part of a 8bits bitmap buffer into another 8bits bitmap buffer with zoom
+ * 
+ * @param source      SAGE bitmap pointer
+ * @param left        Source left in pixel
+ * @param top         Source top in pixel
+ * @param width       Source width in pixel
+ * @param height      Source height in pixel
+ * @param destination SAGE bitmap pointer
+ * @param x_start     X position of copy
+ * @param y_start     Y position of copy
+ * @param z_width     Zoom width
+ * @param z_height    Zoom height
+ */
+VOID SAGE_Blit8BitsZoomedBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, ULONG width, ULONG height, SAGE_Bitmap * destination, ULONG x_start, ULONG y_start, ULONG z_width, ULONG z_height)
+{
+  UBYTE * src_buffer, * dst_buffer;
+  ULONG src_offset, dst_offset;
+
+  src_buffer = (UBYTE *) source->bitmap_buffer;
+  src_buffer += (left + (source->width * top));
+  src_offset = source->width;
+  dst_buffer = (UBYTE *) destination->bitmap_buffer;
+  dst_buffer += (x_start + (destination->width * y_start));
+  dst_offset = destination->width - z_width;
+  if (source->properties & SBMP_TRANSPARENT) {
+    SAGE_BlitTranspZoomCopy8Bits(
+      (ULONG)src_buffer,
+      (ULONG)width,
+      (ULONG)height,
+      (ULONG)src_offset,
+      (ULONG)dst_buffer,
+      (ULONG)z_width,
+      (ULONG)z_height,
+      (ULONG)dst_offset,
+      (ULONG)source->transparency
+    );
+  } else {
+    SAGE_BlitZoomCopy8Bits(
+      (ULONG)src_buffer,
+      (ULONG)width,
+      (ULONG)height,
+      (ULONG)src_offset,
+      (ULONG)dst_buffer,
+      (ULONG)z_width,
+      (ULONG)z_height,
+      (ULONG)dst_offset
+    );
+  }
+}
+
+/**
+ * Copy a part of a 16bits bitmap buffer into another 16bits bitmap buffer with zoom
+ * 
+ * @param source      SAGE bitmap pointer
+ * @param left        Source left in pixel
+ * @param top         Source top in pixel
+ * @param width       Source width in pixel
+ * @param height      Source height in pixel
+ * @param destination SAGE bitmap pointer
+ * @param x_start     X position of copy
+ * @param y_start     Y position of copy
+ * @param z_width     Zoom width
+ * @param z_height    Zoom height
+ */
+VOID SAGE_Blit16BitsZoomedBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, ULONG width, ULONG height, SAGE_Bitmap * destination, ULONG x_start, ULONG y_start, ULONG z_width, ULONG z_height)
+{
+  UWORD * src_buffer, * dst_buffer;
+  ULONG src_offset, dst_offset;
+
+  src_buffer = (UWORD *) source->bitmap_buffer;
+  src_buffer += (left + (source->width * top));
+  src_offset = source->width * 2;
+  dst_buffer = (UWORD *) destination->bitmap_buffer;
+  dst_buffer += (x_start + (destination->width * y_start));
+  dst_offset = (destination->width - z_width) * 2;
+  if (source->properties & SBMP_TRANSPARENT) {
+    SAGE_BlitTranspZoomCopy16Bits(
+      (ULONG)src_buffer,
+      (ULONG)width,
+      (ULONG)height,
+      (ULONG)src_offset,
+      (ULONG)dst_buffer,
+      (ULONG)z_width,
+      (ULONG)z_height,
+      (ULONG)dst_offset,
+      (ULONG)source->transparency
+    );
+  } else {
+    SAGE_BlitZoomCopy16Bits(
+      (ULONG)src_buffer,
+      (ULONG)width,
+      (ULONG)height,
+      (ULONG)src_offset,
+      (ULONG)dst_buffer,
+      (ULONG)z_width,
+      (ULONG)z_height,
+      (ULONG)dst_offset
+    );
+  }
+}
+
+/**
+ * Copy a part of a bitmap into another bitmap wihout clipping
+ * Bitmaps should have the same pixel format
+ * 
+ * @param source      SAGE bitmap pointer
+ * @param left        Source left in pixel
+ * @param top         Source top in pixel
+ * @param width       Source width in pixel
+ * @param height      Source height in pixel
+ * @param destination SAGE bitmap pointer
+ * @param x_start     X position of copy
+ * @param y_start     Y position of copy
+ * @param z_width     Zoom width
+ * @param z_height    Zoom height
+ *
+ * @return Operation success
+ */
+BOOL SAGE_BlitZoomedBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, ULONG width, ULONG height, SAGE_Bitmap * destination, ULONG x_start, ULONG y_start, ULONG z_width, ULONG z_height)
+{
+  if (source == NULL || destination == NULL) {
+    SAGE_SetError(SERR_NULL_POINTER);
+    return FALSE;
+  }
+  // Blit only if we have the same depth
+  if (source->depth == destination->depth) {
+    if (source->depth == SBMP_DEPTH8) {
+      SAGE_Blit8BitsZoomedBitmap(source, left, top, width, height, destination, x_start, y_start, z_width, z_height);
+    } else if (source->depth == SBMP_DEPTH16) {
+      SAGE_Blit16BitsZoomedBitmap(source, left, top, width, height, destination, x_start, y_start, z_width, z_height);
     } else {
       SAGE_SetError(SERR_UNKNOWN_DEPTH);
       return FALSE;

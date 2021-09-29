@@ -1,7 +1,7 @@
 /**
  * sage.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
  * @version 1.1 April 2020

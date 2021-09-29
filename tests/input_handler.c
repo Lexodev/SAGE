@@ -1,7 +1,7 @@
 /**
  * input_handler.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test input handler
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

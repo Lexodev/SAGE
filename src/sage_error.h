@@ -1,7 +1,7 @@
 /**
  * sage_error.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Errors management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

@@ -1,7 +1,7 @@
 ;--------------------------------------
 ; sage_ammxblit.asm
 ;
-; SAGE (Small Amiga Game Engine) project
+; SAGE (Simple Amiga Game Engine) project
 ; Bitmap copy functions using AMMX
 ; 
 ; @author Fabrice Labrador <fabrice.labrador@gmail.com>

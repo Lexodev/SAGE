@@ -1,11 +1,11 @@
 /**
  * sotb_ehanced.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Demo of SOTB ehanced
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 November 2020
+ * @version 1.1 September 2021
  */
 
 #include <proto/dos.h>        // For Delay function
@@ -193,7 +193,7 @@ BOOL InitBackground(VOID)
   SAGE_Picture * picture;
 
   SAGE_AppliLog("Load background picture");
-  if ((picture = SAGE_LoadPicture("/data/SOTB_back.png")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/SOTB_back.png")) != NULL) {
     SAGE_AppliLog("Create back layer");
     if (SAGE_CreateLayerFromPicture(BG_LAYER, picture)) {
       SAGE_ReleasePicture(picture);
@@ -230,11 +230,11 @@ BOOL InitClouds(VOID)
 {
   BOOL result;
   
-  result = InitCloudLayer("/data/SOTB_cloud0.png", CLOUD0_LAYER, TRANSPCOLOR)
-         & InitCloudLayer("/data/SOTB_cloud1.png", CLOUD1_LAYER, TRANSPCOLOR)
-         & InitCloudLayer("/data/SOTB_cloud2.png", CLOUD2_LAYER, TRANSPCOLOR)
-         & InitCloudLayer("/data/SOTB_cloud3.png", CLOUD3_LAYER, TRANSPCOLOR)
-         & InitCloudLayer("/data/SOTB_cloud4.png", CLOUD4_LAYER, TRANSPCOLOR);
+  result = InitCloudLayer("data/SOTB_cloud0.png", CLOUD0_LAYER, TRANSPCOLOR)
+         & InitCloudLayer("data/SOTB_cloud1.png", CLOUD1_LAYER, TRANSPCOLOR)
+         & InitCloudLayer("data/SOTB_cloud2.png", CLOUD2_LAYER, TRANSPCOLOR)
+         & InitCloudLayer("data/SOTB_cloud3.png", CLOUD3_LAYER, TRANSPCOLOR)
+         & InitCloudLayer("data/SOTB_cloud4.png", CLOUD4_LAYER, TRANSPCOLOR);
   return result;
 }
 
@@ -246,7 +246,7 @@ BOOL InitMountain(VOID)
   SAGE_Picture * picture;
 
   SAGE_AppliLog("Load mountain picture");
-  if ((picture = SAGE_LoadPicture("/data/SOTB_mount.png")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/SOTB_mount.png")) != NULL) {
     SAGE_AppliLog("Create mountain layer");
     if (SAGE_CreateLayerFromPicture(MOUNTAIN_LAYER, picture)) {
       SAGE_SetLayerTransparency(MOUNTAIN_LAYER, TRANSPCOLOR);
@@ -284,12 +284,12 @@ BOOL InitGrass(VOID)
 {
   BOOL result;
   
-  result = InitGrassLayer("/data/SOTB_grass0.png", GRASS0_LAYER, TRANSPCOLOR)
-         & InitGrassLayer("/data/SOTB_grass1.png", GRASS1_LAYER, TRANSPCOLOR)
-         & InitGrassLayer("/data/SOTB_grass2.png", GRASS2_LAYER, TRANSPCOLOR)
-         & InitGrassLayer("/data/SOTB_grass3.png", GRASS3_LAYER, TRANSPCOLOR)
-         & InitGrassLayer("/data/SOTB_grass4.png", GRASS4_LAYER, TRANSPCOLOR)
-         & InitGrassLayer("/data/SOTB_grass5.png", GRASS5_LAYER, TRANSPCOLOR);
+  result = InitGrassLayer("data/SOTB_grass0.png", GRASS0_LAYER, TRANSPCOLOR)
+         & InitGrassLayer("data/SOTB_grass1.png", GRASS1_LAYER, TRANSPCOLOR)
+         & InitGrassLayer("data/SOTB_grass2.png", GRASS2_LAYER, TRANSPCOLOR)
+         & InitGrassLayer("data/SOTB_grass3.png", GRASS3_LAYER, TRANSPCOLOR)
+         & InitGrassLayer("data/SOTB_grass4.png", GRASS4_LAYER, TRANSPCOLOR)
+         & InitGrassLayer("data/SOTB_grass5.png", GRASS5_LAYER, TRANSPCOLOR);
   return result;
 }
 
@@ -301,7 +301,7 @@ BOOL InitFence(VOID)
   SAGE_Picture * picture;
 
   SAGE_AppliLog("Load fence picture");
-  if ((picture = SAGE_LoadPicture("/data/SOTB_fence.png")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/SOTB_fence.png")) != NULL) {
     SAGE_AppliLog("Create fence layer");
     if (SAGE_CreateLayerFromPicture(FENCE_LAYER, picture)) {
       SAGE_SetLayerTransparency(FENCE_LAYER, TRANSPCOLOR);
@@ -349,9 +349,9 @@ BOOL InitBeast(VOID)
 {
   BOOL result;
   
-  result = InitBeastSprite("/data/SOTB_beastright.png", SPR_BEASTRIGHT, SPR_NBRIGHT, TRANSPCOLOR)
-         & InitBeastSprite("/data/SOTB_beastleft.png", SPR_BEASTLEFT, SPR_NBLEFT, TRANSPCOLOR)
-         & InitBeastSprite("/data/SOTB_beastturn.png", SPR_BEASTTURN, SPR_NBTURN, TRANSPCOLOR);
+  result = InitBeastSprite("data/SOTB_beastright.png", SPR_BEASTRIGHT, SPR_NBRIGHT, TRANSPCOLOR)
+         & InitBeastSprite("data/SOTB_beastleft.png", SPR_BEASTLEFT, SPR_NBLEFT, TRANSPCOLOR)
+         & InitBeastSprite("data/SOTB_beastturn.png", SPR_BEASTTURN, SPR_NBTURN, TRANSPCOLOR);
   return result;
 }
 
@@ -413,7 +413,7 @@ BOOL InitMusic(VOID)
   SAGE_Music * music = NULL;
 
   SAGE_AppliLog("Loading music");
-  if ((music = SAGE_LoadMusic("/data/sotb_main.aiff")) != NULL) {
+  if ((music = SAGE_LoadMusic("data/sotb_main.aiff")) != NULL) {
     SAGE_AppliLog("Adding music");
     if (SAGE_AddMusic(SOTB_MUSIC, music)) {
       return TRUE;

@@ -1,7 +1,7 @@
 /**
  * 3dengine_3dengine.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test 3D Engine module initialization
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

@@ -1,7 +1,7 @@
 /**
  * core_memory.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test memory management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

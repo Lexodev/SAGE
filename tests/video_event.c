@@ -1,7 +1,7 @@
 /**
  * video_event.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test event polling
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

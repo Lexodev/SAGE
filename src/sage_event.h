@@ -1,7 +1,7 @@
 /**
  * sage_event.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Event container management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -29,6 +29,11 @@
 #define SEVT_MOUSEMV          4
 #define SEVT_JOYSTICK         5
 #define SEVT_PADDLE           6
+
+#define SMBT_LMBUP            SELECTUP
+#define SMBT_LMBDOWN          SELECTDOWN
+#define SMBT_RMBUP            MENUUP
+#define SMBT_RMBDOWN          MENUDOWN
 
 /** SAGE event */
 typedef struct {

@@ -1,7 +1,7 @@
 /**
  * 3dengine_3ddevice.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test 3D Engine device allocation
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

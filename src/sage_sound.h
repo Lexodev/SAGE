@@ -1,7 +1,7 @@
 /**
  * sage_sound.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Sound management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

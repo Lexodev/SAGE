@@ -1,7 +1,7 @@
 /**
  * audio_sound.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test sound loading
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

@@ -1,7 +1,7 @@
 /**
  * sage_sprite.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Sprite management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -143,6 +143,53 @@ BOOL SAGE_SetSpriteBankTransparency(UWORD index, ULONG color)
 }
 
 /**
+ * Calculate the hotspot coordinate
+ *
+ * @param bank    Sprite bank
+ * @param sprite  Sprite index
+ */
+VOID SAGE_CalculSpriteHotspot(SAGE_SpriteBank * bank, UWORD sprite)
+{
+  switch (bank->sprites[sprite].hotspot) {
+    case SSPR_HS_TOPMID:
+      bank->sprites[sprite].hs_x = bank->sprites[sprite].width / 2;
+      bank->sprites[sprite].hs_y = 0;
+      break;
+    case SSPR_HS_TOPRIGHT:
+      bank->sprites[sprite].hs_x = bank->sprites[sprite].width - 1;
+      bank->sprites[sprite].hs_y = 0;
+      break;
+    case SSPR_HS_MIDLEFT:
+      bank->sprites[sprite].hs_x = 0;
+      bank->sprites[sprite].hs_y = bank->sprites[sprite].height / 2;
+      break;
+    case SSPR_HS_MIDDLE:
+      bank->sprites[sprite].hs_x = bank->sprites[sprite].width / 2;
+      bank->sprites[sprite].hs_y = bank->sprites[sprite].height / 2;
+      break;
+    case SSPR_HS_MIDRIGHT:
+      bank->sprites[sprite].hs_x = bank->sprites[sprite].width - 1;
+      bank->sprites[sprite].hs_y = bank->sprites[sprite].height / 2;
+      break;
+    case SSPR_HS_BOTLEFT:
+      bank->sprites[sprite].hs_x = 0;
+      bank->sprites[sprite].hs_y = bank->sprites[sprite].height - 1;
+      break;
+    case SSPR_HS_BOTMID:
+      bank->sprites[sprite].hs_x = bank->sprites[sprite].width / 2;
+      bank->sprites[sprite].hs_y = bank->sprites[sprite].height - 1;
+      break;
+    case SSPR_HS_BOTRIGHT:
+      bank->sprites[sprite].hs_x = bank->sprites[sprite].width - 1;
+      bank->sprites[sprite].hs_y = bank->sprites[sprite].height - 1;
+      break;
+    default:
+      bank->sprites[sprite].hs_x = 0;
+      bank->sprites[sprite].hs_y = 0;
+  }
+}
+
+/**
  * Add a sprite to the bank
  * 
  * @param index   Sprite bank index
@@ -180,44 +227,9 @@ BOOL SAGE_AddSpriteToBank(UWORD index, UWORD sprite, ULONG left, ULONG top, ULON
       bank->sprites[sprite].vertical_flip = FALSE;
       bank->sprites[sprite].horizontal_zoom = 1.0;
       bank->sprites[sprite].vertical_zoom = 1.0;
-      bank->sprites[sprite].zoomed = FALSE;
-      switch (hotspot) {
-        case SSPR_HS_TOPMID:
-          bank->sprites[sprite].hs_x = width / 2;
-          bank->sprites[sprite].hs_y = 0;
-          break;
-        case SSPR_HS_TOPRIGHT:
-          bank->sprites[sprite].hs_x = width - 1;
-          bank->sprites[sprite].hs_y = 0;
-          break;
-        case SSPR_HS_MIDLEFT:
-          bank->sprites[sprite].hs_x = 0;
-          bank->sprites[sprite].hs_y = height / 2;
-          break;
-        case SSPR_HS_MIDDLE:
-          bank->sprites[sprite].hs_x = width / 2;
-          bank->sprites[sprite].hs_y = height / 2;
-          break;
-        case SSPR_HS_MIDRIGHT:
-          bank->sprites[sprite].hs_x = width - 1;
-          bank->sprites[sprite].hs_y = height / 2;
-          break;
-        case SSPR_HS_BOTLEFT:
-          bank->sprites[sprite].hs_x = 0;
-          bank->sprites[sprite].hs_y = height - 1;
-          break;
-        case SSPR_HS_BOTMID:
-          bank->sprites[sprite].hs_x = width / 2;
-          bank->sprites[sprite].hs_y = height - 1;
-          break;
-        case SSPR_HS_BOTRIGHT:
-          bank->sprites[sprite].hs_x = width - 1;
-          bank->sprites[sprite].hs_y = height - 1;
-          break;
-        default:
-          bank->sprites[sprite].hs_x = 0;
-          bank->sprites[sprite].hs_y = 0;
-      }
+      bank->sprites[sprite].flags = SSPR_STANDARD;
+      bank->sprites[sprite].hotspot = hotspot;
+      SAGE_CalculSpriteHotspot(bank, sprite);
       return TRUE;
     }
     SAGE_SetError(SERR_SPRITE_SIZE);
@@ -249,6 +261,22 @@ BOOL SAGE_SetSpriteFlipping(UWORD index, UWORD sprite, BOOL horizontal, BOOL ver
   if (bank->bank_size > sprite) {
     bank->sprites[sprite].horizontal_flip = horizontal;
     bank->sprites[sprite].vertical_flip = vertical;
+    // A flipped sprite can't be zoomed
+    bank->sprites[sprite].flags &= SSPR_STMASK;
+    bank->sprites[sprite].horizontal_zoom = 1.0;
+    bank->sprites[sprite].vertical_zoom = 1.0;
+    bank->sprites[sprite].width = bank->sprites[sprite].real_width;
+    bank->sprites[sprite].height = bank->sprites[sprite].real_height;
+    if (horizontal) {
+      bank->sprites[sprite].flags |= SSPR_HFLIPPED;
+    }
+    if (vertical) {
+      bank->sprites[sprite].flags |= SSPR_VFLIPPED;
+    }
+    if (!horizontal && !vertical) {
+      bank->sprites[sprite].flags |= SSPR_STANDARD;
+    }
+    SAGE_CalculSpriteHotspot(bank, sprite);
     return TRUE;
   }
   SAGE_SetError(SERR_SPRITE_INDEX);
@@ -277,15 +305,20 @@ BOOL SAGE_SetSpriteZoom(UWORD index, UWORD sprite, FLOAT horizontal, FLOAT verti
   if (bank->bank_size > sprite) {
     bank->sprites[sprite].horizontal_zoom = horizontal;
     bank->sprites[sprite].vertical_zoom = vertical;
+    // A zoomed sprite can't be flipped
+    bank->sprites[sprite].flags &= SSPR_STMASK;
+    bank->sprites[sprite].horizontal_flip = FALSE;
+    bank->sprites[sprite].vertical_flip = FALSE;
     if (horizontal == 1.0 && vertical == 1.0) {
-      bank->sprites[sprite].zoomed = FALSE;
       bank->sprites[sprite].width = bank->sprites[sprite].real_width;
       bank->sprites[sprite].height = bank->sprites[sprite].real_height;
+      bank->sprites[sprite].flags |= SSPR_STANDARD;
     } else {
-      bank->sprites[sprite].zoomed = TRUE;
       bank->sprites[sprite].width = (ULONG) (horizontal * bank->sprites[sprite].real_width);
       bank->sprites[sprite].height = (ULONG) (vertical * bank->sprites[sprite].real_height);
+      bank->sprites[sprite].flags |= SSPR_ZOOMED;
     }
+    SAGE_CalculSpriteHotspot(bank, sprite);
     return TRUE;
   }
   SAGE_SetError(SERR_SPRITE_INDEX);
@@ -295,14 +328,13 @@ BOOL SAGE_SetSpriteZoom(UWORD index, UWORD sprite, FLOAT horizontal, FLOAT verti
 /**
  * Set the sprite hotspot
  *
- * @param index  Sprite bank index
- * @param sprite Sprite index
- * @param hs_x   Hotspot X
- * @param hs_y   Hotspot Y
+ * @param index   Sprite bank index
+ * @param sprite  Sprite index
+ * @param hotspot Hotspot type
  * 
  * @return Operation success
  */
-BOOL SAGE_SetSpriteHotspot(UWORD index, UWORD sprite, WORD hs_x, WORD hs_y)
+BOOL SAGE_SetSpriteHotspot(UWORD index, UWORD sprite, UWORD hotspot)
 {
   SAGE_SpriteBank * bank;
   
@@ -312,8 +344,8 @@ BOOL SAGE_SetSpriteHotspot(UWORD index, UWORD sprite, WORD hs_x, WORD hs_y)
     return FALSE;
   }
   if (bank->bank_size > sprite) {
-    bank->sprites[sprite].hs_x = hs_x;
-    bank->sprites[sprite].hs_y = hs_y;
+    bank->sprites[sprite].hotspot = hotspot;
+    SAGE_CalculSpriteHotspot(bank, sprite);
     return TRUE;
   }
   SAGE_SetError(SERR_SPRITE_INDEX);
@@ -332,7 +364,8 @@ BOOL SAGE_SetSpriteHotspot(UWORD index, UWORD sprite, WORD hs_x, WORD hs_y)
  */
 BOOL SAGE_BlitSpriteToScreen(UWORD index, UWORD sprite, LONG x_pos, LONG y_pos)
 {
-  LONG left, top, width, height;
+  LONG left, top, width, height, rwidth, rheight, clipped;
+  FLOAT hzoom, vzoom;
   SAGE_Screen * screen;
   SAGE_SpriteBank * bank;
   
@@ -358,40 +391,65 @@ BOOL SAGE_BlitSpriteToScreen(UWORD index, UWORD sprite, LONG x_pos, LONG y_pos)
     top = (LONG) bank->sprites[sprite].top;
     width = (LONG) bank->sprites[sprite].width;
     height = (LONG) bank->sprites[sprite].height;
-    // Clip the sprite to the screen
+    // Remove sprite outside of the screen
     if (x_pos > screen->clipping.right || (x_pos + width) <= screen->clipping.left) {
       return TRUE;
     }
     if (y_pos > screen->clipping.bottom || (y_pos + height) <= screen->clipping.top) {
       return TRUE;
     }
-    if (x_pos < screen->clipping.left) {
-      left += screen->clipping.left - x_pos;
-      width -= screen->clipping.left - x_pos;
-      x_pos = screen->clipping.left;
-    }
-    if (y_pos < screen->clipping.top) {
-      top += screen->clipping.top - y_pos;
-      height -= screen->clipping.top - y_pos;
-      y_pos = screen->clipping.top;
-    }
-    if ((x_pos + width) > screen->clipping.right) {
-      width = (screen->clipping.right - x_pos) + 1;
-    }
-    if ((y_pos + height) > screen->clipping.bottom) {
-      height = (screen->clipping.bottom - y_pos) + 1;
-    }
     // Now we can blit the sprite to the screen
-    if (bank->sprites[sprite].zoomed) {
-      // Sprite is zoomed
-    } else if (bank->sprites[sprite].horizontal_flip || bank->sprites[sprite].vertical_flip) {
-      // Sprite is flipped
-      /*if (!bank->sprites[sprite].horizontal_flip) {
-        SAGE_BlitVFlipSprite(bank->bitmap, left, top, width, height, screen->back_bitmap, x_pos, y_pos);
-      }*/
-    } else {
-      // Standard sprite
+    if (bank->sprites[sprite].flags & SSPR_STANDARD)
+    {
+      // Standard sprite (not flipped or zoomed)
+      if (x_pos < screen->clipping.left) {
+        left += screen->clipping.left - x_pos;
+        width -= screen->clipping.left - x_pos;
+        x_pos = screen->clipping.left;
+      }
+      if (y_pos < screen->clipping.top) {
+        top += screen->clipping.top - y_pos;
+        height -= screen->clipping.top - y_pos;
+        y_pos = screen->clipping.top;
+      }
+      if ((x_pos + width) > screen->clipping.right) {
+        width = (screen->clipping.right - x_pos) + 1;
+      }
+      if ((y_pos + height) > screen->clipping.bottom) {
+        height = (screen->clipping.bottom - y_pos) + 1;
+      }
       return SAGE_BlitBitmap(bank->bitmap, left, top, width, height, screen->back_bitmap, x_pos, y_pos);
+    } else if ((bank->sprites[sprite].flags & SSPR_HFLIPPED) | (bank->sprites[sprite].flags & SSPR_VFLIPPED)) {
+      // Sprite is flipped
+    } else if ((bank->sprites[sprite].flags & SSPR_ZOOMED)) {
+      // Sprite is zoomed
+      rwidth = (LONG) bank->sprites[sprite].real_width;
+      rheight = (LONG) bank->sprites[sprite].real_height;
+      hzoom = 1.0 / bank->sprites[sprite].horizontal_zoom;
+      vzoom = 1.0 / bank->sprites[sprite].vertical_zoom;
+      if (x_pos < screen->clipping.left) {
+        clipped = (FLOAT)(screen->clipping.left - x_pos) * hzoom;
+        left += clipped;
+        rwidth -= clipped;
+        width -= screen->clipping.left - x_pos;
+        x_pos = screen->clipping.left;
+      }
+      if (y_pos < screen->clipping.top) {
+        clipped = (FLOAT)(screen->clipping.top - y_pos) * vzoom;
+        top += clipped;
+        rheight -= clipped;
+        height -= screen->clipping.top - y_pos;
+        y_pos = screen->clipping.top;
+      }
+      if ((x_pos + width) > screen->clipping.right) {
+        rwidth = (FLOAT)((screen->clipping.right - x_pos) + 1) * hzoom;
+        width = (screen->clipping.right - x_pos) + 1;
+      }
+      if ((y_pos + height) > screen->clipping.bottom) {
+        rheight = (FLOAT)((screen->clipping.bottom - y_pos) + 1) * vzoom;
+        height = (screen->clipping.bottom - y_pos) + 1;
+      }
+      return SAGE_BlitZoomedBitmap(bank->bitmap, left, top, rwidth, rheight, screen->back_bitmap, x_pos, y_pos, width, height);
     }
   }
   SAGE_SetError(SERR_SPRITE_INDEX);

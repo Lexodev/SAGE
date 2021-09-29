@@ -1,7 +1,7 @@
 /**
  * sage_video.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Video module management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

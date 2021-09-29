@@ -1,7 +1,7 @@
 /**
  * sage_loadaiff.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * AIFF music loading
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

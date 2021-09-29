@@ -1,7 +1,7 @@
 /**
  * video_picture.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test picture loading & rendering
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

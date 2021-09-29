@@ -1,7 +1,7 @@
 /**
  * sage_picture.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Picture management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

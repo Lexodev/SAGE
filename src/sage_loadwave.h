@@ -1,7 +1,7 @@
 /**
  * sage_loadwave.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * WAVE sound loading
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

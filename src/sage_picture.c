@@ -1,7 +1,7 @@
 /**
  * sage_picture.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Picture management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -74,7 +74,7 @@ VOID SAGE_ReleasePicture(SAGE_Picture * picture)
  */
 VOID SAGE_PlanarToChunky(struct BitMap * src_bitmap, SAGE_Bitmap * dest_bitmap)
 {
-  UWORD width, height;
+  UWORD width, height, po;
   UBYTE  * p0, * p1, * p2, * p3, * p4, * p5, * p6, * p7, pixel, mask, * picture_data;
 
   SD(SAGE_DebugLog("Remapping picture data to chunky bitmap"));
@@ -86,6 +86,7 @@ VOID SAGE_PlanarToChunky(struct BitMap * src_bitmap, SAGE_Bitmap * dest_bitmap)
   p5 = (UBYTE *) src_bitmap->Planes[5];
   p6 = (UBYTE *) src_bitmap->Planes[6];
   p7 = (UBYTE *) src_bitmap->Planes[7];
+  po = src_bitmap->BytesPerRow - (dest_bitmap->width / 8);
   picture_data = (UBYTE *) dest_bitmap->bitmap_buffer;
   height = dest_bitmap->height;
   while (height--) {
@@ -124,6 +125,14 @@ VOID SAGE_PlanarToChunky(struct BitMap * src_bitmap, SAGE_Bitmap * dest_bitmap)
       p6++;
       p7++;
     }
+    p0 += po;
+    p1 += po;
+    p2 += po;
+    p3 += po;
+    p4 += po;
+    p5 += po;
+    p6 += po;
+    p7 += po;
   }
 }
 

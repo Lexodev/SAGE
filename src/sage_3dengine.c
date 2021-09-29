@@ -1,7 +1,7 @@
 /**
  * sage_3dengine.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * 3D engine functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

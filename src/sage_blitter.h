@@ -1,7 +1,7 @@
 /**
  * sage_blitter.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Blitting functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -49,6 +49,18 @@ extern BOOL __asm SAGE_BlitCopy8Bits(
   register __d3 ULONG dst_offset
 );
 
+/** External function for 8 bits bitmap zoom copy */
+extern BOOL __asm SAGE_BlitZoomCopy8Bits(
+  register __a0 ULONG source,
+  register __d0 UWORD src_width,
+  register __d1 UWORD src_height,
+  register __d2 ULONG src_offset,
+  register __a1 ULONG destination,
+  register __d3 ULONG dst_width,
+  register __d4 ULONG dst_height,
+  register __d5 ULONG dst_offset
+);
+
 /** External function for 8 bits bitmap transparent copy */
 extern BOOL __asm SAGE_BlitTransparentCopy8Bits(
   register __a0 ULONG source,
@@ -60,19 +72,21 @@ extern BOOL __asm SAGE_BlitTransparentCopy8Bits(
   register __d4 ULONG color
 );
 
-/** External function for 8 bits bitmap transparent copy using AMMX */
-extern BOOL __asm SAGE_AMMXBlitTranspCopy8Bits(
+/** External function for 8 bits bitmap transparent zoom copy */
+extern BOOL __asm SAGE_BlitTranspZoomCopy8Bits(
   register __a0 ULONG source,
-  register __a1 ULONG destination,
-  register __d0 UWORD lines,
-  register __d1 UWORD pixels,
+  register __d0 UWORD src_width,
+  register __d1 UWORD src_height,
   register __d2 ULONG src_offset,
-  register __d3 ULONG dst_offset,
-  register __d4 ULONG color
+  register __a1 ULONG destination,
+  register __d3 ULONG dst_width,
+  register __d4 ULONG dst_height,
+  register __d5 ULONG dst_offset,
+  register __d6 ULONG color
 );
 
-/** External function for 8 bits bitmap transparent copy using AMMX cookie cut instruction */
-extern BOOL __asm SAGE_AMMXBlitCookieCut8Bits(
+/** External function for 8 bits bitmap transparent copy using AMMX */
+extern BOOL __asm SAGE_AMMXBlitTranspCopy8Bits(
   register __a0 ULONG source,
   register __a1 ULONG destination,
   register __d0 UWORD lines,
@@ -100,8 +114,44 @@ extern BOOL __asm SAGE_BlitCopy16Bits(
   register __d3 ULONG dst_offset
 );
 
+/** External function for 16 bits bitmap zoom copy */
+extern BOOL __asm SAGE_BlitZoomCopy16Bits(
+  register __a0 ULONG source,
+  register __d0 UWORD src_width,
+  register __d1 UWORD src_height,
+  register __d2 ULONG src_offset,
+  register __a1 ULONG destination,
+  register __d3 ULONG dst_width,
+  register __d4 ULONG dst_height,
+  register __d5 ULONG dst_offset
+);
+
 /** External function for 16 bits bitmap transparent copy */
 extern BOOL __asm SAGE_BlitTransparentCopy16Bits(
+  register __a0 ULONG source,
+  register __a1 ULONG destination,
+  register __d0 UWORD lines,
+  register __d1 UWORD pixels,
+  register __d2 ULONG src_offset,
+  register __d3 ULONG dst_offset,
+  register __d4 ULONG color
+);
+
+/** External function for 16 bits bitmap transparent zoom copy */
+extern BOOL __asm SAGE_BlitTranspZoomCopy16Bits(
+  register __a0 ULONG source,
+  register __d0 UWORD src_width,
+  register __d1 UWORD src_height,
+  register __d2 ULONG src_offset,
+  register __a1 ULONG destination,
+  register __d3 ULONG dst_width,
+  register __d4 ULONG dst_height,
+  register __d5 ULONG dst_offset,
+  register __d6 ULONG color
+);
+
+/** External function for 8 bits bitmap transparent copy using AMMX cookie cut instruction */
+extern BOOL __asm SAGE_AMMXBlitCookieCut8Bits(
   register __a0 ULONG source,
   register __a1 ULONG destination,
   register __d0 UWORD lines,

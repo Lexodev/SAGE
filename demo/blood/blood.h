@@ -1,7 +1,7 @@
 /**
  * blood.h
  *
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Simple wolfenstein like
  *
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

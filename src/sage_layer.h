@@ -1,7 +1,7 @@
 /**
  * sage_layer.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Layer management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

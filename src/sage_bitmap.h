@@ -1,7 +1,7 @@
 /**
  * sage_bitmap.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Bitmap management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -32,6 +32,9 @@
 #define SBMP_SIZE16BITS       4UL
 #define SBMP_SIZE24BITS       4UL
 #define SBMP_SIZE32BITS       2UL
+
+// Bitmap drawinf buffer size
+#define SBMP_DRAWBUFSIZE      16384L
 
 // Pixel format
 #define PIXFMT_PLANAR         99UL
@@ -64,8 +67,8 @@ typedef struct {
   ULONG pixformat;
   /** Bitmap buffer address */
   APTR bitmap_buffer;
-  /** Fast drawing buffers */
-  LONG * left_coords, * right_coords;
+  /** Fast draw buffers */
+  LONG * first_buffer, * second_buffer;
 } SAGE_Bitmap;
 
 /** Return the full name of pixel format */
@@ -80,6 +83,9 @@ BOOL SAGE_AllocateFastDrawBuffers(SAGE_Bitmap *);
 /** Allocate a bitmap structure */
 SAGE_Bitmap * SAGE_AllocBitmap(ULONG, ULONG, ULONG, ULONG, APTR);
 
+/** Get the bitmap buffer address */
+APTR * SAGE_GetBitmapBuffer(SAGE_Bitmap *);
+
 /** Release a bitmap structure */
 VOID SAGE_ReleaseBitmap(SAGE_Bitmap *);
 
@@ -92,6 +98,9 @@ BOOL SAGE_ClearBitmap(SAGE_Bitmap *, ULONG, ULONG, ULONG, ULONG);
 /** Blit a block from a bitmap to another */
 BOOL SAGE_BlitBitmap(SAGE_Bitmap *, ULONG, ULONG, ULONG, ULONG, SAGE_Bitmap *, ULONG, ULONG);
 
+/** Blit a block from a bitmap to another with zoom */
+BOOL SAGE_BlitZoomedBitmap(SAGE_Bitmap *, ULONG, ULONG, ULONG, ULONG, SAGE_Bitmap *, ULONG, ULONG, ULONG, ULONG);
+
 /** Remap a bitmap buffer to another pixel format */
 BOOL SAGE_RemapBitmap(SAGE_Bitmap *, ULONG *, ULONG);
 
@@ -100,6 +109,8 @@ ULONG SAGE_GetBitmapAddress(struct BitMap *);
 
 /** Get the system bitmap bytes per row */
 ULONG SAGE_GetBitmapBPR(struct BitMap *);
+
+/** Only for debug purpose, don't use it in your code */
 
 /** DEBUG : Display the pixel format */
 VOID SAGE_DumpPixelFormat(ULONG);

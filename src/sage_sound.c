@@ -1,7 +1,7 @@
 /**
  * sage_sound.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Sound management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -241,14 +241,10 @@ BOOL SAGE_FreeSound(UWORD index)
  */
 BOOL SAGE_ClearSound()
 {
-  SAGE_Sound * sound;
   UWORD index;
 
   for (index = 0;index < SSND_MAX_SOUNDS;index++) {
-    sound = SAGE_RemoveSound(index);
-    if (sound != NULL) {
-      SAGE_ReleaseSound(sound);
-    }
+    SAGE_FreeSound(index);
   }
   return TRUE;
 }

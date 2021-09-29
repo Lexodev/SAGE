@@ -1,11 +1,11 @@
 /**
  * sage_joyport.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Joyport input management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 April 2020
+ * @version 1.1 September 2021
  */
 
 #include <exec/exec.h>
@@ -198,7 +198,7 @@ BOOL SAGE_RemoveJoyportHandler(UWORD port)
  *
  * @return Operation success
  */
-BOOL SAGE_ClearJoyportHanlders()
+BOOL SAGE_ClearJoyportHandlers()
 {
   SAGE_InputDevice * input;
   UWORD port;

@@ -1,7 +1,7 @@
 /**
  * sage_screen.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Screen management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -26,6 +26,9 @@
 #define SSCR_RGBCOLOR         1
 #define SSCR_ARGBCOLOR        2
 #define SSCR_RGB32COLOR       3
+
+#define SSCR_MAP32TO15(color) ((color&0xF80000)>>9)+((color&0xF800)>>6)+((color&0xF8)>>3)
+#define SSCR_MAP32TO16(color) ((color&0xF80000)>>8)+((color&0xFC00)>>5)+((color&0xF8)>>3)
 
 // Screen flags constants
 #define SSCR_DOUBLEBUF        0
@@ -89,8 +92,8 @@ typedef struct {
   SAGE_ScreenBuffer screen_buffer;
   /** Screen bitmaps */
   SAGE_Bitmap * front_bitmap, * back_bitmap, * wait_bitmap;
-  /** Drawing mode */
-  UBYTE drawing_mode;
+  /** Drawing mode and text color */
+  UBYTE drawing_mode, frontpen, backpen;
   /** Mouse status */
   BOOL hidden_mouse;
   /** Timer instance */
@@ -166,6 +169,9 @@ BOOL SAGE_SetColorMap(ULONG *, UWORD, UWORD);
 /** Get a color from an index */
 ULONG SAGE_GetColor(UWORD);
 
+/** Remap a 32bits color into screen pixel color format */
+ULONG SAGE_RemapColor(ULONG);
+
 /** Set the drawing colors */
 BOOL SAGE_SetDrawColor(ULONG, ULONG);
 
@@ -184,7 +190,7 @@ BOOL SAGE_SetMouseCursor(UWORD *, WORD, WORD, WORD);
 /** Reset the mouse cursor */
 BOOL SAGE_ResetMouse(VOID);
 
-/** Track mouse movement */
+/** Enable/disable the mouse movement tracking */
 BOOL SAGE_TrackMouse(BOOL);
 
 /** Set the screen text font */

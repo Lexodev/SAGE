@@ -1,7 +1,7 @@
 /**
  * video_draw.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test drawing primitives
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

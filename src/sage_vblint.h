@@ -1,7 +1,7 @@
 /**
  * sage_vblint.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * VBL interrupt management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

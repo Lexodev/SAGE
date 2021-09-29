@@ -1,7 +1,7 @@
 /**
  * core_timer.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test timer functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

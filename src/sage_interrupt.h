@@ -1,7 +1,7 @@
 /**
  * sage_interrupt.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Interruptions management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

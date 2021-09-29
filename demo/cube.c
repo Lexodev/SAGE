@@ -1,7 +1,7 @@
 /**
  * cube.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Demo of a 3D cube
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

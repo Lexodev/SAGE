@@ -1,7 +1,7 @@
 /**
  * video_screen.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test double buffer system
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

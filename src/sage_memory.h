@@ -1,7 +1,7 @@
 /**
  * sage_memory.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Memory allocation management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

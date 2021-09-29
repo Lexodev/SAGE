@@ -1,7 +1,7 @@
 /**
  * sage_screen.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Screen management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -427,6 +427,8 @@ BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONG flags)
   screen->back_bitmap = NULL;
   screen->wait_bitmap = NULL;
   screen->drawing_mode = SSCR_TXTREPLACE;
+  screen->frontpen = 1;
+  screen->backpen = 0;
   screen->event = NULL;
   screen->timer = NULL;
   screen->back_color = 0;
@@ -1067,6 +1069,37 @@ ULONG SAGE_GetColor(UWORD index)
 }
 
 /**
+ * Remap a 32bits color into screen pixel color format
+ *
+ * @param color Color in ARGB format
+ *
+ * @return Remapped color
+ */
+ULONG SAGE_RemapColor(ULONG color)
+{
+  ULONG alpha, red, green, blue;
+
+  alpha = (color >> 24) & 255L;
+  red = (color >> 16) & 255L;
+  green = (color >> 8) & 255L;
+  blue = color & 255L;
+  switch (SAGE_GetPixelFormat()) {
+    case PIXFMT_RGB16:
+      color = (((red & 248L) | (green >> 5)) << 8) | ((green << 3) & 224L) | (blue >> 3);
+      return (color << 16) | color;
+    case PIXFMT_RGB16PC:
+      color = ((((green << 3) & 224) | (blue >> 3)) << 8) | (red & 248) | (green >> 5);
+      return (color << 16) | color;
+    case PIXFMT_BGR24:
+      return (red << 16) | (green << 8) | blue;
+    case PIXFMT_RGBA32:
+      return (red << 24) | (green << 16) | (blue << 8) | alpha;
+    default:
+      return color;
+  }
+}
+
+/**
  * Set multiple screen colors
  * 
  * @param colors  Colors array in ARGB format
@@ -1295,9 +1328,25 @@ BOOL SAGE_ResetMouse()
   return TRUE;
 }
 
-/** Track mouse movement */
+/**
+ * Enable/disable the mouse movement tracking
+ *
+ * @param flag Track mouse movement
+ *
+ * @return Operation success
+ */
 BOOL SAGE_TrackMouse(BOOL flag)
 {
+  SAGE_Screen * screen;
+  
+  screen = SAGE_GetScreen();
+  if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return FALSE;
+  }
+  if (screen->system_window != NULL) {
+    ReportMouse(flag, screen->system_window);
+  }
   return TRUE;
 }
 
@@ -1352,6 +1401,8 @@ BOOL SAGE_SetTextColor(UBYTE frontpen, UBYTE backpen)
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
   }
+  screen->frontpen = frontpen;
+  screen->backpen = backpen;
   SetAPen(&(screen->screen_buffer.work_rastport), frontpen);
   SetBPen(&(screen->screen_buffer.work_rastport), backpen);
   return TRUE;
@@ -1419,6 +1470,8 @@ BOOL SAGE_PrintDirectText(STRPTR text, UWORD posx, UWORD posy)
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
   }
+  SetAPen(&(screen->system_screen->RastPort), screen->frontpen);
+  SetBPen(&(screen->system_screen->RastPort), screen->backpen);
   Move(&(screen->system_screen->RastPort), posx, posy);
   SetDrMd(&(screen->system_screen->RastPort), screen->drawing_mode);
   Text(&(screen->system_screen->RastPort), text, strlen(text));

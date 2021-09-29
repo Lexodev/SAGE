@@ -1,7 +1,7 @@
 /**
  * sage_network.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Network management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

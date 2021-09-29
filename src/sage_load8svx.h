@@ -1,7 +1,7 @@
 /**
  * sage_load8svx.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * 8SVX sound loading
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

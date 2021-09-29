@@ -1,7 +1,7 @@
 /**
  * video_bitmap.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test bitmap
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

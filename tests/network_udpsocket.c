@@ -1,7 +1,7 @@
 /**
  * network_udpsocket.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test network UDP socket
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

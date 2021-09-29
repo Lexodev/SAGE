@@ -1,7 +1,7 @@
 /**
  * sage_keyboard.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Keyboard input management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

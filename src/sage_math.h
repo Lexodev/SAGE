@@ -1,7 +1,7 @@
 /**
  * sage_math.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Mathematic functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

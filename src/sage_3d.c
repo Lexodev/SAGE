@@ -1,7 +1,7 @@
 /**
  * sage_3d.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * 3D module management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

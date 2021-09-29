@@ -1,7 +1,7 @@
 /**
  * audio_music.c
  *
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test music player
  *
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

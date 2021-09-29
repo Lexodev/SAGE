@@ -1,7 +1,7 @@
 /**
  * network_handler.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test network TCP socket handlers
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

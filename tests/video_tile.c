@@ -1,7 +1,7 @@
 /**
  * video_tile.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test tiles
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

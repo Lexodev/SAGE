@@ -1,7 +1,7 @@
 /**
  * audio_mix.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Test mix sound/music
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

@@ -25,15 +25,13 @@
 #include <stdio.h>
 #include "dragon_crown.h"
 
-UBYTE string_buffer[256];
-
 SpriteInfo sprite_info[NBSPRITES] = {
-  {"/data/fighter.bmp", SPRFIGHTER, SPR1FRAME, SPR1WIDTH, SPR1HEIGHT, -SPR1WIDTH, SPR1POSY, SPR1STEPX, 0, 0 },
-  {"/data/amazon.bmp", SPRAMAZON, SPR2FRAME, SPR2WIDTH, SPR2HEIGHT, -SPR2WIDTH, SPR2POSY, SPR2STEPX, 0, 0 },
-  {"/data/wizard.bmp", SPRWIZARD, SPR3FRAME, SPR3WIDTH, SPR3HEIGHT, -SPR3WIDTH, SPR3POSY, SPR3STEPX, 0, 0 },
-  {"/data/elf.bmp", SPRELF, SPR4FRAME, SPR4WIDTH, SPR4HEIGHT, -SPR4WIDTH, SPR4POSY, SPR4STEPX, 0, 0 },
-  {"/data/dwarf.bmp", SPRDWARF, SPR5FRAME, SPR5WIDTH, SPR5HEIGHT, -SPR5WIDTH, SPR5POSY, SPR5STEPX, 0, 0 },
-  {"/data/sorceress.bmp", SPRSORCERESS, SPR6FRAME, SPR6WIDTH, SPR6HEIGHT, -SPR6WIDTH, SPR6POSY, SPR6STEPX, 0, 0 }
+  {"data/fighter.bmp", SPRFIGHTER, SPR1FRAME, SPR1WIDTH, SPR1HEIGHT, -SPR1WIDTH, SPR1POSY, SPR1STEPX, 0, 0 },
+  {"data/amazon.bmp", SPRAMAZON, SPR2FRAME, SPR2WIDTH, SPR2HEIGHT, -SPR2WIDTH, SPR2POSY, SPR2STEPX, 0, 0 },
+  {"data/wizard.bmp", SPRWIZARD, SPR3FRAME, SPR3WIDTH, SPR3HEIGHT, -SPR3WIDTH, SPR3POSY, SPR3STEPX, 0, 0 },
+  {"data/elf.bmp", SPRELF, SPR4FRAME, SPR4WIDTH, SPR4HEIGHT, -SPR4WIDTH, SPR4POSY, SPR4STEPX, 0, 0 },
+  {"data/dwarf.bmp", SPRDWARF, SPR5FRAME, SPR5WIDTH, SPR5HEIGHT, -SPR5WIDTH, SPR5POSY, SPR5STEPX, 0, 0 },
+  {"data/sorceress.bmp", SPRSORCERESS, SPR6FRAME, SPR6WIDTH, SPR6HEIGHT, -SPR6WIDTH, SPR6POSY, SPR6STEPX, 0, 0 }
 };
 
 BOOL OpenScreen(VOID)
@@ -54,7 +52,7 @@ BOOL InitBackground(VOID)
 
   SAGE_AppliLog("Load background picture");
   SAGE_PrintDirectText("Loading background...", 0, 20);
-  if ((picture = SAGE_LoadPicture("/data/background.bmp")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/background.bmp")) != NULL) {
     SAGE_AppliLog("Create background layer");
     if (SAGE_CreateLayerFromPicture(BGLAYER, picture)) {
       SAGE_ReleasePicture(picture);
@@ -72,7 +70,7 @@ BOOL InitLogo(VOID)
 
   SAGE_AppliLog("Load logo picture");
   SAGE_PrintDirectText("Loading logo...", 0, 30);
-  if ((picture = SAGE_LoadPicture("/data/crownlogo.bmp")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/crownlogo.bmp")) != NULL) {
     SAGE_DumpBitmap(picture->bitmap);
     SAGE_AppliLog("Create logo layer");
     if (SAGE_CreateLayerFromPicture(LOGOLAYER, picture)) {
@@ -92,7 +90,7 @@ BOOL InitVampire(VOID)
 
   SAGE_AppliLog("Load vampire picture");
   SAGE_PrintDirectText("Loading vampire...", 0, 40);
-  if ((picture = SAGE_LoadPicture("/data/vampire.bmp")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/vampire.bmp")) != NULL) {
     SAGE_AppliLog("Create vampire layer");
     if (SAGE_CreateLayerFromPicture(VAMPIRELAYER, picture)) {
       SAGE_SetLayerTransparency(VAMPIRELAYER, TRANSPCOLOR);
@@ -111,7 +109,7 @@ BOOL InitHelp(VOID)
 
   SAGE_AppliLog("Load help picture");
   SAGE_PrintDirectText("Loading help...", 0, 50);
-  if ((picture = SAGE_LoadPicture("/data/help.bmp")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/help.bmp")) != NULL) {
     SAGE_AppliLog("Create help layer");
     if (SAGE_CreateLayerFromPicture(HELPLAYER, picture)) {
       SAGE_SetLayerTransparency(HELPLAYER, TRANSPCOLOR);
@@ -160,10 +158,10 @@ BOOL InitSprite(UWORD index)
   UWORD sprite;
   ULONG crdy = 0;
 
-  SAGE_AppliLog("Load font and create sprite bank");
-  SAGE_PrintDirectText("Loading fonts...", 0, 70);
+  printf("Load font and create sprite bank\n");
+      SAGE_PrintText(screen, "Loading fonts...", 0, 70);
   if ((picture = SAGE_LoadPicture("/data/fonts.bmp")) != NULL) {
-    if ((bank = SAGE_CreateSpriteBank(picture, SCREENDEPTH, FONTFRAME)) != NULL) {
+    if ((bank = SAGE_CreateSpriteBankFromPicture(picture, SCREENDEPTH, FONTFRAME)) != NULL) {
       SAGE_SetSpriteBankTransparency(bank, TRANSPCOLOR);
       for (sprite = 0;sprite < FONTFRAME;sprite++) {
         SAGE_AddSpriteToBank(bank, sprite, 0, crdy, FONTWIDTH, FONTHEIGHT);
@@ -229,9 +227,6 @@ BOOL InitGraphx(VOID)
       return FALSE;
     }
   }
-  if (!SAGE_EnableFrameCount(TRUE)) {
-    SAGE_ErrorLog("Can't activate frame rate counter !");
-  }
   SAGE_SetFont("diamond.font", 12);
   return TRUE;
 }
@@ -255,7 +250,7 @@ BOOL InitMusic(VOID)
   SAGE_Music * music = NULL;
 
   SAGE_PrintDirectText("Loading music...", 0, 70);
-  if ((music = SAGE_LoadMusic("/data/theme.mod")) != NULL) {
+  if ((music = SAGE_LoadMusic("data/theme.mod")) != NULL) {
     SAGE_AppliLog("Adding music");
     if (SAGE_AddMusic(DRAGON_MUSIC, music)) {
       return TRUE;
@@ -270,7 +265,7 @@ BOOL InitSound(VOID)
   SAGE_Sound * sound = NULL;
 
   SAGE_PrintDirectText("Loading sound...", 0, 80);
-  if ((sound = SAGE_LoadSound("/data/evil.wav")) != NULL) {
+  if ((sound = SAGE_LoadSound("data/evil.wav")) != NULL) {
     SAGE_AppliLog("Adding sound");
     if (SAGE_AddSound(SOUND_EVIL, sound)) {
       return TRUE;
@@ -311,10 +306,10 @@ void main(void)
   ULONG bg_posx = 0, logo_posy = LOGOPOSY, frame_count = 0, elapsed_time = 0, avg_render = 0;
   UWORD index = 0, show_sprite = 5; //, fps = 0, mouse_cursor = 0;
 
-  //SAGE_SetLogLevel(SLOG_WARNING);
+  SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("** SAGE library dragon crown demo V1.2 **");
   SAGE_AppliLog("Initialize SAGE");
-  if (SAGE_Init(SMOD_VIDEO|SMOD_AUDIO|SMOD_INTERRUPTION)) {
+  if (SAGE_Init(SMOD_VIDEO|SMOD_AUDIO)) {
     if (SAGE_AMMX2Available()) {
       SAGE_AppliLog("AMMX detected !!!");
     } else {
@@ -451,9 +446,13 @@ void main(void)
                 SAGE_DisplayError();
               }
             }
-            // Draw the fps counter
-            sprintf(string_buffer, "%d fps", SAGE_GetFps());
-            SAGE_PrintText(string_buffer, 10, 10);
+            // Render the FPS counter
+            /*fps = SAGE_GetFps();
+            if (fps > 99) {
+              fps = 99;
+            }
+            SAGE_BlitSpriteToScreen(fonts, fps / 10, screen, FONTPOSX + BGPOSX, FONTPOSY);
+            SAGE_BlitSpriteToScreen(fonts, fps % 10, screen, FONTPOSX + FONTWIDTH + BGPOSX, FONTPOSY);*/
             // Update the mouse cursor
             /*SAGE_SetMouseSprite(screen, mouse_cursor);
             if ((frame_count % SPRFRAMERATE) == 0) {

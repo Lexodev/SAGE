@@ -1,7 +1,7 @@
 /**
  * sage_dekey.h
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * German keyboard code mapping
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

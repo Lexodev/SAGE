@@ -1,7 +1,7 @@
 /**
  * blood.h
  *
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Simple wolfenstein like
  *
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
@@ -98,7 +98,7 @@ BOOL LoadTextures(VOID)
   if (texture_buffer == NULL) {
     return FALSE;
   }
-  handle = Open("/data/blood_texture.chk", MODE_OLDFILE);
+  handle = Open("data/blood_texture.chk", MODE_OLDFILE);
   if (handle == 0) {
     SAGE_FreeMem(texture_buffer);
     return FALSE;

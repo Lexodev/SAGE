@@ -5,7 +5,7 @@
 #----------------------------------------------------------
 
 # Build options
-OPT=CPU=68040 IDIR=libinclude: MATH=standard DEFINE=_SAGE_DEBUG_MODE_=1
+OPT=CPU=68040 IDIR=libinclude: MATH=68882 DEFINE=_SAGE_DEBUG_MODE_=1
 LIB=
 SAGELIB=/lib/sage.lib
 
