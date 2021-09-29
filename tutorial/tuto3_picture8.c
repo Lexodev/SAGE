@@ -27,7 +27,7 @@ void main(void)
   SAGE_SetLogLevel(SLOG_INFO);
   // Use the AppliLog to log text in the console, this is an unmaskable level of log
   SAGE_AppliLog("--------------------------------------------------------------------------------");
-  SAGE_AppliLog("* SAGE library tutorial 3 : PICTURE 8 / %s\n", SAGE_GetVersion());
+  SAGE_AppliLog("* SAGE library tutorial 3 : PICTURE 8 / %s", SAGE_GetVersion());
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   // Get rid of low level logs
   SAGE_SetLogLevel(SLOG_INFO);

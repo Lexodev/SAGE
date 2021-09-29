@@ -321,13 +321,6 @@ BOOL SAGE_SetBitmapTransparency(SAGE_Bitmap * bitmap, ULONG color)
   }
   bitmap->properties |= SBMP_TRANSPARENT;
   bitmap->transparency = SAGE_RemapTransparencyColor(color, bitmap->pixformat);
-  if (bitmap->depth == SBMP_DEPTH8 && bitmap->transparency == 0x00) {
-    bitmap->properties |= SBMP_FASTCOPY;        // Activate fast 8bits cookie cut AMMX operation
-    SD(SAGE_DebugLog("Activate fast 8bits cookie cut AMMX operation"));
-  } else if (bitmap->depth == SBMP_DEPTH16 && bitmap->transparency == 0xF81FF81F) {
-    bitmap->properties |= SBMP_FASTCOPY;        // Activate fast 16bits cookie cut AMMX operation
-    SD(SAGE_DebugLog("Activate fast 16bits cookie cut AMMX operation"));
-  }
   return TRUE;
 }
 
@@ -486,27 +479,15 @@ VOID SAGE_Blit8BitsBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, ULONG wid
   dst_offset = destination->width - width;
   if (source->properties & SBMP_TRANSPARENT) {
     if (SageContext.AmmxReady) {
-      if (source->properties & SBMP_FASTCOPY) {
-        SAGE_AMMXBlitCookieCut8Bits(
-          (ULONG)src_buffer,
-          (ULONG)dst_buffer,
-          (UWORD)height,
-          (UWORD)width,
-          (ULONG)src_offset,
-          (ULONG)dst_offset,
-          (ULONG)source->transparency
-        );
-      } else {
-        SAGE_AMMXBlitTranspCopy8Bits(
-          (ULONG)src_buffer,
-          (ULONG)dst_buffer,
-          (UWORD)height,
-          (UWORD)width,
-          (ULONG)src_offset,
-          (ULONG)dst_offset,
-          (ULONG)source->transparency
-        );
-      }
+      SAGE_AMMXBlitTranspCopy8Bits(
+        (ULONG)src_buffer,
+        (ULONG)dst_buffer,
+        (UWORD)height,
+        (UWORD)width,
+        (ULONG)src_offset,
+        (ULONG)dst_offset,
+        (ULONG)source->transparency
+      );
     } else {
       SAGE_BlitTransparentCopy8Bits(
         (ULONG)src_buffer,
@@ -555,27 +536,15 @@ VOID SAGE_Blit16BitsBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, ULONG wi
   dst_offset = (destination->width - width) * 2;
   if (source->properties & SBMP_TRANSPARENT) {
     if (SageContext.AmmxReady) {
-      if (source->properties & SBMP_FASTCOPY) {
-        SAGE_AMMXBlitCookieCut16Bits(
-          (ULONG)src_buffer,
-          (ULONG)dst_buffer,
-          (UWORD)height,
-          (UWORD)width,
-          (ULONG)src_offset,
-          (ULONG)dst_offset,
-          (ULONG)source->transparency
-        );
-      } else {
-        SAGE_AMMXBlitTranspCopy16Bits(
-          (ULONG)src_buffer,
-          (ULONG)dst_buffer,
-          (UWORD)height,
-          (UWORD)width,
-          (ULONG)src_offset,
-          (ULONG)dst_offset,
-          (ULONG)source->transparency
-        );
-      }
+      SAGE_AMMXBlitTranspCopy16Bits(
+        (ULONG)src_buffer,
+        (ULONG)dst_buffer,
+        (UWORD)height,
+        (UWORD)width,
+        (ULONG)src_offset,
+        (ULONG)dst_offset,
+        (ULONG)source->transparency
+      );
     } else {
       SAGE_BlitTransparentCopy16Bits(
         (ULONG)src_buffer,
