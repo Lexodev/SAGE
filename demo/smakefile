@@ -9,40 +9,60 @@ OPT=CPU=68040 IDIR=libinclude: MATH=68882 NOICONS
 LIB=/lib/sage.lib
 
 # Files
-EXE=dragon_crown fire_effect troll_run odysseus runner blood cube sotb_ehanced mandelbrot
+EXE=dragon fire_effect troll odysseus runner blood flatcube mapcube sotb mandelbrot effect engine
 
 # Build all demos
 all: $(EXE) cleanobj
 
-dragon_crown: dragon/dragon_crown.c dragon/dragon_crown.h $(LIB)
-  sc LINK dragon/dragon_crown.c $(OPT) $(LIB)
+mandelbrot: mandelbrot.c $(LIB)
+  sc LINK mandelbrot.c $(OPT) $(LIB)
 
 fire_effect: fire_effect.c $(LIB)
   sc LINK fire_effect.c $(OPT) $(LIB)
 
-troll_run: troll_run.c $(LIB)
-  sc LINK troll_run.c $(OPT) $(LIB)
+mapcube: cube/mapcube.c $(LIB)
+  sc LINK cube/mapcube.c $(OPT) $(LIB) DATA=far
 
-odysseus: odysseus.c $(LIB)
-  sc LINK odysseus.c $(OPT) $(LIB)
+flatcube: cube/flatcube.c $(LIB)
+  sc LINK cube/flatcube.c $(OPT) $(LIB) DATA=far
+
+dragon: dragon/dragon_crown.c dragon/dragon_crown.h $(LIB)
+  sc LINK dragon/dragon_crown.c $(OPT) $(LIB)
+
+troll: troll/troll_run.c $(LIB)
+  sc LINK troll/troll_run.c $(OPT) $(LIB)
+
+odysseus: odysseus/odysseus.c $(LIB)
+  sc LINK odysseus/odysseus.c $(OPT) $(LIB)
 
 runner: runner/runner.c $(LIB)
   sc LINK runner/runner.c $(OPT) $(LIB) DATA=far
 
-cube: cube.c $(LIB)
-  sc LINK cube.c $(OPT) $(LIB) DATA=far
-
-mandelbrot: mandelbrot.c $(LIB)
-  sc LINK mandelbrot.c $(OPT) $(LIB)
-
-sotb_ehanced: sotb/sotb_ehanced.c $(LIB)
+sotb: sotb/sotb_ehanced.c $(LIB)
   sc LINK sotb/sotb_ehanced.c $(OPT) $(LIB)
+
+engine: engine/engine.c $(LIB)
+  sc LINK engine/engine.c $(OPT) $(LIB) CODE=far DATA=far
 
 blood: blood/blood.c blood/blood.h blood/blood_engine.c blood/blood_engine.h blood/blood_control.c blood/blood_control.h $(LIB)
   sc LINK blood/blood.c blood/blood_engine.c blood/blood_control.c $(OPT) $(LIB) CODE=far DATA=far
 
+# Ports of classical effects
+
+plasma: effect/plasma.c $(LIB)
+  sc LINK effect/plasma.c $(OPT) $(LIB) CODE=far DATA=far
+
+tunnel: effect/tunnel.c $(LIB)
+  sc LINK effect/tunnel.c $(OPT) $(LIB) CODE=far DATA=far
+
+rotozoom: effect/rotozoom.c $(LIB)
+  sc LINK effect/rotozoom.c $(OPT) $(LIB) CODE=far DATA=far
+
+voxel: effect/voxel.c $(LIB)
+  sc LINK effect/voxel.c $(OPT) $(LIB) CODE=far DATA=far
+
 # Clean files
-clean: cleanobj cleandragon cleanrunner cleanblood cleansotb
+clean: cleanobj cleandragon cleanrunner cleanblood cleansotb cleantroll cleanodysseus cleaneffect cleancube cleanengine
   @echo "** Clean complete **"
 
 cleanobj:
@@ -64,3 +84,23 @@ cleanblood:
 cleansotb:
   -@delete sotb/\#?.o
   -@delete sotb/\#?.lnk
+
+cleantroll:
+  -@delete troll/\#?.o
+  -@delete troll/\#?.lnk
+
+cleanodysseus:
+  -@delete odysseus/\#?.o
+  -@delete odysseus/\#?.lnk
+
+cleaneffect:
+  -@delete effect/\#?.o
+  -@delete effect/\#?.lnk
+
+cleancube:
+  -@delete cube/\#?.o
+  -@delete cube/\#?.lnk
+  
+cleanengine:
+  -@delete engine/\#?.o
+  -@delete engine/\#?.lnk
