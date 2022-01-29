@@ -66,7 +66,7 @@ __asm __interrupt __saveds static void SAGE_PTPlayer(
  *
  * @return Operation success
  */
-BOOL SAGE_InitAudioModule(VOID)
+BOOL SAGE_InitAudioModule()
 {
   SD(SAGE_DebugLog("Init Audio module"));
   if (AHImp = CreateMsgPort()) {
@@ -98,7 +98,7 @@ BOOL SAGE_InitAudioModule(VOID)
  *
  * @return Operation success
  */
-BOOL SAGE_ReleaseAudioModule(VOID)
+BOOL SAGE_ReleaseAudioModule()
 {
   SD(SAGE_DebugLog("Release Audio module"));
   if (SageContext.SageAudio != NULL) {
@@ -124,7 +124,7 @@ BOOL SAGE_ReleaseAudioModule(VOID)
  * 
  * @return Operation success
  */
-BOOL SAGE_AllocAudioDevice(VOID)
+BOOL SAGE_AllocAudioDevice()
 {
   SAGE_AudioDevice * audio;
 

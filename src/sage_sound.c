@@ -163,10 +163,10 @@ BOOL SAGE_AddSound(UWORD index, SAGE_Sound * sound)
 
   // Check for audio device
   audio = SageContext.SageAudio;
-  if (audio == NULL) {
+  SAFE(if (audio == NULL) {
     SAGE_SetError(SERR_NO_AUDIODEVICE);
     return FALSE;
-  }
+  })
   if (index > SSND_MAX_SOUNDS) {
     SAGE_SetError(SERR_SOUND_INDEX);
     return FALSE;
@@ -200,10 +200,10 @@ SAGE_Sound * SAGE_RemoveSound(UWORD index)
 
   // Check for audio device
   audio = SageContext.SageAudio;
-  if (audio == NULL) {
+  SAFE(if (audio == NULL) {
     SAGE_SetError(SERR_NO_AUDIODEVICE);
     return NULL;
-  }
+  })
   if (index > SSND_MAX_SOUNDS) {
     SAGE_SetError(SERR_SOUND_INDEX);
     return NULL;
@@ -264,10 +264,10 @@ BOOL SAGE_PlaySound(UWORD index, UWORD channel)
 
   // Check for audio device
   audio = SageContext.SageAudio;
-  if (audio == NULL) {
+  SAFE(if (audio == NULL) {
     SAGE_SetError(SERR_NO_AUDIODEVICE);
     return FALSE;
-  }
+  })
   if (index > SSND_MAX_SOUNDS) {
     SAGE_SetError(SERR_SOUND_INDEX);
     return FALSE;
@@ -308,10 +308,10 @@ BOOL SAGE_StopSound(UWORD index, UWORD channel)
 
   // Check for audio device
   audio = SageContext.SageAudio;
-  if (audio == NULL) {
+  SAFE(if (audio == NULL) {
     SAGE_SetError(SERR_NO_AUDIODEVICE);
     return FALSE;
-  }
+  })
   if (index > SSND_MAX_SOUNDS) {
     SAGE_SetError(SERR_SOUND_INDEX);
     return FALSE;

@@ -5,7 +5,7 @@
  * 3D module management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 April 2020
+ * @version 1.2 December 2021
  */
 
 #include <exec/execbase.h>
@@ -70,41 +70,78 @@ BOOL SAGE_Release3DModule(VOID)
 }
 
 /**
+ * Display available 3D drivers
+ */
+VOID SAGE_Display3DDrivers(VOID)
+{
+  W3D_Driver ** drivers, * driver;
+  ULONG index;
+  
+  drivers = W3D_GetDrivers();
+  index = 0;
+  while (*drivers != NULL) {
+    driver = *drivers;
+    SAGE_InfoLog("W3D driver %d :", index);
+    // 3D chip
+    switch (driver->ChipID) {
+      case W3D_CHIP_UNKNOWN:
+        SAGE_InfoLog(" - Unknown chip");
+        break;
+      case W3D_CHIP_VIRGE:
+        SAGE_InfoLog(" - S3 Virge");
+        break;
+      case W3D_CHIP_PERMEDIA2:
+        SAGE_InfoLog(" - Permedia2");
+        break;
+      case W3D_CHIP_VOODOO1:
+        SAGE_InfoLog(" - Voodoo1");
+        break;
+      case W3D_CHIP_AVENGER_LE:
+        SAGE_InfoLog(" - Voodoo3 LE");
+        break;
+      case W3D_CHIP_AVENGER_BE:
+        SAGE_InfoLog(" - Voodoo3 BE");
+        break;
+      case W3D_CHIP_PERMEDIA3:
+        SAGE_InfoLog(" - Permedia3");
+        break;
+      case W3D_CHIP_RADEON:
+        SAGE_InfoLog(" - Radeon");
+        break;
+      case W3D_CHIP_RADEON2:
+        SAGE_InfoLog(" - Radeon2");
+        break;
+    }
+    SAGE_InfoLog(" - %s", driver->name);
+//  @todo : display driver->formats
+    if (driver->swdriver == W3D_TRUE) {
+      SAGE_InfoLog(" - this is a software driver !");
+    }
+    drivers++;
+    index++;
+  }
+}
+
+/**
  * Allocate 3D device
  *
  * @return Operation success
  */
 BOOL SAGE_Alloc3DDevice(VOID)
 {
-  struct Window * window;
   SAGE_3DDevice * device;
 
   SD(SAGE_InfoLog("Allocate 3D device"));
-  if (SageContext.SageVideo == NULL || SageContext.SageVideo->screen == NULL) {
-    SAGE_SetError(SERR_NO_VIDEODEVICE);
-    return FALSE;
-  }
   if ((device = SAGE_AllocMem(sizeof(SAGE_3DDevice))) == NULL) {
     return FALSE;
   }
+  // Show available drivers
+  SD(SAGE_Display3DDrivers());
+  device->render_mode = S3DR_W3DMODE;
   device->driver_type = W3D_CheckDriver();
   if (device->driver_type & W3D_DRIVER_UNAVAILABLE) {
     SAGE_FreeMem(device);
     SAGE_SetError(SERR_NO_3DDRIVER);
-    return FALSE;
-  }
-  window = SageContext.SageVideo->screen->system_window;
-  device->context = W3D_CreateContextTags(
-    &(device->warp3d_error),
-    W3D_CC_BITMAP, window->RPort->BitMap,
-    W3D_CC_YOFFSET, 0,
-    W3D_CC_DRIVERTYPE, W3D_DRIVER_BEST,
-    W3D_CC_FAST, TRUE,
-    TAG_DONE
-  );
-  if (device->context == NULL) {
-    SAGE_FreeMem(device);
-    SAGE_SetError(SERR_NO_3DCONTEXT);
     return FALSE;
   }
   SageContext.Sage3D = device;
@@ -119,6 +156,7 @@ BOOL SAGE_Alloc3DDevice(VOID)
 BOOL SAGE_Free3DDevice()
 {
   SAGE_3DDevice * device;
+  UWORD index;
   
   SD(SAGE_InfoLog("Release 3D device"));
   device = SageContext.Sage3D;
@@ -126,11 +164,66 @@ BOOL SAGE_Free3DDevice()
     SAGE_SetError(SERR_NO_3DDEVICE);
     return FALSE;
   }
+  // Release all textures
+  for (index = 0;index < STEX_MAX_TEXTURES;index++) {
+    if (device->textures[index] != NULL) {
+      SAGE_ReleaseTexture(index);
+      device->textures[index] = NULL;
+    }
+  }
   if (device->context != NULL) {
     W3D_DestroyContext(device->context);
   }
   SAGE_FreeMem(device);
   SageContext.Sage3D = NULL;
+  return TRUE;
+}
+
+/**
+ * Allocate the context for 3D rendering
+ *
+ * @return Operation success
+ */
+BOOL SAGE_Allocate3DContext(VOID)
+{
+  struct Window * window;
+  SAGE_3DDevice * device;
+  
+  SD(SAGE_InfoLog("Allocate 3D context"));
+  device = SageContext.Sage3D;
+  if (device == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
+    return FALSE;
+  }
+  if (SageContext.SageVideo == NULL || SageContext.SageVideo->screen == NULL) {
+    SAGE_SetError(SERR_NO_VIDEODEVICE);
+    return FALSE;
+  }
+  window = SageContext.SageVideo->screen->system_window;
+  device->context = W3D_CreateContextTags(
+    &(device->warp3d_error),
+    W3D_CC_BITMAP, window->RPort->BitMap,
+    W3D_CC_YOFFSET, 0,
+    W3D_CC_DRIVERTYPE, W3D_DRIVER_BEST,
+    W3D_CC_FAST, TRUE,
+    TAG_DONE
+  );
+  if (device->context == NULL) {
+    SD(SAGE_InfoLog("Error : %s", SAGE_GetLast3DDeviceError()));
+    SAGE_FreeMem(device);
+    SAGE_SetError(SERR_NO_3DCONTEXT);
+    return FALSE;
+  }
+  SD(SAGE_InfoLog("Set context states"));
+  W3D_SetState(device->context, W3D_GOURAUD, W3D_ENABLE);
+  W3D_SetState(device->context, W3D_TEXMAPPING, W3D_ENABLE);
+  W3D_SetState(device->context, W3D_AUTOTEXMANAGEMENT, W3D_ENABLE);
+  W3D_SetState(device->context, W3D_PERSPECTIVE, W3D_ENABLE);
+  W3D_SetState(device->context, W3D_INDIRECT, W3D_DISABLE);
+  W3D_SetState(device->context, W3D_SYNCHRON, W3D_DISABLE);
+  W3D_SetState(device->context, W3D_FAST, W3D_ENABLE);
+  W3D_SetState(device->context, W3D_ZBUFFER, W3D_DISABLE);
+  W3D_SetState(device->context, W3D_FOGGING, W3D_DISABLE);
   return TRUE;
 }
 
@@ -150,4 +243,39 @@ W3D_Context * SAGE_Get3DContext(VOID)
     return NULL;
   }
   return device->context;
+}
+
+/**
+ * Return a string describing the last 3D device error
+ *
+ * @return 3D device error string
+ */
+STRPTR SAGE_GetLast3DDeviceError(VOID)
+{
+  SAGE_3DDevice * device;
+  
+  device = SageContext.Sage3D;
+  if (device == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
+    return "No device";
+  }
+  switch (device->warp3d_error) {
+    case W3D_ILLEGALINPUT:
+      return "Illegal input";
+    case W3D_NOMEMORY:
+      return "Out of memory";
+    case W3D_NODRIVER:
+      return "No suitable driver found";
+    case W3D_UNSUPPORTEDFMT:
+      return "Supplied bitmap cannot be handled by Warp3D";
+    case W3D_ILLEGALBITMAP:
+      return "Supplied bitmap not properly initialized";
+    case W3D_UNSUPPORTEDTEXSIZE:
+      return "Unsupported texture size";
+    case W3D_NOPALETTE:
+      return "Chunky texture without palette specified";
+    case W3D_UNSUPPORTEDTEXFMT:
+      return "Texture format not supported";
+  }
+  return "Unknown error";
 }

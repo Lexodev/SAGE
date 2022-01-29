@@ -48,7 +48,7 @@ extern SAGE_Context SageContext;
  *
  * @return Operation success
  */
-BOOL SAGE_InitVideoModule(VOID)
+BOOL SAGE_InitVideoModule()
 {
   SD(SAGE_DebugLog("Init Video module"));
   if ((IntuitionBase = (struct IntuitionBase *) OpenLibrary("intuition.library", INTUITIONVERSION)) == NULL) {
@@ -75,7 +75,7 @@ BOOL SAGE_InitVideoModule(VOID)
  *
  * @return Operation success
  */
-BOOL SAGE_ReleaseVideoModule(VOID)
+BOOL SAGE_ReleaseVideoModule()
 {
   SD(SAGE_DebugLog("Release Video module"));
   if (SageContext.SageVideo != NULL) {
@@ -101,7 +101,7 @@ BOOL SAGE_ReleaseVideoModule(VOID)
  *
  * @return Operation success
  */
-BOOL SAGE_AllocVideoDevice(VOID)
+BOOL SAGE_AllocVideoDevice()
 {
   SAGE_VideoDevice * video;
 
@@ -181,7 +181,7 @@ BOOL SAGE_FreeVideoDevice()
 /**
  * Dump available RTG vide modes
  */
-VOID SAGE_DumpVideoModes(VOID)
+VOID SAGE_DumpVideoModes()
 {
   SAGE_VideoDevice * video;
 

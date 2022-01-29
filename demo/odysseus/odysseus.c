@@ -152,7 +152,7 @@ BOOL InitTiles(VOID)
   UWORD index;
 
   SAGE_AppliLog("Load tile picture");
-  if ((picture = SAGE_LoadPicture("/data/Odysseus_Tiles.bmp")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/Odysseus_Tiles.bmp")) != NULL) {
     SAGE_LoadPictureColorMap(picture);
     SAGE_RefreshColors(0, 256);
     SAGE_AppliLog("Create tile bank");
@@ -176,7 +176,7 @@ BOOL InitTileMap(VOID)
   SAGE_AppliLog("Create tile map");
   if (SAGE_CreateTileMap(MAP_BANK, MAP_WIDTH, MAP_HEIGHT, STIL_MAPBPT_BYTE)) {
     SAGE_AppliLog("Load map level");
-    if (SAGE_LoadTileMap(MAP_BANK, "/data/Odysseus_Level1.map")) {
+    if (SAGE_LoadTileMap(MAP_BANK, "data/Odysseus_Level1.map")) {
       return TRUE;
     }
   }
@@ -190,7 +190,7 @@ BOOL InitSprites(VOID)
   ULONG top, left;
 
   SAGE_AppliLog("Load sprite picture");
-  if ((picture = SAGE_LoadPicture("/data/Odysseus_Sprites.bmp")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/Odysseus_Sprites.bmp")) != NULL) {
     SAGE_AppliLog("Create sprites bank");
     if (SAGE_CreateSpriteBank(SPR_BANK, NB_SPRITES, picture)) {
       SAGE_SetSpriteBankTransparency(SPR_BANK, TRANSP_COLOR);
@@ -259,7 +259,7 @@ BOOL InitMusic(VOID)
   SAGE_Music * music = NULL;
 
   SAGE_AppliLog("Loading music");
-  if ((music = SAGE_LoadMusic("/data/theme.mod")) != NULL) {
+  if ((music = SAGE_LoadMusic("data/theme.mod")) != NULL) {
     SAGE_AppliLog("Adding music");
     if (SAGE_AddMusic(MAIN_MUSIC, music)) {
       return TRUE;
@@ -280,8 +280,8 @@ BOOL InitSound(VOID)
   SAGE_Sound * sound1 = NULL, * sound2 = NULL;
 
   SAGE_AppliLog("Loading sounds");
-  sound1 = SAGE_LoadSound("/data/shoot.wav");
-  sound2 = SAGE_LoadSound("/data/explosion.wav");
+  sound1 = SAGE_LoadSound("data/shoot.wav");
+  sound2 = SAGE_LoadSound("data/explosion.wav");
   if (sound1 != NULL && sound2 != NULL) {
     sound1->volume = 65536*2;
     sound2->volume = 65536*2;

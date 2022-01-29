@@ -12,9 +12,15 @@
 #define _SAGE_DEBUG_H_
 
 #if _SAGE_DEBUG_MODE_ == 1
-#define SD(x)  x
+#define SD(x)     x
 #else
-#define SD(x)  ;
+#define SD(x)     ;
+#endif
+
+#if _SAGE_SAFE_MODE_ == 1
+#define SAFE(x)   x
+#else
+#define SAFE(x)   ;
 #endif
 
 #endif

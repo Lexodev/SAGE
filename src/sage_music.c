@@ -35,7 +35,7 @@ extern SAGE_Context SageContext;
  *
  * @return SAGE music structure
  */
-SAGE_Music * SAGE_AllocMusic(VOID)
+SAGE_Music * SAGE_AllocMusic()
 {
   SAGE_Music * music;
 
@@ -91,7 +91,7 @@ VOID SAGE_DumpMusic(SAGE_Music * music)
  * 
  *  @param file_handle Handle on a file
  * 
- *  @return Type of file music
+ *  @return Type of music file
  */
 UWORD SAGE_GetMusicFileType(BPTR file_handle)
 {
@@ -266,10 +266,10 @@ BOOL SAGE_PlayMusic(UWORD index)
 
   // Check for audio device
   audio = SageContext.SageAudio;
-  if (audio == NULL) {
+  SAFE(if (audio == NULL) {
     SAGE_SetError(SERR_NO_AUDIODEVICE);
     return FALSE;
-  }
+  })
   if (index >= SMUS_MAX_MUSICS) {
     SAGE_SetError(SERR_MUSIC_INDEX);
     return FALSE;
@@ -328,10 +328,10 @@ BOOL SAGE_StopMusic()
 
   // Check for audio device
   audio = SageContext.SageAudio;
-  if (audio == NULL) {
+  SAFE(if (audio == NULL) {
     SAGE_SetError(SERR_NO_AUDIODEVICE);
     return FALSE;
-  }
+  })
   if (audio->music_played == SMUS_MAX_MUSICS) {
     return FALSE;
   }
@@ -367,10 +367,10 @@ BOOL SAGE_PauseMusic()
 
   // Check for audio device
   audio = SageContext.SageAudio;
-  if (audio == NULL) {
+  SAFE(if (audio == NULL) {
     SAGE_SetError(SERR_NO_AUDIODEVICE);
     return FALSE;
-  }
+  })
   if (audio->music_played == SMUS_MAX_MUSICS) {
     return FALSE;
   }
@@ -401,10 +401,10 @@ BOOL SAGE_ResumeMusic()
 
   // Check for audio device
   audio = SageContext.SageAudio;
-  if (audio == NULL) {
+  SAFE(if (audio == NULL) {
     SAGE_SetError(SERR_NO_AUDIODEVICE);
     return FALSE;
-  }
+  })
   if (audio->music_played == SMUS_MAX_MUSICS) {
     return FALSE;
   }

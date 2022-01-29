@@ -32,7 +32,7 @@ extern SAGE_Context SageContext;
  *
  * @return Operation success
  */
-BOOL SAGE_InitNetworkModule(VOID)
+BOOL SAGE_InitNetworkModule()
 {
   SD(SAGE_DebugLog("Init Network module"));
   if ((SocketBase = OpenLibrary(SOCKETNAME, SOCKETVER)) == NULL) {
@@ -51,7 +51,7 @@ BOOL SAGE_InitNetworkModule(VOID)
  *
  * @return Operation success
  */
-BOOL SAGE_ReleaseNetworkModule(VOID)
+BOOL SAGE_ReleaseNetworkModule()
 {
   SD(SAGE_DebugLog("Release Network module"));
   if (SageContext.SageNetwork != NULL) {
@@ -69,7 +69,7 @@ BOOL SAGE_ReleaseNetworkModule(VOID)
  *
  * @return Operation success
  */
-BOOL SAGE_AllocNetworkDevice(VOID)
+BOOL SAGE_AllocNetworkDevice()
 {
   SAGE_NetworkDevice * device;
   
@@ -85,7 +85,7 @@ BOOL SAGE_AllocNetworkDevice(VOID)
  *
  * @return Operation success
  */
-BOOL SAGE_FreeNetworkDevice(VOID)
+BOOL SAGE_FreeNetworkDevice()
 {
   SAGE_NetworkDevice * network;
   UWORD index;
@@ -119,10 +119,10 @@ SAGE_BsdSocket * SAGE_OpenServer(UWORD protocol, UWORD port)
   
   // Check for network device
   network = SageContext.SageNetwork;
-  if (network == NULL) {
+  SAFE(if (network == NULL) {
     SAGE_SetError(SERR_NO_NETDEVICE);
     return NULL;
-  }
+  })
   bsdsocket = (SAGE_BsdSocket *) SAGE_AllocMem(sizeof(SAGE_BsdSocket));
   if (bsdsocket != NULL) {
     bsdsocket->type = SNET_SERVER_SOCKET;
@@ -183,10 +183,10 @@ SAGE_BsdSocket * SAGE_OpenClient(UWORD protocol, STRPTR host, UWORD port)
   
   // Check for network device
   network = SageContext.SageNetwork;
-  if (network == NULL) {
+  SAFE(if (network == NULL) {
     SAGE_SetError(SERR_NO_NETDEVICE);
     return NULL;
-  }
+  })
   bsdsocket = (SAGE_BsdSocket *) SAGE_AllocMem(sizeof(SAGE_BsdSocket));
   if (bsdsocket != NULL) {
     bsdsocket->type = SNET_CLIENT_SOCKET;
@@ -249,10 +249,10 @@ BOOL SAGE_CloseSocket(SAGE_BsdSocket * bsdsocket)
 
   // Check for network device
   network = SageContext.SageNetwork;
-  if (network == NULL) {
+  SAFE(if (network == NULL) {
     SAGE_SetError(SERR_NO_NETDEVICE);
     return NULL;
-  }
+  })
   if (bsdsocket != NULL) {
     if (bsdsocket->socket_id != SNET_INVALID_SOCKET) {
       SD(SAGE_DebugLog("Close socket #%d", bsdsocket->socket_id));
@@ -313,10 +313,10 @@ SAGE_BsdSocket * SAGE_AcceptClient(SAGE_BsdSocket * bsdsocket)
 
   // Check for network device
   network = SageContext.SageNetwork;
-  if (network == NULL) {
+  SAFE(if (network == NULL) {
     SAGE_SetError(SERR_NO_NETDEVICE);
     return NULL;
-  }
+  })
   if (bsdsocket != NULL) {
     if (bsdsocket->protocol == SNET_UDP_PROTOCOL) {
       return NULL;
@@ -461,10 +461,10 @@ BOOL SAGE_AddSocketListenHandler(SAGE_BsdSocket * bsdsocket, VOID (*handler)(SAG
 
   // Check for network device
   network = SageContext.SageNetwork;
-  if (network == NULL) {
+  SAFE(if (network == NULL) {
     SAGE_SetError(SERR_NO_NETDEVICE);
     return FALSE;
-  }
+  })
   if (bsdsocket != NULL) {
     if (bsdsocket->type == SNET_SERVER_SOCKET) {
       if (network->handlers[bsdsocket->socket_id] == NULL) {
@@ -503,10 +503,10 @@ BOOL SAGE_AddSocketReadHandler(SAGE_BsdSocket * bsdsocket, VOID (*handler)(SAGE_
 
   // Check for network device
   network = SageContext.SageNetwork;
-  if (network == NULL) {
+  SAFE(if (network == NULL) {
     SAGE_SetError(SERR_NO_NETDEVICE);
     return FALSE;
-  }
+  })
   if (bsdsocket != NULL) {
     if (network->handlers[bsdsocket->socket_id] == NULL) {
       if ((sockhand = SAGE_AllocMem(sizeof(SAGE_SocketHandler))) == NULL) {
@@ -533,10 +533,10 @@ BOOL SAGE_HandleSocketEvents()
 
   // Check for network device
   network = SageContext.SageNetwork;
-  if (network == NULL) {
+  SAFE(if (network == NULL) {
     SAGE_SetError(SERR_NO_NETDEVICE);
     return FALSE;
-  }
+  })
   FD_ZERO(&(network->read_ds));
   for (index = 0;index < SNET_MAX_SOCKETS;index++) {
     if (network->sockets[index] != NULL && network->handlers[index] != NULL) {
@@ -565,7 +565,7 @@ BOOL SAGE_HandleSocketEvents()
  *
  * @return Last network error code
  */
-LONG SAGE_GetLastNetworkError(VOID)
+LONG SAGE_GetLastNetworkError()
 {
   return Errno();
 }
@@ -585,6 +585,6 @@ LONG SAGE_GetLastSocketError(SAGE_BsdSocket * bsdsocket)
 /**
  * Dump network device
  */
-VOID SAGE_DumpNetworkDevice(VOID)
+VOID SAGE_DumpNetworkDevice()
 {
 }

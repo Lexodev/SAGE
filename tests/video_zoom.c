@@ -14,10 +14,8 @@
 
 #define SCREEN_WIDTH          640L
 #define SCREEN_HEIGHT         480L
-//#define SCREEN_DEPTH          8L
 #define SCREEN_DEPTH          16L
 
-//#define SPR_TRANSP            1
 #define SPR_TRANSP            0xF81F
 #define SPR_BANK              0
 #define SPR_INDEX             0
@@ -25,84 +23,56 @@
 
 #define BG_LAYER              0
 
-/**
- * Sprite 6,4 96x112
- */
-void Test8bitsZoomAndClip(void)
-{
-  SAGE_SetSpriteZoom(SPR_BANK, SPR_INDEX, 1.5F, 1.5F);
-  SAGE_BlitSpriteToScreen(SPR_BANK, SPR_INDEX, 320, 240);
-  SAGE_RefreshScreen();
-}
-
-/**
- * Sprite 0,0 176x259
- */
-void Test16bitsZoomAndClip(void)
-{
-  SAGE_SetSpriteZoom(SPR_BANK, SPR_INDEX, 1.5F, 1.5F);
-  SAGE_BlitSpriteToScreen(SPR_BANK, SPR_INDEX, 320, 240);
-  SAGE_RefreshScreen();
-}
+UBYTE string_buffer[256];
 
 void main(void)
 {
   SAGE_Picture * picture = NULL;
   SAGE_Event * event = NULL;
   LONG sprxpos = 320, sprypos = 240;
-  FLOAT zoom = 1.0, step = 0.05;
+  FLOAT zoom = 1.0, step = 0.02;
   BOOL finish = FALSE;
 
   printf("--------------------------------------------------------------------------------\n");
   printf("* SAGE library VIDEO test (ZOOM) / %s\n", SAGE_GetVersion());
   printf("--------------------------------------------------------------------------------\n");
-  if (SAGE_Init(SMOD_VIDEO)) {
+  if (SAGE_Init(SMOD_VIDEO|SMOD_INTERRUPTION)) {
     printf("Opening screen\n");
     if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_TRIPLEBUF|SSCR_STRICTRES)) {
       SAGE_HideMouse();
-// 8Bits assets
-      /*printf("Load sprite picture and create sprite bank\n");
-      if ((picture = SAGE_LoadPicture("/data/troll_sprite.gif")) != NULL) {
-        SAGE_LoadPictureColorMap(picture);
-        SAGE_RefreshColors(0, 256);
-        if (SAGE_CreateSpriteBank(SPR_BANK, SPR_NUMBER, picture)) {
-          SAGE_SetSpriteBankTransparency(SPR_BANK, SPR_TRANSP);
-          if (!SAGE_AddSpriteToBank(SPR_BANK, SPR_INDEX, 6, 4, 96, 112, SSPR_HS_MIDDLE)) {
-            finish = TRUE;
-          }
-        }
-        SAGE_ReleasePicture(picture);
-      }
-      printf("Load a picture for the background\n");
-      if ((picture = SAGE_LoadPicture("/data/desert256.png")) == NULL) {
-        finish = FALSE;
-      }*/
-//      Test8bitsZoomAndClip();
-
-// 16Bits assets
+  if (!SAGE_EnableFrameCount(TRUE)) {
+    SAGE_ErrorLog("Can't activate frame rate counter !");
+  }
+      SAGE_MaximumFPS(60);
+      SAGE_VerticalSynchro(FALSE);
       printf("Load sprite picture and create sprite bank\n");
-      if ((picture = SAGE_LoadPicture("/data/fighter.bmp")) != NULL) {
+      if ((picture = SAGE_LoadPicture("/data/vampire.bmp")) != NULL) {
         SAGE_LoadPictureColorMap(picture);
         if (SAGE_CreateSpriteBank(SPR_BANK, SPR_NUMBER, picture)) {
           SAGE_SetSpriteBankTransparency(SPR_BANK, SPR_TRANSP);
-          if (!SAGE_AddSpriteToBank(SPR_BANK, SPR_INDEX, 0, 0, 176, 259, SSPR_HS_MIDDLE)) {
+          if (!SAGE_AddSpriteToBank(SPR_BANK, SPR_INDEX, 0, 0, 360, 360, SSPR_HS_MIDDLE)) {
             finish = TRUE;
           }
         }
         SAGE_ReleasePicture(picture);
       }
       printf("Load a picture for the background\n");
-      if ((picture = SAGE_LoadPicture("/data/background.bmp")) == NULL) {
+      if ((picture = SAGE_LoadPicture("/data/desert.bmp")) == NULL) {
         finish = FALSE;
       }
-//      Test16bitsZoomAndClip();
       while (!finish) {
         SAGE_BlitPictureToScreen(picture, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0);
+        zoom += step;
+        if (zoom > 1.4) step *= -1.0;
+        if (zoom < 0.1) step *= -1.0;
         SAGE_SetSpriteZoom(SPR_BANK, 0, zoom, zoom);
         if (!SAGE_BlitSpriteToScreen(SPR_BANK, SPR_INDEX, sprxpos, sprypos)) {
           finish = TRUE;
           SAGE_DisplayError();
         }
+        // Draw the fps counter
+        sprintf(string_buffer, "%d fps", SAGE_GetFps());
+        SAGE_PrintText(string_buffer, 10, 10);
         SAGE_RefreshScreen();
         while ((event = SAGE_GetEvent()) != NULL) {
           if (event->type == SEVT_RAWKEY) {
@@ -112,33 +82,25 @@ void main(void)
                 finish = TRUE;
                 break;
               case SKEY_FR_LEFT:
-                sprxpos -= 4;
+                sprxpos -= 10;
                 if (sprxpos < -128) sprxpos = -128;
                 break;
               case SKEY_FR_RIGHT:
-                sprxpos += 4;
+                sprxpos += 10;
                 if (sprxpos > SCREEN_WIDTH+128) sprxpos = SCREEN_WIDTH+128;
                 break;
               case SKEY_FR_UP:
-                sprypos -= 4;
+                sprypos -= 10;
                 if (sprxpos < -128) sprxpos = -128;
                 break;
               case SKEY_FR_DOWN:
-                sprypos += 4;
+                sprypos += 10;
                 if (sprxpos > SCREEN_HEIGHT+128) sprxpos = SCREEN_HEIGHT+128;
                 break;
               case SKEY_FR_SPACE:
-                sprxpos = 320;
-                sprypos = 240;
+                sprxpos = SCREEN_WIDTH / 2;
+                sprypos = SCREEN_HEIGHT / 2;
                 zoom = 1.0;
-                break;
-              case SKEY_FR_A:
-                zoom += step;
-                if (zoom > 4.0) zoom = 4.0;
-                break;
-              case SKEY_FR_Q:
-                zoom -= step;
-                if (zoom < 0) zoom = 0;
                 break;
             }
           }

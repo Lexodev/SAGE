@@ -1,8 +1,8 @@
 /**
- * cube.c
+ * flatcube.c
  * 
  * SAGE (Simple Amiga Game Engine) project
- * Demo of a 3D cube
+ * Demo of a flat 3D cube
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
  * @version 1.0 February 2021
@@ -16,6 +16,9 @@
 #define SCREEN_WIDTH          640L
 #define SCREEN_HEIGHT         480L
 #define SCREEN_DEPTH          8L
+
+#define CUBE_POINTS           8
+#define CUBE_FACES            6
 
 ULONG cube_colors[8] = {
   0x00000000,0x00FF0000,0x0000FF00,0x000000FF,
@@ -33,30 +36,35 @@ struct cube_face {
 struct cube_object {
   WORD anglex,angley,anglez;
   FLOAT posx, posy, posz;
-  struct cube_point points[8];
-  struct cube_face faces[6];
+  struct cube_point points[CUBE_POINTS];
+  struct cube_face faces[CUBE_FACES];
 };
 
 // Demo Data
 struct cube_object Cube = {
   0,0,0,
-  0.0,0.0,-100.0,
-  {{ -10.0,10.0,-10.0 },
-  { 10.0,10.0,-10.0 },
-  { 10.0,10.0,10.0 },
-  { -10.0,10.0,10.0 },
-  { -10.0,-10.0,-10.0 },
-  { 10.0,-10.0,-10.0 },
-  { 10.0,-10.0,10.0 },
-  { -10.0,-10.0,10.0 }},
-  {{ 0,1,2,3,1 },
-  { 1,5,6,2,2 },
-  { 4,7,6,5,3 },
-  { 0,3,7,4,4 },
-  { 0,4,5,1,5 },
-  { 2,6,7,3,6 }}
+  0.0,0.0,50.0,
+  {
+    { -10.0,10.0,-10.0 },
+    { 10.0,10.0,-10.0 },
+    { 10.0,-10.0,-10.0 },
+    { -10.0,-10.0,-10.0 },
+    { -10.0,10.0,10.0 },
+    { 10.0,10.0,10.0 },
+    { 10.0,-10.0,10.0 },
+    { -10.0,-10.0,10.0 }
+  },
+  {
+    { 0,1,2,3, 1 },
+    { 1,5,6,2, 2 },
+    { 5,4,7,6, 3 },
+    { 4,0,3,7, 4 },
+    { 4,5,1,0, 5 },
+    { 3,2,6,7, 6 }
+  }
 };
-struct cube_point transf[8];
+
+struct cube_point transf[CUBE_POINTS];
 BOOL finish = FALSE;
 
 // Controls
@@ -177,10 +185,10 @@ VOID _Update(VOID)
   ScanKeyboard();
   if (keyboard_state[KEY_QUIT]) finish = TRUE;
   if (keyboard_state[KEY_SPACE]) {
-    Cube.anglex = 0;
-    Cube.angley = 0;
-    Cube.anglez = 0;
-    Cube.posz = -150;
+    Cube.anglex = 0.0;
+    Cube.angley = 0.0;
+    Cube.anglez = 0.0;
+    Cube.posz = 50.0;
   }
   if (keyboard_state[KEY_LEFT]) {
     Cube.angley += 1;
@@ -204,11 +212,11 @@ VOID _Update(VOID)
     if (Cube.anglez < 0) Cube.anglez += 360;
   }
   if (keyboard_state[KEY_Q]) {
-    Cube.posz -= 1;
-    if (Cube.posz < -300.0) Cube.posz = -300.0;
-  } else if (keyboard_state[KEY_W]) {
     Cube.posz += 1;
-    if (Cube.posz > -20.0) Cube.posz = -20.0;
+    if (Cube.posz > 200.0) Cube.posz = 200.0;
+  } else if (keyboard_state[KEY_W]) {
+    Cube.posz -= 1;
+    if (Cube.posz < 20.0) Cube.posz = 20.0;
   }
 }
 
@@ -218,7 +226,7 @@ VOID DrawCube(VOID)
   LONG x1,y1,x2,y2,x3,y3,x4,y4;
   UWORD i;
   
-  for (i=0;i < 8;i++) {
+  for (i=0;i < CUBE_POINTS;i++) {
     xa = Cube.points[i].x;
     ya = Cube.points[i].y;
     za = Cube.points[i].z;
@@ -231,13 +239,14 @@ VOID DrawCube(VOID)
     // Rotate Z
     x = xb * Cosinus[Cube.anglez] - yb * Sinus[Cube.anglez];
     y = xb * Sinus[Cube.anglez] + yb * Cosinus[Cube.anglez];
+    SAGE_DebugLog(" => rx=%f, ry=%f, rz=%f", x, y, z);
     // Perspective
     z += Cube.posz;
     transf[i].x = (x * 256.0) / z;
-    transf[i].y = (y * 256.0) / z;
+    transf[i].y = (-y * 256.0) / z;
     transf[i].z = z;
   }
-  for (i = 0;i < 6;i++) {
+  for (i = 0;i < CUBE_FACES;i++) {
     x1 = (LONG) transf[Cube.faces[i].p1].x + (SCREEN_WIDTH/2);
     y1 = (LONG) transf[Cube.faces[i].p1].y + (SCREEN_HEIGHT/2);
     x2 = (LONG) transf[Cube.faces[i].p2].x + (SCREEN_WIDTH/2);
@@ -246,7 +255,7 @@ VOID DrawCube(VOID)
     y3 = (LONG) transf[Cube.faces[i].p3].y + (SCREEN_HEIGHT/2);
     x4 = (LONG) transf[Cube.faces[i].p4].x + (SCREEN_WIDTH/2);
     y4 = (LONG) transf[Cube.faces[i].p4].y + (SCREEN_HEIGHT/2);
-    if (((y1-y2)*(x2-x3)) >= ((y2-y3)*(x1-x2))) {
+    if (((y1-y2)*(x2-x3)) < ((y2-y3)*(x1-x2))) {
       SAGE_DrawClippedTriangle(x1 ,y1, x2, y2, x3, y3, Cube.faces[i].color);
       SAGE_DrawClippedTriangle(x1 ,y1, x4, y4, x3, y3, Cube.faces[i].color);
     }
@@ -268,7 +277,7 @@ VOID _Render(VOID)
 void main(void)
 {
   SAGE_SetLogLevel(SLOG_WARNING);
-  SAGE_AppliLog("** SAGE library 3D cube demo V1.0 **");
+  SAGE_AppliLog("** SAGE library flat 3D cube demo V1.0 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_INPUT|SMOD_INTERRUPTION)) {
     if (SAGE_ApolloPresence()) {

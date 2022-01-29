@@ -36,6 +36,7 @@
 #define SSCR_STRICTRES        2
 #define SSCR_NOWINDOWEVT      4
 #define SSCR_TRACKMOUSE       8
+#define SSCR_DELTAMOUSE       16
 
 // Text drawing mode
 #define SSCR_TXTTRANSP        JAM1
@@ -151,8 +152,14 @@ BOOL SAGE_IsFrontMostScreen(VOID);
 /** Get the screen front bitmap */
 SAGE_Bitmap * SAGE_GetFrontBitmap(VOID);
 
+/** Get the screen system front bitmap */
+struct BitMap * SAGE_GetSystemFrontBitmap(VOID);
+
 /** Get the screen back bitmap */
 SAGE_Bitmap * SAGE_GetBackBitmap(VOID);
+
+/** Get the screen system back bitmap */
+struct BitMap * SAGE_GetSystemBackBitmap(VOID);
 
 /** Get the screen pixel format */
 ULONG SAGE_GetPixelFormat(VOID);

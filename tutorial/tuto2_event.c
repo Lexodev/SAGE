@@ -1,7 +1,7 @@
 /**
  * tuto2_event.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Opening the screen and wait for user input
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

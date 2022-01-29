@@ -84,10 +84,10 @@ BOOL SAGE_CreateSpriteBank(UWORD index, UWORD size, SAGE_Picture * picture)
 SAGE_SpriteBank * SAGE_GetSpriteBank(UWORD index)
 {
   // Check for video device
-  if (SageContext.SageVideo == NULL) {
+  SAFE(if (SageContext.SageVideo == NULL) {
     SAGE_SetError(SERR_NO_VIDEODEVICE);
     return NULL;
-  }
+  })
   if (index >= SSPR_MAX_SPRBANK) {
     SAGE_SetError(SERR_SPRBANK_INDEX);
     return NULL;
@@ -135,10 +135,10 @@ BOOL SAGE_SetSpriteBankTransparency(UWORD index, ULONG color)
   SAGE_SpriteBank * bank;
   
   bank = SAGE_GetSpriteBank(index);
-  if (bank == NULL) {
+  SAFE(if (bank == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   return SAGE_SetBitmapTransparency(bank->bitmap, color);
 }
 
@@ -207,10 +207,10 @@ BOOL SAGE_AddSpriteToBank(UWORD index, UWORD sprite, ULONG left, ULONG top, ULON
   SAGE_SpriteBank * bank;
   
   bank = SAGE_GetSpriteBank(index);
-  if (bank == NULL || bank->sprites == NULL || bank->bitmap == NULL) {
+  SAFE(if (bank == NULL || bank->sprites == NULL || bank->bitmap == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if (bank->bank_size > sprite) {
     // Check for size constraint
     if (!SAGE_CheckSizeConstraint(width, bank->bitmap->depth)) {
@@ -240,6 +240,30 @@ BOOL SAGE_AddSpriteToBank(UWORD index, UWORD sprite, ULONG left, ULONG top, ULON
 }
 
 /**
+ * Get a sprite from a sprite bank
+ *
+ * @param index  Sprite bank index
+ * @param sprite Sprite index
+ *
+ * @return Sprite structure
+ */
+SAGE_Sprite * SAGE_GetSprite(UWORD index, UWORD sprite)
+{
+  SAGE_SpriteBank * bank;
+
+  bank = SAGE_GetSpriteBank(index);
+  SAFE(if (bank == NULL || bank->sprites == NULL) {
+    SAGE_SetError(SERR_NULL_POINTER);
+    return FALSE;
+  })
+  if (bank->bank_size > sprite) {
+    return &(bank->sprites[sprite]);
+  }
+  SAGE_SetError(SERR_SPRITE_INDEX);
+  return FALSE;
+}
+
+/**
  *  Set the sprite flip flags
  * 
  * @param index      Sprite bank index
@@ -254,10 +278,10 @@ BOOL SAGE_SetSpriteFlipping(UWORD index, UWORD sprite, BOOL horizontal, BOOL ver
   SAGE_SpriteBank * bank;
   
   bank = SAGE_GetSpriteBank(index);
-  if (bank == NULL || bank->sprites == NULL || bank->bitmap == NULL) {
+  SAFE(if (bank == NULL || bank->sprites == NULL || bank->bitmap == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if (bank->bank_size > sprite) {
     bank->sprites[sprite].horizontal_flip = horizontal;
     bank->sprites[sprite].vertical_flip = vertical;
@@ -298,10 +322,10 @@ BOOL SAGE_SetSpriteZoom(UWORD index, UWORD sprite, FLOAT horizontal, FLOAT verti
   SAGE_SpriteBank * bank;
   
   bank = SAGE_GetSpriteBank(index);
-  if (bank == NULL || bank->sprites == NULL || bank->bitmap == NULL) {
+  SAFE(if (bank == NULL || bank->sprites == NULL || bank->bitmap == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if (bank->bank_size > sprite) {
     bank->sprites[sprite].horizontal_zoom = horizontal;
     bank->sprites[sprite].vertical_zoom = vertical;
@@ -339,13 +363,56 @@ BOOL SAGE_SetSpriteHotspot(UWORD index, UWORD sprite, UWORD hotspot)
   SAGE_SpriteBank * bank;
   
   bank = SAGE_GetSpriteBank(index);
-  if (bank == NULL || bank->sprites == NULL || bank->bitmap == NULL) {
+  SAFE(if (bank == NULL || bank->sprites == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if (bank->bank_size > sprite) {
     bank->sprites[sprite].hotspot = hotspot;
     SAGE_CalculSpriteHotspot(bank, sprite);
+    return TRUE;
+  }
+  SAGE_SetError(SERR_SPRITE_INDEX);
+  return FALSE;
+}
+
+/**
+ * Check for collision between two sprites
+ * 
+ * @param idx1 First sprite bank index
+ * @param spr1 First sprite index
+ * @param x1   First sprite horizontal position
+ * @param y1   First sprite vertical position
+ * @param idx2 Second sprite bank index
+ * @param spr2 Second sprite index
+ * @param x2   Second sprite horizontal position
+ * @param y2   Second sprite vertical position
+ *
+ * @return Collision detected
+ */
+BOOL SAGE_SpriteCollide(UWORD idx1, UWORD spr1, LONG x1, LONG y1, UWORD idx2, UWORD spr2, LONG x2, LONG y2)
+{
+  SAGE_SpriteBank * bank1, * bank2;
+
+  bank1 = SAGE_GetSpriteBank(idx1);
+  bank2 = SAGE_GetSpriteBank(idx2);
+  SAFE(if (bank1 == NULL || bank1->sprites == NULL || bank2 == NULL || bank2->sprites == NULL) {
+    SAGE_SetError(SERR_NULL_POINTER);
+    return FALSE;
+  })
+  if (bank1->bank_size > spr1 && bank2->bank_size > spr2) {
+    // Set the real position regarding the sprite hotspot
+    x1 -= bank1->sprites[spr1].hs_x;
+    y1 -= bank1->sprites[spr1].hs_y;
+    x2 -= bank2->sprites[spr2].hs_x;
+    y2 -= bank2->sprites[spr2].hs_y;
+    //printf("SpriteCollide x1 %d, y1 %d, w1 %d, h1 %d\n", x1, y1, bank1->sprites[spr1].width, bank1->sprites[spr1].height);
+    //printf("              x2 %d, y2 %d, w2 %d, h2 %d\n", x2, y2, bank2->sprites[spr2].width, bank2->sprites[spr2].height);
+    // Check collision
+    if (x2 > (x1 + bank1->sprites[spr1].width)) return FALSE;
+    if (x1 > (x2 + bank2->sprites[spr2].width)) return FALSE;
+    if (y2 > (y1 + bank1->sprites[spr1].height)) return FALSE;
+    if (y1 > (y2 + bank2->sprites[spr2].height)) return FALSE;
     return TRUE;
   }
   SAGE_SetError(SERR_SPRITE_INDEX);
@@ -370,18 +437,19 @@ BOOL SAGE_BlitSpriteToScreen(UWORD index, UWORD sprite, LONG x_pos, LONG y_pos)
   SAGE_SpriteBank * bank;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   bank = SAGE_GetSpriteBank(index);
-  if (bank == NULL) {
-    return FALSE;
-  }
-  if (bank->sprites == NULL || bank->bitmap == NULL) {
+  SAFE(if (bank == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
+  SAFE(if (bank->sprites == NULL || bank->bitmap == NULL) {
+    SAGE_SetError(SERR_NULL_POINTER);
+    return FALSE;
+  })
   if (bank->bank_size > sprite) {
     // Set the real position regarding the sprite hotspot
     x_pos -= bank->sprites[sprite].hs_x;

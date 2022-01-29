@@ -18,6 +18,7 @@
 #include "sage_blitter.h"
 #include "sage_interrupt.h"
 #include "sage_context.h"
+#include "sage_3d.h"
 #include "sage_screen.h"
 
 #include <proto/exec.h>
@@ -119,7 +120,7 @@ struct Screen * SAGE_OpenSystemScreen(ULONG display_id, LONG width, LONG height,
  *
  * @return Window structure pointer
  */
-struct Window * SAGE_OpenSystemWindow(struct Screen * custom_screen, LONG width, LONG height)
+struct Window * SAGE_OpenSystemWindow(struct Screen * custom_screen, LONG width, LONG height, LONG flags, LONG idcmp)
 {
   struct Window * system_window;
 
@@ -127,8 +128,8 @@ struct Window * SAGE_OpenSystemWindow(struct Screen * custom_screen, LONG width,
   system_window = OpenWindowTags(
     NULL,
     WA_Title, NULL,
-    WA_Flags, WFLG_ACTIVATE|WFLG_BORDERLESS|WFLG_RMBTRAP|WFLG_REPORTMOUSE,
-    WA_IDCMP, IDCMP_RAWKEY|IDCMP_MOUSEBUTTONS|IDCMP_MOUSEMOVE,
+    WA_Flags, flags,
+    WA_IDCMP, idcmp,
     WA_Left, 0,
     WA_Top, 0,
     WA_Width, width,
@@ -401,7 +402,7 @@ BOOL SAGE_IsSupportedPixFormat(ULONG pixformat)
 BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONG flags)
 {
   ULONG display_id, pixformat;
-  LONG display_width, display_height, display_depth;
+  LONG display_width, display_height, display_depth, win_flags, win_idcmp;
   SAGE_Screen * screen;
   struct BitMap * bitmap;
 
@@ -488,13 +489,24 @@ BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONG flags)
   }
   screen->pixformat = pixformat;
   // Open the window
-  if ((screen->system_window = SAGE_OpenSystemWindow(screen->system_screen, screen->width, screen->height)) == NULL) {
+  win_flags = WFLG_ACTIVATE|WFLG_BORDERLESS|WFLG_RMBTRAP;
+  if (screen->flags & SSCR_NOWINDOWEVT) {
+    win_idcmp = 0;
+  } else {
+    win_idcmp = IDCMP_RAWKEY|IDCMP_MOUSEBUTTONS;
+    if (screen->flags & SSCR_TRACKMOUSE) {
+      win_flags |= WFLG_REPORTMOUSE;
+      win_idcmp |= IDCMP_MOUSEMOVE;
+    }
+    if (screen->flags & SSCR_DELTAMOUSE) {
+      win_idcmp |= IDCMP_DELTAMOVE;
+    }
+  }
+  if ((screen->system_window = SAGE_OpenSystemWindow(screen->system_screen, screen->width, screen->height, win_flags, win_idcmp)) == NULL) {
     SAGE_CloseScreen();
     SAGE_SetError(SERR_NO_WINDOW);
     return FALSE;
   }
-  // BOOL ModifyIDCMP( struct Window *, ULONG ); 
-  // VOID ReportMouse( BOOL, struct Window * );
   // Setup the screen buffer
   if (!SAGE_SetupScreenBuffer(screen->system_screen, &(screen->screen_buffer), (screen->flags&SSCR_TRIPLEBUF))) {
     SAGE_CloseScreen();
@@ -505,11 +517,18 @@ BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONG flags)
   if (!SAGE_SetupFrameBuffer(screen)) {
     SAGE_CloseScreen();
     return FALSE;
-  }    
+  }
   // Allocate screen event structure
   if ((screen->event = SAGE_AllocEvent()) == NULL) {
     SAGE_CloseScreen();
     return FALSE;
+  }
+  // Allocate the 3D context if needed
+  if (SageContext.Sage3D != NULL) {
+    if (!SAGE_Allocate3DContext()) {
+      SAGE_CloseScreen();
+      return FALSE;
+    }
   }
   // Set default clipping
   screen->clipping.left = 0;
@@ -538,10 +557,10 @@ BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONG flags)
 SAGE_Screen * SAGE_GetScreen()
 {
   // Check for video device
-  if (SageContext.SageVideo == NULL) {
+  SAFE(if (SageContext.SageVideo == NULL) {
     SAGE_SetError(SERR_NO_VIDEODEVICE);
     return NULL;
-  }
+  })
   return SageContext.SageVideo->screen;
 }
 
@@ -601,10 +620,10 @@ BOOL SAGE_ClearScreen()
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if (screen->back_bitmap->depth == SBMP_DEPTH8) {
     SAGE_FastClearScreen(
       (ULONG)screen->back_bitmap->bitmap_buffer,
@@ -653,10 +672,10 @@ BOOL SAGE_SetScreenClip(ULONG left, ULONG top, ULONG width, ULONG height)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if ((left + width) > screen->width) {
     SAGE_SetError(SERR_AREASIZE);
     return FALSE;
@@ -682,10 +701,10 @@ BOOL SAGE_ClearView()
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   return SAGE_ClearBitmap(
     screen->back_bitmap,
     screen->clipping.left,
@@ -710,10 +729,10 @@ BOOL SAGE_ClearArea(ULONG left, ULONG top, ULONG width, ULONG height)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if ((left + width) == 0 || (left + width) > screen->width) {
     SAGE_SetError(SERR_AREASIZE);
     return FALSE;
@@ -737,10 +756,10 @@ BOOL SAGE_VerticalSynchro(BOOL synchro)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   screen->vertical_synchro = synchro;
   return TRUE;
 }
@@ -757,10 +776,10 @@ BOOL SAGE_MaximumFPS(ULONG maxfps)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if (screen->timer == NULL) {
     SAGE_SetError(SERR_NO_SCREENTIMER);
     return FALSE;
@@ -781,10 +800,10 @@ BOOL SAGE_RefreshScreen()
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   // Wait for intuition display message that say it's ready for change
   if (!screen->screen_buffer.safe_change) {
     Wait(screen->screen_buffer.display_sigbit);
@@ -850,10 +869,10 @@ BOOL SAGE_WaitVBlank()
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   WaitTOF();
   return TRUE;
 }
@@ -869,10 +888,10 @@ SAGE_Event * SAGE_GetEvent()
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if (screen->system_window != NULL) {
     message = GETIMSG(screen->system_window);
     if (message) {
@@ -924,10 +943,10 @@ BOOL SAGE_IsFrontMostScreen()
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if (IntuitionBase->FirstScreen == screen->system_screen) {
     return TRUE;
   }
@@ -946,11 +965,28 @@ SAGE_Bitmap * SAGE_GetFrontBitmap()
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return NULL;
-  }
+  })
   return screen->front_bitmap;
+}
+
+/**
+ * Get the screen system front bitmap
+ * 
+ * @return System front bitmap
+ */
+struct BitMap * SAGE_GetSystemFrontBitmap(VOID)
+{
+  SAGE_Screen * screen;
+  
+  screen = SAGE_GetScreen();
+  SAFE(if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return NULL;
+  })
+  return screen->screen_buffer.front_buffer->sb_BitMap;
 }
 
 /**
@@ -963,11 +999,28 @@ SAGE_Bitmap * SAGE_GetBackBitmap()
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return NULL;
-  }
+  })
   return screen->back_bitmap;
+}
+
+/**
+ * Get the screen system back bitmap
+ * 
+ * @return System back bitmap
+ */
+struct BitMap * SAGE_GetSystemBackBitmap(VOID)
+{
+  SAGE_Screen * screen;
+  
+  screen = SAGE_GetScreen();
+  SAFE(if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return NULL;
+  })
+  return screen->screen_buffer.back_buffer->sb_BitMap;
 }
 
 /**
@@ -980,10 +1033,10 @@ ULONG SAGE_GetPixelFormat()
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return PIXFMT_UNDEFINED;
-  }
+  })
   return screen->pixformat;
 }
 
@@ -1002,10 +1055,10 @@ BOOL SAGE_RefreshColors(UWORD start, UWORD nbcolor)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if ((start+nbcolor) > SSCR_MAXCOLORS) {
     SAGE_SetError(SERR_COLORINDEX);
     return FALSE;
@@ -1038,10 +1091,10 @@ BOOL SAGE_SetColor(UWORD index, ULONG color)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if (index < SSCR_MAXCOLORS) {
     screen->color_map[index] = color;
     return TRUE;
@@ -1062,7 +1115,11 @@ ULONG SAGE_GetColor(UWORD index)
   SAGE_Screen * screen;
 
   screen = SAGE_GetScreen();
-  if (screen != NULL && index < SSCR_MAXCOLORS) {
+  SAFE(if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return FALSE;
+  })
+  if (index < SSCR_MAXCOLORS) {
     return screen->color_map[index];
   }
   return 0;
@@ -1114,14 +1171,14 @@ BOOL SAGE_SetColorMap(ULONG * colors, UWORD start, UWORD nbcolor)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
-  if (colors == NULL) {
+  })
+  SAFE(if (colors == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if ((start+nbcolor) > SSCR_MAXCOLORS) {
     SAGE_SetError(SERR_COLORINDEX);
     return FALSE;
@@ -1145,10 +1202,10 @@ BOOL SAGE_SetDrawColor(ULONG back, ULONG front)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   screen->back_color = back;
   screen->front_color = front;
   return TRUE;
@@ -1173,10 +1230,10 @@ BOOL SAGE_LoadFileColorMap(STRPTR filepath, UWORD start, UWORD nbcolor, UWORD fo
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if ((start+nbcolor) > SSCR_MAXCOLORS) {
     SAGE_SetError(SERR_COLORINDEX);
     return FALSE;
@@ -1249,13 +1306,15 @@ BOOL SAGE_HideMouse()
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if (screen->system_window != NULL) {
     SetPointer(screen->system_window, SAGE_BlankPointer, 0, 16, 0, 0);
-    ReportMouse(FALSE, screen->system_window);
+    if (!screen->flags & SSCR_TRACKMOUSE) {
+      ReportMouse(FALSE, screen->system_window);
+    }
   }
   screen->hidden_mouse = TRUE;
   return TRUE;
@@ -1271,10 +1330,10 @@ BOOL SAGE_ShowMouse()
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if (screen->system_window != NULL) {
     ReportMouse(TRUE, screen->system_window);
     ClearPointer(screen->system_window);
@@ -1298,10 +1357,10 @@ BOOL SAGE_SetMouseCursor(UWORD * cursor, WORD height, WORD x_action, WORD y_acti
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if (!screen->hidden_mouse && screen->system_window != NULL) {
     SetPointer(screen->system_window, cursor, 16, height, x_action, y_action);
   }
@@ -1318,10 +1377,10 @@ BOOL SAGE_ResetMouse()
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if (!screen->hidden_mouse && screen->system_window != NULL) {
     ClearPointer(screen->system_window);
   }
@@ -1340,10 +1399,10 @@ BOOL SAGE_TrackMouse(BOOL flag)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if (screen->system_window != NULL) {
     ReportMouse(flag, screen->system_window);
   }
@@ -1364,10 +1423,10 @@ BOOL SAGE_SetFont(STRPTR name, UWORD size)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if (screen->system_font != NULL) {
     CloseFont(screen->system_font);
   }
@@ -1397,10 +1456,10 @@ BOOL SAGE_SetTextColor(UBYTE frontpen, UBYTE backpen)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   screen->frontpen = frontpen;
   screen->backpen = backpen;
   SetAPen(&(screen->screen_buffer.work_rastport), frontpen);
@@ -1420,10 +1479,10 @@ BOOL SAGE_SetDrawingMode(UBYTE mode)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   screen->drawing_mode = mode;
   return TRUE;
 }
@@ -1442,10 +1501,10 @@ BOOL SAGE_PrintText(STRPTR text, UWORD posx, UWORD posy)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   Move(&(screen->screen_buffer.work_rastport), posx, posy);
   SetDrMd(&(screen->screen_buffer.work_rastport), screen->drawing_mode);
   Text(&(screen->screen_buffer.work_rastport), text, strlen(text));
@@ -1466,10 +1525,10 @@ BOOL SAGE_PrintDirectText(STRPTR text, UWORD posx, UWORD posy)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   SetAPen(&(screen->system_screen->RastPort), screen->frontpen);
   SetBPen(&(screen->system_screen->RastPort), screen->backpen);
   Move(&(screen->system_screen->RastPort), posx, posy);
@@ -1504,10 +1563,10 @@ BOOL SAGE_EnableFrameCount(BOOL enable)
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if (enable) {
     if (!screen->frame_rate.enable) {
       if (SAGE_AddInterruptionHandler(SSCR_FPS_INTERRUPT, FpsHandler, (APTR) &(screen->frame_rate))) {
@@ -1532,14 +1591,14 @@ BOOL SAGE_EnableFrameCount(BOOL enable)
  *
  * @return Frame per second
  */
-UWORD SAGE_GetFps(VOID)
+UWORD SAGE_GetFps()
 {
   SAGE_Screen * screen;
   
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return 0;
-  }
+  })
   return screen->frame_rate.fps;
 }

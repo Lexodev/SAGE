@@ -1,7 +1,7 @@
 /**
  * tuto7_sprite.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Sprite and scrolling
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

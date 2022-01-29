@@ -17,13 +17,12 @@
 #define SCREEN_DEPTH          8L
 
 #define SOUND_EVIL            1
-#define SOUND_SHOOT           2
-#define SOUND_RAGE            3
+#define SOUND_RAGE            2
 
 void main(void)
 {
   SAGE_Event * event;
-  SAGE_Sound * sound1, * sound2, * sound3;
+  SAGE_Sound * sound1, * sound2;
   BOOL finish = FALSE;
 
   printf("--------------------------------------------------------------------------------\n");
@@ -34,14 +33,13 @@ void main(void)
     if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_DOUBLEBUF)) {
       printf("Loading sounds\n");
       sound1 = SAGE_LoadSound("/data/evil.wav");
-      sound2 = SAGE_LoadSound("/data/shoot.wav");
-      sound3 = SAGE_LoadSound("/data/hiya.8svx");
-      printf("Sound volumes %d / %d / %d\n", sound1->volume, sound2->volume, sound3->volume);
-      if (sound1 == NULL || sound2 == NULL || sound3 == NULL) {
+      sound2 = SAGE_LoadSound("/data/hiya.8svx");
+      printf("Sound volumes %d / %d\n", sound1->volume, sound2->volume);
+      if (sound1 == NULL || sound2 == NULL) {
         finish = TRUE;
         SAGE_DisplayError();
       } else {
-        if (!SAGE_AddSound(SOUND_EVIL, sound1) || !SAGE_AddSound(SOUND_SHOOT, sound2) || !SAGE_AddSound(SOUND_RAGE, sound3)) {
+        if (!SAGE_AddSound(SOUND_EVIL, sound1) || !SAGE_AddSound(SOUND_RAGE, sound2)) {
           printf("Add sound error !!!\n");
           finish = TRUE;
           SAGE_DisplayError();
@@ -49,8 +47,7 @@ void main(void)
       }
       SAGE_PrintText("PRESS SPACE FOR SOUND 1", 20, 20);
       SAGE_PrintText("      ENTER FOR SOUND 2", 20, 40);
-      SAGE_PrintText("      TAB   FOR SOUND 3", 20, 60);
-      SAGE_PrintText("      MOUSE FOR EXIT", 20, 80);
+      SAGE_PrintText("      MOUSE FOR EXIT", 20, 60);
       SAGE_RefreshScreen();
       while (!finish) {
         while ((event = SAGE_GetEvent()) != NULL) {
@@ -70,10 +67,6 @@ void main(void)
                 printf("Sound play error !\n");
               }
             } else if (event->code == SKEY_FR_ENTER) {
-              if (!SAGE_PlaySound(SOUND_SHOOT, 1)) {
-                printf("Sound play error !\n");
-              }
-            } else if (event->code == SKEY_FR_TAB) {
               if (!SAGE_PlaySound(SOUND_RAGE, 2)) {
                 printf("Sound play error !\n");
               }

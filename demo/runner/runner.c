@@ -5,8 +5,10 @@
  * Demo of an out run clone
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 February 2021
+ * @version 1.5 October 2021
  */
+
+// Sound effect https://www.sfxbuzz.com/summary/20-cars-trucks/294-race-car-idle-and-rev-away-sound-effects
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,10 +21,10 @@
 #define SCREEN_HEIGHT         480L
 #define SCREEN_DEPTH          16L
 
-#define ROAD_SIZE             4000L
+#define ROAD_SIZE             4600L
 #define IAMPI                 3.141592
 
-#define VMAX                  320
+#define VMAX                  300
 
 // Backgrounds
 #define BG_SKY_LEFT           0L
@@ -46,11 +48,20 @@
 #define BG_TREE_LAYER         3
 #define BG_TREE_POSY          80
 
+// Road types
+#define ROAD_TYPE0            0       // Red/white rumble start line
+#define ROAD_TYPE1            1       // Red/white rumble no line
+#define ROAD_TYPE2            2       // Red/white rumble one line
+#define ROAD_TYPE3            3       // Red/white rumble two lines
+#define ROAD_TYPE4            4       // Yellow rumble no line
+#define ROAD_TYPE5            5       // Yellow rumble one line
+
 // Sprites
 #define SPR_BANK              0
-#define NB_SPRITES            16
+#define NB_SPRITES            22
 #define TRANSP_COLOR          0xF81F
 
+#define SPR_CARWIDTH          160
 #define SPR_CARPOSX           SCREEN_WIDTH/2
 #define SPR_CARPOSY           SCREEN_HEIGHT-8
 
@@ -60,21 +71,27 @@
 #define SPR_CARBLUE           3
 #define SPR_CARPINK           4
 #define SPR_CARBROWN          5
-#define SPR_SIGNM             6
-#define SPR_BUSH              7
-#define SPR_CACTUS            8
-#define SPR_TREE              9
-#define SPR_SIGNC             10
-#define SPR_ROCK              11
-#define SPR_SEGA              12
-#define SPR_TOWER             13
-#define SPR_BUISSON           14
-#define SPR_COCONUT           15
+#define SPR_CARTRUCK          6
+#define SPR_CARSPORT          7
+#define SPR_SIGNM             8
+#define SPR_BUSH              9
+#define SPR_CACTUS            10
+#define SPR_TREE              11
+#define SPR_SIGNC             12
+#define SPR_ROCK              13
+#define SPR_SEGA              14
+#define SPR_TOWER             15
+#define SPR_BUISSON           16
+#define SPR_COCONUT           17
+#define SPR_START             18
+#define SPR_LSTART            19
+#define SPR_RSTART            20
+#define SPR_ARCHE             21
 
 #define MAIN_MUSIC            0
 
 // Engine constant params
-LONG road_width = 800;        // Width of the road
+LONG road_width = 1000;       // Width of the road
 LONG segment_len = 200;       // Road segment length
 LONG deep_view = 100;         // Deep of player view (how many segment are displayed)
 FLOAT camera_depth = 0.84;    // Camera depth (distance between projection plane and user eye)
@@ -83,6 +100,11 @@ LONG playerAccel = 2;         // Player acceleration value (in reality it's not 
 LONG playerDecel = 1;         // Player deceleration value (no brakes, no accel)
 LONG playerBrake = 4;         // Player brake value (the car brakes more than it accelerate)
 LONG playerSlow = 3;          // Player slow value (when car is out of road)
+LONG playerSprite = SPR_CARM; // Player car sprite
+FLOAT centrifugal = 0.0001;   // Centrifugal force ratio
+
+// Engine data
+LONG startPos = 0;
 
 // Player data
 FLOAT playerX = 0.0;
@@ -99,6 +121,8 @@ ULONG spr_data[NB_SPRITES*4] = {
   0, 246, 160, 118,
   0, 364, 176, 110,
   0, 474, 160, 114,
+  1080, 576, 200, 156,
+  1080, 740, 160, 112,
   180, 0, 232, 220,
   180, 220, 240, 156,
   180, 376, 236, 118,
@@ -108,44 +132,59 @@ ULONG spr_data[NB_SPRITES*4] = {
   440, 476, 268, 170,
   680, 0, 204, 314,
   680, 316, 232, 152,
-  920, 0, 216, 540
+  1064, 0, 216, 540,
+  0, 660, 640, 92,
+  740, 472, 132, 288,
+  890, 472, 132, 288,
+  0, 770, 784, 92
 };
 
 // Cars data
-#define NB_CARS               25
+#define NB_CARS               40
 #define NO_CAR                -1
 
 // Road data
 #define ROAD_GRASS1           0x00CC00
-#define ROAD_GRASS2           0x008800
+#define ROAD_GRASS2           0x00AA00
 #define ROAD_RUMBLE1          0xEE0000
-#define ROAD_RUMBLE2          0xFFFFFF
+#define ROAD_RUMBLE2          0xEEEEEE
+#define ROAD_RUMBLE3          0xEEEE00
 #define ROAD_RUBBER1          0xCCCCCC
-#define ROAD_RUBBER2          0x888888
+#define ROAD_RUBBER2          0xAAAAAA
+#define ROAD_RUBBER3          0x888888
 #define ROAD_LINE1            0xFFFFFF
 #define ROAD_LINE2            0xFFFF00
+#define ROAD_MUD1             0xFF8800
+#define ROAD_MUD2             0xFF6600
 
-LONG segment_color[8];
+LONG segment_color[12];
+
+struct Element
+{
+  UWORD sprite;             // Element sprite
+  FLOAT offset, height;     // Offset from center of road, height from ground
+  LONG x, width;            // X/Y pos and offset of element, used for collision test
+};
+
+struct Car
+{
+  UWORD sprite;             // Car sprite
+  LONG speed, pos;          // Car speed and position
+  FLOAT offset;             // Offset for center of road
+  LONG x, width;            // X pos and offset of car, used for collision test
+};
+struct Car cars[NB_CARS];
 
 struct RoadLine
 {
   FLOAT x,y,z;      // 3D center of line
   FLOAT X,Y,W;      // Screen coord
   FLOAT curve, scale, zoom, clip;
-  UWORD sprLeft, sprRight;      // Sprites elements (tree, rock, sign, etc...)
-  FLOAT sprLPos, sprRPos;       // Distance from center (-3.0 => 3.0, -1.2 => 1.2 is on the road)
-  WORD cars[NB_CARS+1];
+  struct Element sprLeft, sprRight, sprMid;
+  WORD cars[NB_CARS+1], type;
   BOOL hasCar;
 };
 struct RoadLine road[ROAD_SIZE];
-
-struct Car
-{
-  UWORD sprite;
-  LONG speed, pos;
-  FLOAT offset;
-};
-struct Car cars[NB_CARS];
 
 // Controls
 #define KEY_NBR               8
@@ -154,8 +193,8 @@ struct Car cars[NB_CARS];
 #define KEY_LEFT              2
 #define KEY_RIGHT             3
 #define KEY_SPACE             4
-#define KEY_Q                 5
-#define KEY_W                 6
+#define KEY_D                 5
+#define KEY_P                 6
 #define KEY_QUIT              7
 
 UBYTE keyboard_state[KEY_NBR];
@@ -166,8 +205,8 @@ SAGE_KeyScan keys[KEY_NBR] = {
   { SKEY_FR_LEFT, FALSE },
   { SKEY_FR_RIGHT, FALSE },
   { SKEY_FR_SPACE, FALSE },
-  { SKEY_FR_Q, FALSE },
-  { SKEY_FR_W, FALSE },
+  { SKEY_FR_D, FALSE },
+  { SKEY_FR_P, FALSE },
   { SKEY_FR_ESC, FALSE }
 };
 
@@ -178,13 +217,86 @@ UWORD * screen_buffer;
 LONG left_grass_crd[SCREEN_HEIGHT];
 LONG left_rumble_crd[SCREEN_HEIGHT];
 LONG left_road_crd[SCREEN_HEIGHT];
+LONG left_line_crd[SCREEN_HEIGHT];
 LONG right_grass_crd[SCREEN_HEIGHT];
 LONG right_rumble_crd[SCREEN_HEIGHT];
 LONG right_road_crd[SCREEN_HEIGHT];
+LONG right_line_crd[SCREEN_HEIGHT];
 
 // Game data
 BOOL finish = FALSE;
 UBYTE string_buffer[256];
+
+// Big debug function
+LONG rendered_segment;
+VOID DumpDebugInfos(VOID)
+{
+  struct RoadLine * l, * p;
+  SAGE_Sprite * spr;
+  WORD * segCars, carIdx;
+  FLOAT ratio;
+  LONG n, c, y;
+
+  printf("********** DEBUG DUMP **********\n");
+  printf("Player pos=%d, speed=%d, x=%f\n", playerPos, playerSpeed, playerX);
+  printf("Background x=%f\n", backX);
+  printf("Start position=%d, deep=%d\n", startPos, deep_view);
+  printf("** Segments :\n");
+  for (n = startPos+1;n <= (startPos + deep_view);n++) {
+    l = &(road[n%ROAD_SIZE]);
+    printf(" - %d world x/y/z %f/%f/%f , screen X/Y/W %f/%f/%f , curve %f, scale %f, zoom %f, clip %f\n",
+      n, l->x, l->y, l->z, l->X, l->Y, l->W, l->curve, l->scale, l->zoom, l->clip);
+  }
+  printf("Rendered %d\n", rendered_segment);
+  printf("** Sprites :\n");
+  for (n = (startPos + (deep_view-1));n > startPos;n--) {
+    l = &(road[n%ROAD_SIZE]);
+    if (l->sprLeft.sprite != 0 || l->sprRight.sprite != 0 || l->sprMid.sprite != 0) {
+      printf(" - %d Left sprite %d, offset %f, x %d, y %d, width %d | Right sprite %d, offset %f, x %d, y %d, width %d | Mid sprite %d, offset %f, x %d, y %d, width %d\n",
+        n, l->sprLeft.sprite, l->sprLeft.offset, l->sprLeft.x, (LONG)l->Y, l->sprLeft.width,
+        l->sprRight.sprite, l->sprRight.offset, l->sprRight.x, (LONG)l->Y, l->sprRight.width,
+        l->sprMid.sprite, l->sprMid.offset, l->sprMid.x, (LONG)l->Y, l->sprMid.width);
+    }
+    if (l->hasCar) {
+      p = &(road[(n+1)%ROAD_SIZE]);
+      ratio = (l->Y - p->Y) / segment_len;
+      c = 0;
+      segCars = l->cars;
+      while ((carIdx = segCars[c++]) != NO_CAR) {
+        if (n != startPos || cars[carIdx].pos >= playerPos) {
+          spr = SAGE_GetSprite(SPR_BANK, cars[carIdx].sprite);
+          y = (LONG)(l->Y - ((cars[carIdx].pos - l->z) * ratio));
+          printf(" - %d Car %d sprite %d, speed %d, pos %d, offset %f, x %d, width %d, zoom %f, Y %d, z %d, nY %d, ratio %f, real y %d\n",
+            n, carIdx, cars[carIdx].sprite, cars[carIdx].speed, cars[carIdx].pos, cars[carIdx].offset, cars[carIdx].x, cars[carIdx].width,
+            spr->horizontal_zoom, (LONG)l->Y, (LONG)l->z, (LONG)p->Y, ratio, y);
+        }
+      }
+    }
+  }
+  printf("** Collisions :\n");
+  l = &(road[startPos%ROAD_SIZE]);
+  if (l->sprLeft.sprite != 0) {
+    n = SPR_CARPOSX - l->sprLeft.x;
+    printf(" - Left n %d, x %d, width %d, car %d, diff %d\n", n, l->sprLeft.x, l->sprLeft.width, SPR_CARWIDTH, l->sprLeft.width + (SPR_CARWIDTH / 2));
+  } else {
+    printf(" - Left no sprite\n", n);
+  }
+  if (l->sprRight.sprite != 0) {
+    n = SPR_CARPOSX - l->sprRight.x;
+    printf(" - Right n %d, x %d, width %d, car %d, diff %d\n", n, l->sprRight.x, l->sprRight.width, SPR_CARWIDTH, l->sprRight.width + (SPR_CARWIDTH / 2));
+  } else {
+    printf(" - Right no sprite\n", n);
+  }
+  if (l->hasCar) {
+    c = 0;
+    segCars = l->cars;
+    while ((carIdx = segCars[c++]) != NO_CAR) {
+      n = SPR_CARPOSX - cars[carIdx].x;
+      printf(" - Car id %d, x %d, width %d, car %d, diff %d\n", carIdx, cars[carIdx].x, cars[carIdx].width, SPR_CARWIDTH, cars[carIdx].width + (SPR_CARWIDTH / 2));
+    }
+  }
+  printf("********************************\n");
+}
 
 // Demo starts here
 
@@ -199,6 +311,12 @@ BOOL OpenScreen(VOID)
     segment_color[3] = SAGE_RemapColor(ROAD_RUMBLE2);
     segment_color[4] = SAGE_RemapColor(ROAD_RUBBER1);
     segment_color[5] = SAGE_RemapColor(ROAD_RUBBER2);
+    segment_color[6] = SAGE_RemapColor(ROAD_LINE1);
+    segment_color[7] = SAGE_RemapColor(ROAD_LINE2);
+    segment_color[8] = SAGE_RemapColor(ROAD_RUMBLE3);
+    segment_color[9] = SAGE_RemapColor(ROAD_RUBBER3);
+    segment_color[10] = SAGE_RemapColor(ROAD_MUD1);
+    segment_color[11] = SAGE_RemapColor(ROAD_MUD2);
     return TRUE;
   }
   SAGE_DisplayError();
@@ -232,14 +350,14 @@ BOOL InitBackgroundLayer(VOID)
   return FALSE;
 }
 
-ULONG Rand(ULONG max)
-{
-  return (rand()%max);
-}
-
 FLOAT Random(VOID)
 {
   return (FLOAT)(rand()/(RAND_MAX+1.0));
+}
+
+ULONG Rand(ULONG max)
+{
+  return (ULONG)(Random() * max);
 }
 
 BOOL InitSprites(VOID)
@@ -276,73 +394,102 @@ VOID InitRoad(VOID)
 {
   LONG i;
 
-  srand(time(NULL));
   for (i = 0; i < ROAD_SIZE;i++) {
     // Default segment
     road[i].x = 0;
     road[i].y = 0;
     road[i].z = i * segment_len;
     road[i].curve = 0;
-    road[i].sprLeft = road[i].sprRight = 0;
-    road[i].sprLPos = -2.2;
-    road[i].sprRPos = 2.2;
+    road[i].sprLeft.sprite = road[i].sprRight.sprite = road[i].sprMid.sprite = 0;
+    road[i].sprLeft.offset = -2.0;
+    road[i].sprRight.offset = 2.0;
+    road[i].sprMid.offset = 0.0;
     road[i].cars[0] = NO_CAR;
     road[i].hasCar = FALSE;
-    // Add some sprites
-    if (i>10 && i<=1000) {
+    road[i].type = ROAD_TYPE1;
+    // Add some sprites (coconut by default)
+    if (i%20==0) {
+      road[i].sprLeft.sprite = SPR_COCONUT;
+      road[i].sprRight.sprite = SPR_COCONUT;
+    }
+    if (i==10) {
+      road[i].type = ROAD_TYPE0;
+      road[i].sprLeft.sprite = SPR_LSTART;
+      road[i].sprLeft.offset = -1.0;
+      road[i].sprRight.sprite = SPR_RSTART;
+      road[i].sprRight.offset = 1.0;
+      road[i].sprMid.sprite = SPR_START;
+      road[i].sprMid.height = 1000.0;
+    }
+    if (i>100 && i<=1000) {
+      road[i].type = ROAD_TYPE3;
       if (i%20==0) {
-        road[i].sprLeft = SPR_BUSH;
+        road[i].sprLeft.sprite = SPR_BUSH;
         if (i<800) {
-          road[i].sprRight = SPR_BUSH;
+          road[i].sprRight.sprite = SPR_BUSH;
         } else {
-          road[i].sprRight = SPR_COCONUT;
+          road[i].sprRight.sprite = SPR_COCONUT;
         }
       }
     }
     if (i>1000 && i<=2000) {
+      road[i].type = ROAD_TYPE2;
       if (i%20==0) {
-        road[i].sprLeft = SPR_COCONUT;
+        road[i].sprLeft.sprite = SPR_COCONUT;
         if (i<1900) {
-          road[i].sprRight = SPR_COCONUT;
+          road[i].sprRight.sprite = SPR_COCONUT;
         } else {
-          road[i].sprRight = SPR_TOWER;
+          road[i].sprRight.sprite = SPR_ROCK;
         }
       }
     }
     if (i>2000 && i<=3000) {
+      road[i].type = ROAD_TYPE4;
       if (i%20==0) {
-        road[i].sprLeft = SPR_CACTUS;
-        road[i].sprRight = SPR_BUSH;
+        road[i].sprLeft.sprite = SPR_CACTUS;
+        road[i].sprRight.sprite = SPR_BUSH;
       }
     }
     if (i>3000 && i<=4000) {
+      road[i].type = ROAD_TYPE5;
       if (i%20==0) {
         if (i<3200) {
-          road[i].sprLeft = SPR_ROCK;
+          road[i].sprLeft.sprite = SPR_ROCK;
         } else {
-          road[i].sprLeft = SPR_TREE;
+          road[i].sprLeft.sprite = SPR_TREE;
         }
-        road[i].sprRight = SPR_BUISSON;
+        road[i].sprRight.sprite = SPR_BUISSON;
       }
     }
-    if (i==1000) road[i].sprLeft = SPR_SIGNM;
-    if (i==1300) road[i].sprRight = SPR_SIGNM;
-    if (i==1400) road[i].sprRight = SPR_SEGA;
-    if (i==2500) road[i].sprRight = SPR_SIGNC;
-    if (i==3000) road[i].sprLeft = SPR_SIGNM;
-    if (i==3040) road[i].sprLeft = SPR_SEGA;
-    if (i==3300) road[i].sprLeft = SPR_SIGNM;
-    if (i==3500) road[i].sprRight = SPR_SIGNC;
+    if (i>4200 && i<4500) {
+      if (i%10==0) {
+        road[i].sprLeft.sprite = SPR_TOWER;
+        road[i].sprLeft.offset = -1.3;
+        road[i].sprRight.sprite = SPR_TOWER;
+        road[i].sprRight.offset = 1.3;
+        road[i].sprMid.sprite = SPR_ARCHE;
+        road[i].sprMid.height = 1000.0;
+      }
+    }
+    if (i==1000) road[i].sprLeft.sprite = SPR_SIGNM;
+    if (i==1300) road[i].sprRight.sprite = SPR_SIGNM;
+    if (i==1400) road[i].sprRight.sprite = SPR_SEGA;
+    if (i==2500) road[i].sprRight.sprite = SPR_SIGNC;
+    if (i==3000) road[i].sprLeft.sprite = SPR_SIGNM;
+    if (i==3040) road[i].sprLeft.sprite = SPR_SEGA;
+    if (i==3300) road[i].sprLeft.sprite = SPR_SIGNM;
+    if (i==3500) road[i].sprRight.sprite = SPR_SIGNC;
     // Add curves
     if (i>300 && i<700) road[i].curve = 0.5;
     if (i>1100 && i<2000) road[i].curve = -0.7;
     if (i>2500 && i<2800) road[i].curve = 0.9;
     if (i>2800 && i<3200) road[i].curve -= 0.9;
     if (i>3200 && i<3400) road[i].curve = 1.5;
-    if (i>3150) road[i].y = sin((i-3150)/30.0)*3000;
+    if (i>3600 && i<3800) road[i].curve = -1.9;
+    if (i>4100 && i<4600) road[i].curve = 0.4;
     // Add hills
     if (i>750 && i<1600) road[i].y = sin((i-750)/30.0)*1500;
-    if (i>3600 && i<3800) road[i].curve = -1.9;
+    if (i>3150 && i<4000) road[i].y = sin((i-3150)/30.0)*3000;
   }
 }
 
@@ -350,8 +497,9 @@ VOID InitCars(VOID)
 {
   LONG i;
   
+  srand(time(NULL));
   for (i = 0;i < NB_CARS;i++) {
-    cars[i].sprite = SPR_CARBLUE + Rand(3);
+    cars[i].sprite = SPR_CARBLUE + Rand(5);
     cars[i].speed = (VMAX / 4) + Rand(VMAX / 2);
     cars[i].pos = Rand(ROAD_SIZE * segment_len);
     cars[i].offset = -0.8 + (Random() * 1.6);
@@ -415,14 +563,14 @@ VOID _Restore(VOID)
 VOID ScanKeyboard(VOID)
 {
   if (SAGE_ScanKeyboard(keys, KEY_NBR)) {
-    keyboard_state[KEY_UP] = keys[0].key_pressed;
-    keyboard_state[KEY_DOWN] = keys[1].key_pressed;
-    keyboard_state[KEY_LEFT] = keys[2].key_pressed;
-    keyboard_state[KEY_RIGHT] = keys[3].key_pressed;
-    keyboard_state[KEY_SPACE] = keys[4].key_pressed;
-    keyboard_state[KEY_Q] = keys[5].key_pressed;
-    keyboard_state[KEY_W] = keys[6].key_pressed;
-    keyboard_state[KEY_QUIT] = keys[7].key_pressed;
+    keyboard_state[KEY_UP] = keys[KEY_UP].key_pressed;
+    keyboard_state[KEY_DOWN] = keys[KEY_DOWN].key_pressed;
+    keyboard_state[KEY_LEFT] = keys[KEY_LEFT].key_pressed;
+    keyboard_state[KEY_RIGHT] = keys[KEY_RIGHT].key_pressed;
+    keyboard_state[KEY_SPACE] = keys[KEY_SPACE].key_pressed;
+    keyboard_state[KEY_D] = keys[KEY_D].key_pressed;
+    keyboard_state[KEY_P] = keys[KEY_P].key_pressed;
+    keyboard_state[KEY_QUIT] = keys[KEY_QUIT].key_pressed;
   }
 }
 
@@ -440,9 +588,7 @@ VOID UpdateCars(VOID)
     s = cars[i].pos / segment_len;
     road[s].hasCar = TRUE;
     c = 0;
-    while (road[s].cars[c] != NO_CAR) {
-      c++;
-    }
+    while (road[s].cars[c] != NO_CAR) { c++; }
     road[s].cars[c] = i;
     road[s].cars[c+1] = NO_CAR;
   }
@@ -454,12 +600,16 @@ VOID _Update(VOID)
   if (keyboard_state[KEY_QUIT]) finish = TRUE;
   // Update player car
   if (keyboard_state[KEY_LEFT]) {
-    playerX -= 0.02;
+    playerX -= 0.03;
+    playerSprite = SPR_CARL;
   } else if (keyboard_state[KEY_RIGHT]) {
-    playerX += 0.02;
+    playerX += 0.03;
+    playerSprite = SPR_CARR;
+  } else {
+    playerSprite = SPR_CARM;
   }
-  if (playerX < -1.6) playerX = -1.6;
-  if (playerX > 1.6) playerX = 1.6;
+  if (playerX < -2.0) playerX = -2.0;
+  if (playerX > 2.0) playerX = 2.0;
   if (keyboard_state[KEY_UP]) {
     playerSpeed += playerAccel;
   } else if (keyboard_state[KEY_DOWN]) {
@@ -475,6 +625,9 @@ VOID _Update(VOID)
   }
   if (playerSpeed < 0) playerSpeed = 0;
   if (playerSpeed > VMAX) playerSpeed = VMAX;
+  playerPos += playerSpeed;
+  while (playerPos >= (ROAD_SIZE * segment_len)) playerPos -= (ROAD_SIZE * segment_len);
+  startPos = playerPos / segment_len;
   // Update other cars
   UpdateCars();
 }
@@ -489,10 +642,13 @@ VOID Project(struct RoadLine * line, LONG camX, LONG camY, LONG camZ)
   if (line->zoom >= 2.0) line->zoom = 2.0;
 }
 
-VOID DrawBackground(FLOAT curve)
+VOID DrawBackground(VOID)
 {
+  struct RoadLine * l;
+
+  l = &(road[startPos%ROAD_SIZE]);
   if (playerSpeed > 0) {
-    backX += (curve*(1.0+(playerSpeed/(VMAX/4))));
+    backX += (l->curve*(1.0+(playerSpeed/(VMAX/4))));
   }
   if (backX < 0.0) backX += SCREEN_WIDTH;
   if (backX >= SCREEN_WIDTH) backX -= SCREEN_WIDTH;
@@ -503,7 +659,7 @@ VOID DrawBackground(FLOAT curve)
   SAGE_BlitLayerToScreen(BG_TREE_LAYER, 0, BG_TREE_POSY);
 }
 
-VOID DrawSegment(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
+VOID DrawRoadType0(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
 {
   UWORD * buffer;
   LONG gcolor, bcolor, rcolor, start, end, row;
@@ -511,6 +667,34 @@ VOID DrawSegment(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2,
 
   start = (LONG) y1;
   if (start >= SCREEN_HEIGHT) return;
+  rendered_segment++;         // DEBUG !!!!
+  end = (LONG) y2;
+  row = SAGE_FastClippedLeftEdgeCalc(left_grass_crd, 0, start, 0, end, &clip);
+  SAGE_FastClippedLeftEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, &clip);
+  SAGE_FastClippedLeftEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, &clip);
+  gcolor = (segment>>2)%2 ? segment_color[0]:segment_color[1];
+  bcolor = (segment>>3)%2 ? segment_color[2]:segment_color[3];
+  rcolor = segment_color[6];
+  buffer = screen_buffer + (start*SCREEN_WIDTH);
+  SAGE_DrawFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor);
+}
+
+VOID DrawRoadType1(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
+{
+  UWORD * buffer;
+  LONG gcolor, bcolor, rcolor, start, end, row;
+  SAGE_Clipping clip = { 0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1};
+
+  start = (LONG) y1;
+  if (start >= SCREEN_HEIGHT) return;
+  rendered_segment++;         // DEBUG !!!!
   end = (LONG) y2;
   row = SAGE_FastClippedLeftEdgeCalc(left_grass_crd, 0, start, 0, end, &clip);
   SAGE_FastClippedLeftEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, &clip);
@@ -529,7 +713,139 @@ VOID DrawSegment(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2,
   SAGE_DrawFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor);
 }
 
-VOID DrawRoad(LONG startPos)
+VOID DrawRoadType2(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
+{
+  UWORD * buffer;
+  LONG gcolor, bcolor, rcolor, lcolor, start, end, row;
+  SAGE_Clipping clip = { 0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1};
+
+  start = (LONG) y1;
+  if (start >= SCREEN_HEIGHT) return;
+  rendered_segment++;         // DEBUG !!!!
+  end = (LONG) y2;
+  row = SAGE_FastClippedLeftEdgeCalc(left_grass_crd, 0, start, 0, end, &clip);
+  SAGE_FastClippedLeftEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, &clip);
+  SAGE_FastClippedLeftEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, &clip);
+  gcolor = (segment>>2)%2 ? segment_color[0]:segment_color[1];
+  bcolor = (segment>>3)%2 ? segment_color[2]:segment_color[3];
+  rcolor = (segment>>2)%2 ? segment_color[4]:segment_color[5];
+  buffer = screen_buffer + (start*SCREEN_WIDTH);
+  SAGE_DrawFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor);
+  // Add middle line
+  if ((segment>>3)%2 == 0) {
+    lcolor = segment_color[6];
+    SAGE_FastClippedLeftEdgeCalc(left_line_crd, (LONG)(x1 - (w1*0.05)), start, (LONG)(x2 - (w2*0.05)), end, &clip);
+    SAGE_FastClippedRightEdgeCalc(right_line_crd, (LONG)(x1 + (w1*0.05)), start, (LONG)(x2 + (w2*0.05)), end, &clip);
+    SAGE_DrawFlatQuad16Bits(buffer, left_line_crd, right_line_crd, row, screen_bpr, lcolor);
+  }
+}
+
+VOID DrawRoadType3(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
+{
+  UWORD * buffer;
+  LONG gcolor, bcolor, rcolor, lcolor, start, end, row;
+  SAGE_Clipping clip = { 0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1};
+
+  start = (LONG) y1;
+  if (start >= SCREEN_HEIGHT) return;
+  rendered_segment++;         // DEBUG !!!!
+  end = (LONG) y2;
+  row = SAGE_FastClippedLeftEdgeCalc(left_grass_crd, 0, start, 0, end, &clip);
+  SAGE_FastClippedLeftEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, &clip);
+  SAGE_FastClippedLeftEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, &clip);
+  gcolor = (segment>>2)%2 ? segment_color[0]:segment_color[1];
+  bcolor = (segment>>3)%2 ? segment_color[2]:segment_color[3];
+  rcolor = (segment>>2)%2 ? segment_color[4]:segment_color[5];
+  buffer = screen_buffer + (start*SCREEN_WIDTH);
+  SAGE_DrawFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor);
+  // Add two lines
+  if ((segment>>3)%2 == 0) {
+    lcolor = segment_color[6];
+    SAGE_FastClippedLeftEdgeCalc(left_line_crd, (LONG)(x1 - (w1*0.4)), start, (LONG)(x2 - (w2*0.4)), end, &clip);
+    SAGE_FastClippedRightEdgeCalc(right_line_crd, (LONG)(x1 - (w1*0.35)), start, (LONG)(x2 - (w2*0.35)), end, &clip);
+    SAGE_DrawFlatQuad16Bits(buffer, left_line_crd, right_line_crd, row, screen_bpr, lcolor);
+    SAGE_FastClippedLeftEdgeCalc(left_line_crd, (LONG)(x1 + (w1*0.35)), start, (LONG)(x2 + (w2*0.35)), end, &clip);
+    SAGE_FastClippedRightEdgeCalc(right_line_crd, (LONG)(x1 + (w1*0.4)), start, (LONG)(x2 + (w2*0.4)), end, &clip);
+    SAGE_DrawFlatQuad16Bits(buffer, left_line_crd, right_line_crd, row, screen_bpr, lcolor);
+  }
+}
+
+VOID DrawRoadType4(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
+{
+  UWORD * buffer;
+  LONG gcolor, bcolor, rcolor, start, end, row;
+  SAGE_Clipping clip = { 0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1};
+
+  start = (LONG) y1;
+  if (start >= SCREEN_HEIGHT) return;
+  rendered_segment++;         // DEBUG !!!!
+  end = (LONG) y2;
+  row = SAGE_FastClippedLeftEdgeCalc(left_grass_crd, 0, start, 0, end, &clip);
+  SAGE_FastClippedLeftEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, &clip);
+  SAGE_FastClippedLeftEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, &clip);
+  gcolor = (segment>>2)%2 ? segment_color[0]:segment_color[1];
+  rcolor = (segment>>2)%2 ? segment_color[4]:segment_color[5];
+  bcolor = (segment>>3)%2 ? segment_color[8]:rcolor;
+  buffer = screen_buffer + (start*SCREEN_WIDTH);
+  SAGE_DrawFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor);
+}
+
+VOID DrawRoadType5(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
+{
+  UWORD * buffer;
+  LONG gcolor, bcolor, rcolor, lcolor, start, end, row;
+  SAGE_Clipping clip = { 0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1};
+
+  start = (LONG) y1;
+  if (start >= SCREEN_HEIGHT) return;
+  rendered_segment++;         // DEBUG !!!!
+  end = (LONG) y2;
+  row = SAGE_FastClippedLeftEdgeCalc(left_grass_crd, 0, start, 0, end, &clip);
+  SAGE_FastClippedLeftEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, &clip);
+  SAGE_FastClippedLeftEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, &clip);
+  SAGE_FastClippedRightEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, &clip);
+  gcolor = (segment>>2)%2 ? segment_color[10]:segment_color[11];
+  rcolor = segment_color[9];
+  bcolor = (segment>>3)%2 ? segment_color[8]:rcolor;
+  buffer = screen_buffer + (start*SCREEN_WIDTH);
+  SAGE_DrawFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor);
+  SAGE_DrawFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor);
+  // Add middle line
+  if ((segment>>3)%2 == 0) {
+    lcolor = segment_color[7];
+    SAGE_FastClippedLeftEdgeCalc(left_line_crd, (LONG)(x1 - (w1*0.05)), start, (LONG)(x2 - (w2*0.05)), end, &clip);
+    SAGE_FastClippedRightEdgeCalc(right_line_crd, (LONG)(x1 + (w1*0.05)), start, (LONG)(x2 + (w2*0.05)), end, &clip);
+    SAGE_DrawFlatQuad16Bits(buffer, left_line_crd, right_line_crd, row, screen_bpr, lcolor);
+  }
+}
+
+VOID DrawRoad(VOID)
 {
   SAGE_Bitmap * bitmap;
   LONG roadW, camH, maxy, n;
@@ -543,7 +859,8 @@ VOID DrawRoad(LONG startPos)
   bitmap = SAGE_GetBackBitmap();
   screen_buffer = (UWORD *)SAGE_GetBitmapBuffer(bitmap);
   screen_bpr = bitmap->bpr;
-  for (n = startPos;n < (startPos + deep_view);n++) {
+  rendered_segment = 0;         // DEBUG !!!!
+  for (n = startPos+1;n <= (startPos + deep_view);n++) {
     l = &(road[n%ROAD_SIZE]);
     roadW = (LONG) (playerX * road_width - x);
     Project(l, roadW, camH, startPos * segment_len - ( n>=ROAD_SIZE ? ROAD_SIZE*segment_len:0));
@@ -553,84 +870,143 @@ VOID DrawRoad(LONG startPos)
     if (l->Y >= maxy) continue;
     maxy = l->Y;
     p = &(road[(n-1)%ROAD_SIZE]);     // Previous line
-    DrawSegment(n, l->X, l->Y, l->W, p->X, p->Y, p->W);
+    switch (l->type) {
+      case ROAD_TYPE1:
+        DrawRoadType1(n, l->X, l->Y, l->W, p->X, p->Y, p->W);
+        break;
+      case ROAD_TYPE2:
+        DrawRoadType2(n, l->X, l->Y, l->W, p->X, p->Y, p->W);
+        break;
+      case ROAD_TYPE3:
+        DrawRoadType3(n, l->X, l->Y, l->W, p->X, p->Y, p->W);
+        break;
+      case ROAD_TYPE4:
+        DrawRoadType4(n, l->X, l->Y, l->W, p->X, p->Y, p->W);
+        break;
+      case ROAD_TYPE5:
+        DrawRoadType5(n, l->X, l->Y, l->W, p->X, p->Y, p->W);
+        break;
+      default:
+        DrawRoadType0(n, l->X, l->Y, l->W, p->X, p->Y, p->W);
+    }
   }
 }
 
-VOID DrawSprites(LONG startPos)
+VOID DrawSprites(VOID)
 {
-  struct RoadLine * l;
-  LONG n, c;
-  WORD * segCars;
+  struct RoadLine * l, * p;
+  LONG n, c, y;
+  WORD * segCars, carIdx;
+  FLOAT ratio;
+  SAGE_Sprite * spr;
 
-  for (n = (startPos + deep_view);n > startPos;n--) {
+  for (n = (startPos + (deep_view-1));n > startPos;n--) {
     l = &(road[n%ROAD_SIZE]);
     screen->clipping.bottom = (LONG)l->clip;
-    if (l->sprLeft != 0) {
-      SAGE_SetSpriteZoom(SPR_BANK, l->sprLeft, l->zoom, l->zoom);
-      SAGE_BlitSpriteToScreen(SPR_BANK, l->sprLeft, (LONG)(l->X + (l->W*l->sprLPos)), (LONG)l->Y);
+    if (l->sprLeft.sprite != 0) {
+      SAGE_SetSpriteZoom(SPR_BANK, l->sprLeft.sprite, l->zoom, l->zoom);
+      spr = SAGE_GetSprite(SPR_BANK, l->sprLeft.sprite);
+      l->sprLeft.x = (LONG)(l->X + (l->W*l->sprLeft.offset));
+      l->sprLeft.width = spr->width / 2;
+      SAGE_BlitSpriteToScreen(SPR_BANK, l->sprLeft.sprite, l->sprLeft.x, (LONG)l->Y);
     }
-    if (l->sprRight != 0) {
-      SAGE_SetSpriteZoom(SPR_BANK, l->sprRight, l->zoom, l->zoom);
-      SAGE_BlitSpriteToScreen(SPR_BANK, l->sprRight, (LONG)(l->X + (l->W*l->sprRPos)), (LONG)l->Y);
+    if (l->sprRight.sprite != 0) {
+      SAGE_SetSpriteZoom(SPR_BANK, l->sprRight.sprite, l->zoom, l->zoom);
+      spr = SAGE_GetSprite(SPR_BANK, l->sprRight.sprite);
+      l->sprRight.x = (LONG)(l->X + (l->W*l->sprRight.offset));
+      l->sprRight.width = spr->width / 2;
+      SAGE_BlitSpriteToScreen(SPR_BANK, l->sprRight.sprite, l->sprRight.x, (LONG)l->Y);
+    }
+    if (l->sprMid.sprite != 0) {
+      SAGE_SetSpriteZoom(SPR_BANK, l->sprMid.sprite, l->zoom, l->zoom);
+      l->sprMid.x = (LONG)(l->X + (l->W*l->sprMid.offset));
+      y = (LONG)((1 - l->scale * (l->sprMid.height - (road[startPos].y + playerH))) * (SCREEN_HEIGHT / 2));
+      SAGE_BlitSpriteToScreen(SPR_BANK, l->sprMid.sprite, l->sprMid.x, y);
     }
     if (l->hasCar) {
+      p = &(road[(n+1)%ROAD_SIZE]);
+      ratio = (l->Y - p->Y) / segment_len;
       c = 0;
       segCars = l->cars;
-      while (segCars[c] != NO_CAR) {
-        SAGE_SetSpriteZoom(SPR_BANK, cars[segCars[c]].sprite, l->zoom, l->zoom);
-        SAGE_BlitSpriteToScreen(SPR_BANK, cars[segCars[c]].sprite, (LONG)(l->X + (l->W*cars[segCars[c]].offset)), (LONG)l->Y);
-        c++;
+      while ((carIdx = segCars[c++]) != NO_CAR) {
+        if (n != startPos || cars[carIdx].pos >= playerPos) {
+          SAGE_SetSpriteZoom(SPR_BANK, cars[carIdx].sprite, l->zoom, l->zoom);
+          spr = SAGE_GetSprite(SPR_BANK, cars[carIdx].sprite);
+          cars[carIdx].x = (LONG)(l->X + (l->W*cars[carIdx].offset));
+          cars[carIdx].width = spr->width / 2;
+          y = (LONG)(l->Y - ((cars[carIdx].pos - l->z) * ratio));
+          SAGE_BlitSpriteToScreen(SPR_BANK, cars[carIdx].sprite, cars[carIdx].x, y);
+        }
       }
     }
   }
   screen->clipping.bottom = SCREEN_HEIGHT;
 }
 
+VOID DrawPlayer(VOID)
+{
+  struct RoadLine * l, * p;
+  LONG n, c;
+  WORD * segCars, carIdx;
+
+  // Get segment of car
+  l = &(road[startPos%ROAD_SIZE]);
+  // Move car on curve (centrifugal force)
+  playerX -= (l->curve * playerSpeed * centrifugal);
+  // Get segment in front of car
+  p = &(road[(startPos+4)%ROAD_SIZE]);
+  // Check player collision with elements
+  if (p->sprLeft.sprite != 0) {
+    n = SPR_CARPOSX - p->sprLeft.x;
+    if (n < (p->sprLeft.width + (SPR_CARWIDTH / 2)) && n > -(p->sprLeft.width + (SPR_CARWIDTH / 2))) {
+      playerSpeed = 0;
+    }
+  }
+  if (p->sprRight.sprite != 0) {
+    n = SPR_CARPOSX - p->sprRight.x;
+    if (n < (p->sprRight.width + (SPR_CARWIDTH / 2)) && n > -(p->sprRight.width + (SPR_CARWIDTH / 2))) {
+      playerSpeed = 0;
+    }
+  }
+  // Check player collision with car
+  if (l->hasCar) {
+    c = 0;
+    segCars = l->cars;
+    while ((carIdx = segCars[c++]) != NO_CAR) {
+      // Simple collision test
+      n = SPR_CARPOSX - cars[carIdx].x;
+      if (n < (cars[carIdx].width + (SPR_CARWIDTH / 2)) && n > -(cars[carIdx].width + (SPR_CARWIDTH / 2))) {
+        playerPos = cars[carIdx].pos;
+        playerSpeed = 0;
+      }
+    }
+  }
+  SAGE_BlitSpriteToScreen(SPR_BANK, playerSprite, SPR_CARPOSX, SPR_CARPOSY);
+}
+
 VOID _Render(VOID)
 {
-  struct RoadLine * l;
-  LONG startPos, sprCar;
-
-  // Calcul road param
-  playerPos += playerSpeed;
-  while (playerPos >= (ROAD_SIZE * segment_len)) playerPos -= (ROAD_SIZE * segment_len);
-  startPos = playerPos / segment_len;
-  // Get first segment
-  l = &(road[startPos%ROAD_SIZE]);
-  // Set the car sprite
-  if (l->curve > 0) {
-    sprCar = SPR_CARR;
-  } else if (l->curve < 0) {
-    sprCar = SPR_CARL;
-  } else {
-    sprCar = SPR_CARM;
-  }
-  // Move car on curve (force centrifuge)
-  playerX -= (l->curve*((playerSpeed/VMAX)/40.0));
   // Draw background
-  DrawBackground(l->curve);
+  DrawBackground();
   // Draw road
-  DrawRoad(startPos);
+  DrawRoad();
   // Draw sprites
-  DrawSprites(startPos);
+  DrawSprites();
   // Draw the car sprite
-  SAGE_BlitSpriteToScreen(SPR_BANK, sprCar, SPR_CARPOSX, SPR_CARPOSY);
+  DrawPlayer();
   // Draw the fps counter
   sprintf(string_buffer, "%d fps", SAGE_GetFps());
   SAGE_PrintText(string_buffer, 10, 10);
-  // Draw car position
-  sprintf(string_buffer, "Pos %d", playerPos);
-  SAGE_PrintText(string_buffer, 250, 10);  
   // Draw the car speed
   sprintf(string_buffer, "Speed %d", playerSpeed);
-  SAGE_PrintText(string_buffer, 500, 10);  
+  SAGE_PrintText(string_buffer, 500, 10);
+  if (keyboard_state[KEY_D]) DumpDebugInfos();
 }
 
 void main(void)
 {
   SAGE_SetLogLevel(SLOG_WARNING);
-  SAGE_AppliLog("** SAGE library Runner demo V1.0 **");
+  SAGE_AppliLog("** SAGE library Runner demo V1.5 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_AUDIO|SMOD_INPUT|SMOD_INTERRUPTION)) {
     if (SAGE_ApolloPresence()) {

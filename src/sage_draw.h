@@ -13,6 +13,8 @@
 
 #include <exec/exec.h>
 
+#include "sage_screen.h"
+
 /** Pixel structure */
 typedef struct {
   LONG x, y, color;

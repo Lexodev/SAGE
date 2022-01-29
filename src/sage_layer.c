@@ -100,14 +100,14 @@ BOOL SAGE_CreateLayerFromPicture(UWORD index, SAGE_Picture * picture)
 SAGE_Layer * SAGE_GetLayer(UWORD index)
 {
   // Check for video device
-  if (SageContext.SageVideo == NULL) {
+  SAFE(if (SageContext.SageVideo == NULL) {
     SAGE_SetError(SERR_NO_VIDEODEVICE);
     return NULL;
-  }
-  if (index >= SLAY_MAX_LAYERS) {
+  })
+  SAFE(if (index >= SLAY_MAX_LAYERS) {
     SAGE_SetError(SERR_LAYER_INDEX);
     return NULL;
-  }
+  })
   return SageContext.SageVideo->layers[index];
 }
 
@@ -149,9 +149,9 @@ BOOL SAGE_SetLayerView(UWORD index, ULONG left, ULONG top, ULONG width, ULONG he
   SAGE_Layer * layer;
 
   layer = SAGE_GetLayer(index);
-  if (layer == NULL) {
+  SAFE(if (layer == NULL) {
     return FALSE;
-  }
+  })
   // Check for size constraint
   if (!SAGE_CheckSizeConstraint(width, layer->bitmap->depth)) {
     return FALSE;
@@ -268,15 +268,15 @@ BOOL SAGE_BlitPictureToLayer(SAGE_Picture * picture, ULONG left, ULONG top, ULON
 {
   SAGE_Layer * layer;
 
-  if (picture == NULL || picture->bitmap == NULL) {
+  SAFE(if (picture == NULL || picture->bitmap == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   layer = SAGE_GetLayer(index);
-  if (layer == NULL || layer->bitmap == NULL) {
+  SAFE(if (layer == NULL || layer->bitmap == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if ((left + width) <= picture->bitmap->width && (top + height) <= picture->bitmap->height) {
     if (layer->bitmap->width >= (width + x_pos) && layer->bitmap->height >= (height + y_pos)) {
       return SAGE_BlitBitmap(picture->bitmap, left, top, width, height, layer->bitmap, x_pos, y_pos);
@@ -301,15 +301,15 @@ BOOL SAGE_BlitLayerToScreen(UWORD index, ULONG x_pos, ULONG y_pos)
   SAGE_Layer * layer;
 
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   layer = SAGE_GetLayer(index);
-  if (layer == NULL) {
+  SAFE(if (layer == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   // Check if the layer fit in the screen
   if (screen->back_bitmap->width >= (layer->view[SLAY_OVERNONE].width + x_pos) && screen->back_bitmap->height >= (layer->view[SLAY_OVERNONE].height + y_pos)) {
     // Copy the main layer bitmap into screen bitmap

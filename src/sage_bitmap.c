@@ -315,25 +315,33 @@ ULONG SAGE_RemapTransparencyColor(ULONG color, ULONG pixformat)
  */
 BOOL SAGE_SetBitmapTransparency(SAGE_Bitmap * bitmap, ULONG color)
 {
-  if (bitmap == NULL) {
+  SAFE(if (bitmap == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   bitmap->properties |= SBMP_TRANSPARENT;
   bitmap->transparency = SAGE_RemapTransparencyColor(color, bitmap->pixformat);
+  if (bitmap->depth == SBMP_DEPTH8 && bitmap->transparency == 0x00) {
+    bitmap->properties |= SBMP_FASTCOPY;        // Activate fast 8bits cookie cut AMMX operation
+    SD(SAGE_DebugLog("Activate fast 8bits cookie cut AMMX operation"));
+  } else if (bitmap->depth == SBMP_DEPTH16 && bitmap->transparency == 0xF81FF81F) {
+    bitmap->properties |= SBMP_FASTCOPY;        // Activate fast 16bits cookie cut AMMX operation
+    SD(SAGE_DebugLog("Activate fast 16bits cookie cut AMMX operation"));
+  }
   return TRUE;
 }
 
 /**
- * Clear a part of a 8bits bitmap buffer
+ * Fill a part of a 8bits bitmap buffer with a color
  * 
  * @param bitmap SAGE bitmap pointer
  * @param left   Area left in pixel
  * @param top    Area top in pixel
  * @param width  Area width in pixel
  * @param height Area height in pixel
+ * @param color  Filling color
  */
-VOID SAGE_Clear8BitsBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG width, ULONG height)
+VOID SAGE_Fill8BitsBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG width, ULONG height, ULONG color)
 {
   UBYTE * buffer;
   ULONG offset;
@@ -341,24 +349,26 @@ VOID SAGE_Clear8BitsBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG wi
   buffer = (UBYTE *) bitmap->bitmap_buffer;
   buffer += (left + (bitmap->width * top));
   offset = bitmap->width - width;
-  SAGE_BlitClear8Bits(
+  SAGE_BlitFill8Bits(
     (ULONG)buffer,
     (UWORD)height,
     (UWORD)width,
-    (ULONG)offset
+    (ULONG)offset,
+    (ULONG)color
   );
 }
 
 /**
- * Clear a part of a 16bits bitmap buffer
+ * Fill a part of a 16bits bitmap buffer with a color
  * 
  * @param bitmap SAGE bitmap pointer
  * @param left   Area left in pixel
  * @param top    Area top in pixel
  * @param width  Area width in pixel
  * @param height Area height in pixel
+ * @param color  Filling color
  */
-VOID SAGE_Clear16BitsBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG width, ULONG height)
+VOID SAGE_Fill16BitsBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG width, ULONG height, ULONG color)
 {
   UWORD * buffer;
   ULONG offset;
@@ -366,59 +376,64 @@ VOID SAGE_Clear16BitsBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG w
   buffer = (UWORD *) bitmap->bitmap_buffer;
   buffer += (left + (bitmap->width * top));
   offset = (bitmap->width - width) * 2;
-  SAGE_BlitClear16Bits(
+  SAGE_BlitFill16Bits(
     (ULONG)buffer,
     (UWORD)height,
     (UWORD)width,
-    (ULONG)offset
+    (ULONG)offset,
+    (ULONG)color
   );
 }
 
 /**
- * Clear a part of a 24bits bitmap buffer
+ * Fill a part of a 24bits bitmap buffer with a color
  * 
  * @param bitmap SAGE bitmap pointer
  * @param left   Area left in pixel
  * @param top    Area top in pixel
  * @param width  Area width in pixel
  * @param height Area height in pixel
+ * @param color  Filling color
  */
-VOID SAGE_Clear24BitsBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG width, ULONG height)
+VOID SAGE_Fill24BitsBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG width, ULONG height, ULONG color)
 {
   UBYTE * buffer, offset;
 
   buffer = (UBYTE *) bitmap->bitmap_buffer;
   buffer += ((left * 3) + ((bitmap->width * 3) * top));
   offset = (bitmap->width - width) * 3;
-  SAGE_BlitClear24Bits(
+  SAGE_BlitFill24Bits(
     (ULONG)buffer,
     (UWORD)height,
     (UWORD)width,
-    (ULONG)offset
+    (ULONG)offset,
+    (ULONG)color
   );
 }
 
 /**
- * Clear a part of a 32bits bitmap buffer
+ * Fill a part of a 32bits bitmap buffer with a color
  * 
  * @param bitmap SAGE bitmap pointer
  * @param left   Area left in pixel
  * @param top    Area top in pixel
  * @param width  Area width in pixel
  * @param height Area height in pixel
+ * @param color  Filling color
  */
-VOID SAGE_Clear32BitsBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG width, ULONG height)
+VOID SAGE_Fill32BitsBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG width, ULONG height, ULONG color)
 {
   ULONG * buffer, offset;
 
   buffer = (ULONG *) bitmap->bitmap_buffer;
   buffer += (left + (bitmap->width * top));
   offset = bitmap->width - width;
-  SAGE_BlitClear32Bits(
+  SAGE_BlitFill32Bits(
     (ULONG)buffer,
     (UWORD)height,
     (UWORD)width,
-    (ULONG)offset
+    (ULONG)offset,
+    (ULONG)color
   );
 }
 
@@ -435,18 +450,51 @@ VOID SAGE_Clear32BitsBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG w
  */
 BOOL SAGE_ClearBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG width, ULONG height)
 {
-  if (bitmap == NULL) {
+  SAFE(if (bitmap == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if (bitmap->depth == SBMP_DEPTH8) {
-    SAGE_Clear8BitsBitmap(bitmap, left, top, width, height);
+    SAGE_Fill8BitsBitmap(bitmap, left, top, width, height, 0);
   } else if (bitmap->depth == SBMP_DEPTH16) {
-    SAGE_Clear16BitsBitmap(bitmap, left, top, width, height);
+    SAGE_Fill16BitsBitmap(bitmap, left, top, width, height, 0);
   } else if (bitmap->depth == SBMP_DEPTH24) {
-    SAGE_Clear24BitsBitmap(bitmap, left, top, width, height);
+    SAGE_Fill24BitsBitmap(bitmap, left, top, width, height, 0);
   } else if (bitmap->depth == SBMP_DEPTH32) {
-    SAGE_Clear32BitsBitmap(bitmap, left, top, width, height);
+    SAGE_Fill32BitsBitmap(bitmap, left, top, width, height, 0);
+  } else {
+    SAGE_SetError(SERR_UNKNOWN_DEPTH);
+    return FALSE;
+  }
+  return TRUE;
+}
+
+/**
+ * Fill a part of a bitmap with a color
+ * 
+ * @param bitmap SAGE bitmap pointer
+ * @param left   Area left in pixel
+ * @param top    Area top in pixel
+ * @param width  Area width in pixel
+ * @param height Area height in pixel
+ * @param color  Filling color
+ *
+ * @return Operation success
+ */
+BOOL SAGE_FillBitmap(SAGE_Bitmap * bitmap, ULONG left, ULONG top, ULONG width, ULONG height, ULONG color)
+{
+  SAFE(if (bitmap == NULL) {
+    SAGE_SetError(SERR_NULL_POINTER);
+    return FALSE;
+  })
+  if (bitmap->depth == SBMP_DEPTH8) {
+    SAGE_Fill8BitsBitmap(bitmap, left, top, width, height, color);
+  } else if (bitmap->depth == SBMP_DEPTH16) {
+    SAGE_Fill16BitsBitmap(bitmap, left, top, width, height, color);
+  } else if (bitmap->depth == SBMP_DEPTH24) {
+    SAGE_Fill24BitsBitmap(bitmap, left, top, width, height, color);
+  } else if (bitmap->depth == SBMP_DEPTH32) {
+    SAGE_Fill32BitsBitmap(bitmap, left, top, width, height, color);
   } else {
     SAGE_SetError(SERR_UNKNOWN_DEPTH);
     return FALSE;
@@ -479,15 +527,27 @@ VOID SAGE_Blit8BitsBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, ULONG wid
   dst_offset = destination->width - width;
   if (source->properties & SBMP_TRANSPARENT) {
     if (SageContext.AmmxReady) {
-      SAGE_AMMXBlitTranspCopy8Bits(
-        (ULONG)src_buffer,
-        (ULONG)dst_buffer,
-        (UWORD)height,
-        (UWORD)width,
-        (ULONG)src_offset,
-        (ULONG)dst_offset,
-        (ULONG)source->transparency
-      );
+      if (source->properties & SBMP_FASTCOPY) {
+        SAGE_AMMXBlitCookieCut8Bits(
+          (ULONG)src_buffer,
+          (ULONG)dst_buffer,
+          (UWORD)height,
+          (UWORD)width,
+          (ULONG)src_offset,
+          (ULONG)dst_offset,
+          (ULONG)source->transparency
+        );
+      } else {
+        SAGE_AMMXBlitTranspCopy8Bits(
+          (ULONG)src_buffer,
+          (ULONG)dst_buffer,
+          (UWORD)height,
+          (UWORD)width,
+          (ULONG)src_offset,
+          (ULONG)dst_offset,
+          (ULONG)source->transparency
+        );
+      }
     } else {
       SAGE_BlitTransparentCopy8Bits(
         (ULONG)src_buffer,
@@ -536,15 +596,27 @@ VOID SAGE_Blit16BitsBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, ULONG wi
   dst_offset = (destination->width - width) * 2;
   if (source->properties & SBMP_TRANSPARENT) {
     if (SageContext.AmmxReady) {
-      SAGE_AMMXBlitTranspCopy16Bits(
-        (ULONG)src_buffer,
-        (ULONG)dst_buffer,
-        (UWORD)height,
-        (UWORD)width,
-        (ULONG)src_offset,
-        (ULONG)dst_offset,
-        (ULONG)source->transparency
-      );
+      if (source->properties & SBMP_FASTCOPY) {
+        SAGE_AMMXBlitCookieCut16Bits(
+          (ULONG)src_buffer,
+          (ULONG)dst_buffer,
+          (UWORD)height,
+          (UWORD)width,
+          (ULONG)src_offset,
+          (ULONG)dst_offset,
+          (ULONG)source->transparency
+        );
+      } else {
+        SAGE_AMMXBlitTranspCopy16Bits(
+          (ULONG)src_buffer,
+          (ULONG)dst_buffer,
+          (UWORD)height,
+          (UWORD)width,
+          (ULONG)src_offset,
+          (ULONG)dst_offset,
+          (ULONG)source->transparency
+        );
+      }
     } else {
       SAGE_BlitTransparentCopy16Bits(
         (ULONG)src_buffer,
@@ -686,10 +758,10 @@ VOID SAGE_Blit32BitsBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, ULONG wi
  */
 BOOL SAGE_BlitBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, ULONG width, ULONG height, SAGE_Bitmap * destination, ULONG x_start, ULONG y_start)
 {
-  if (source == NULL || destination == NULL) {
+  SAFE(if (source == NULL || destination == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   // Blit only if we have the same depth
   if (source->depth == destination->depth) {
     if (source->depth == SBMP_DEPTH8) {
@@ -832,10 +904,10 @@ VOID SAGE_Blit16BitsZoomedBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, UL
  */
 BOOL SAGE_BlitZoomedBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, ULONG width, ULONG height, SAGE_Bitmap * destination, ULONG x_start, ULONG y_start, ULONG z_width, ULONG z_height)
 {
-  if (source == NULL || destination == NULL) {
+  SAFE(if (source == NULL || destination == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   // Blit only if we have the same depth
   if (source->depth == destination->depth) {
     if (source->depth == SBMP_DEPTH8) {

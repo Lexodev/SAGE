@@ -37,10 +37,10 @@ BOOL SAGE_CreateTileMap(UWORD index, UWORD cols, UWORD rows, UBYTE bpt)
 
   SD(SAGE_DebugLog("Create tilemap #%d %dx%d (%d)", index, cols, rows, bpt));
   // Check for video device
-  if (SageContext.SageVideo == NULL) {
+  SAFE(if (SageContext.SageVideo == NULL) {
     SAGE_SetError(SERR_NO_VIDEODEVICE);
     return FALSE;
-  }
+  })
   if (index >= STIL_MAX_TILEMAP) {
     SAGE_SetError(SERR_TILEMAP_INDEX);
     return FALSE;
@@ -75,10 +75,10 @@ BOOL SAGE_CreateTileMap(UWORD index, UWORD cols, UWORD rows, UBYTE bpt)
 SAGE_TileMap * SAGE_GetTileMap(UWORD index)
 {
   // Check for video device
-  if (SageContext.SageVideo == NULL) {
+  SAFE(if (SageContext.SageVideo == NULL) {
     SAGE_SetError(SERR_NO_VIDEODEVICE);
     return NULL;
-  }
+  })
   if (index >= STIL_MAX_TILEMAP) {
     SAGE_SetError(SERR_TILEMAP_INDEX);
     return NULL;
@@ -125,9 +125,10 @@ BOOL SAGE_LoadTileMap(UWORD index, STRPTR mapfile)
   LONG bytes_read, file_size, map_size;
 
   tilemap = SAGE_GetTileMap(index);
-  if (tilemap == NULL) {
+  SAFE(if (tilemap == NULL) {
+    SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   map_size = tilemap->cols * tilemap->rows * tilemap->bytespertile;
   file_handle = Open(mapfile, MODE_OLDFILE);
   if (file_handle != 0) {
@@ -160,9 +161,10 @@ UBYTE * SAGE_GetTileMapB(UWORD index)
   SAGE_TileMap * tilemap;
 
   tilemap = SAGE_GetTileMap(index);
-  if (tilemap == NULL) {
+  SAFE(if (tilemap == NULL) {
+    SAGE_SetError(SERR_NULL_POINTER);
     return NULL;
-  }
+  })
   return (UBYTE *)tilemap->map;
 }
 
@@ -178,9 +180,10 @@ UWORD * SAGE_GetTileMapW(UWORD index)
   SAGE_TileMap * tilemap;
 
   tilemap = SAGE_GetTileMap(index);
-  if (tilemap == NULL) {
+  SAFE(if (tilemap == NULL) {
+    SAGE_SetError(SERR_NULL_POINTER);
     return NULL;
-  }
+  })
   return (UWORD *)tilemap->map;
 }
 

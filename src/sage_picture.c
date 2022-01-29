@@ -30,8 +30,8 @@
 #define PDTA_DestMode   (DTA_Dummy + 251)
 
 /* Interface modes */
-#define PMODE_V42 (0)	/* Compatibility mode */
-#define PMODE_V43 (1)	/* Extended mode */
+#define PMODE_V42 (0)   /* Compatibility mode */
+#define PMODE_V43 (1)   /* Extended mode */
 
 /** SAGE context */
 extern SAGE_Context SageContext;
@@ -137,7 +137,7 @@ VOID SAGE_PlanarToChunky(struct BitMap * src_bitmap, SAGE_Bitmap * dest_bitmap)
 }
 
 /**
- * Load a picture using datatypes and remap it to the screen pixel format
+ * Load a picture using datatypes
  *
  * @param file_name Picture file name
  *
@@ -276,8 +276,9 @@ SAGE_Picture * SAGE_LoadPicture(STRPTR file_name)
         SAGE_PlanarToChunky(bitmap, picture->bitmap);
       }
       DisposeDTObject(object);
-      // Try to remap picture to screen format
-      SAGE_RemapPicture(picture);
+      if (SageContext.AutoRemap) {
+        SAGE_RemapPicture(picture);
+      }
       return picture;
     }
     SAGE_SetError(SERR_PICMAPPING);
@@ -286,6 +287,14 @@ SAGE_Picture * SAGE_LoadPicture(STRPTR file_name)
   }
   SAGE_SetError(SERR_OPENFILE);
   return NULL;
+}
+
+/**
+ * Set the picture auto remap feature
+ */
+VOID SAGE_AutoRemapPicture(BOOL flag)
+{
+  SageContext.AutoRemap = flag;
 }
 
 /**

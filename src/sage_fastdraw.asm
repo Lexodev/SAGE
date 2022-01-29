@@ -622,17 +622,17 @@ _SAGE_FastClippedLeftEdgeCalc:
   ble.s   .Calculate
 ; do the calculation of new x2' with y2'=BOTTOMCLIP
 ; x'2 = x2 + ((y2 - y2') * (x1 - x2)) / (y2 - y1)
-  move.l	d3,d5; y2
-  sub.l		SSCR_BOTTOMCLIP(a1),d5        ; y2 - y2'
-  move.l	d0,d4                         ; x1
-  sub.l		d2,d4                         ; x1 - x2
-  muls.w	d5,d4                         ; (y2 - y2()) * (x1 - x2)
-  move.l	d3,d5                         ; y2
-  sub.l		d1,d5                         ; y2 - y1
-  divs.w	d5,d4                         ; ((y2 - y2') * (x1 - x2)) / (y2 - y1)
+  move.l  d3,d5; y2
+  sub.l   SSCR_BOTTOMCLIP(a1),d5        ; y2 - y2'
+  move.l  d0,d4                         ; x1
+  sub.l   d2,d4                         ; x1 - x2
+  muls.w  d5,d4                         ; (y2 - y2()) * (x1 - x2)
+  move.l  d3,d5                         ; y2
+  sub.l   d1,d5                         ; y2 - y1
+  divs.w  d5,d4                         ; ((y2 - y2') * (x1 - x2)) / (y2 - y1)
   ext.l   d4
-  add.l		d4,d2                         ;	x2'
-  move.l	SSCR_BOTTOMCLIP(a1),d3        ;	y2'
+  add.l   d4,d2                         ; x2'
+  move.l  SSCR_BOTTOMCLIP(a1),d3        ; y2'
 
 .Calculate:
   move.l  #-1,d7                        ; Clipping indicator
@@ -887,17 +887,17 @@ _SAGE_FastClippedRightEdgeCalc:
   ble.s   .Calculate
 ; do the calculation of new x2' with y2'=BOTTOMCLIP
 ; x'2 = x2 + ((y2 - y2') * (x1 - x2)) / (y2 - y1)
-  move.l	d3,d5; y2
-  sub.l		SSCR_BOTTOMCLIP(a1),d5        ; y2 - y2'
-  move.l	d0,d4                         ; x1
-  sub.l		d2,d4                         ; x1 - x2
-  muls.w	d5,d4                         ; (y2 - y2()) * (x1 - x2)
-  move.l	d3,d5                         ; y2
-  sub.l		d1,d5                         ; y2 - y1
-  divs.w	d5,d4                         ; ((y2 - y2') * (x1 - x2)) / (y2 - y1)
+  move.l  d3,d5; y2
+  sub.l   SSCR_BOTTOMCLIP(a1),d5        ; y2 - y2'
+  move.l  d0,d4                         ; x1
+  sub.l   d2,d4                         ; x1 - x2
+  muls.w  d5,d4                         ; (y2 - y2()) * (x1 - x2)
+  move.l  d3,d5                         ; y2
+  sub.l   d1,d5                         ; y2 - y1
+  divs.w  d5,d4                         ; ((y2 - y2') * (x1 - x2)) / (y2 - y1)
   ext.l   d4
-  add.l		d4,d2                         ;	x2'
-  move.l	SSCR_BOTTOMCLIP(a1),d3        ;	y2'
+  add.l   d4,d2                         ; x2'
+  move.l  SSCR_BOTTOMCLIP(a1),d3        ; y2'
 
 .Calculate:
   move.l  #-1,d7                        ; Clipping indicator
@@ -1196,7 +1196,7 @@ _SAGE_DrawFlatQuad16Bits:
 .DrawFastLine:
   andi.l  #$fffffffc,d4                 ; clear low bits
   beq.s   .SkipRow                      ; nothing more to draw
-  lsr.l   #2,d4                         ; draw 8 pixels each time
+  lsr.l   #2,d4                         ; draw 4 pixels each time
   subq.l  #1,d4                         ; pixels to draw
 .DrawLine:
   move.l  d2,(a3)+
@@ -1246,7 +1246,7 @@ _SAGE_DrawFlatQuad32Bits:
 .DrawFastLine:
   andi.l  #$fffffffe,d4                 ; clear low bits
   beq.s   .SkipRow                      ; nothing more to draw
-  lsr.l   #1,d4                         ; draw 8 pixels each time
+  lsr.l   #1,d4                         ; draw 2 pixels each time
   subq.l  #1,d4                         ; pixels to draw
 .DrawLine:
   move.l  d2,(a3)+

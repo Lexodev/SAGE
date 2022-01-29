@@ -116,7 +116,7 @@ BOOL InitSkyLayer(VOID)
   SAGE_Picture * picture;
 
   SAGE_AppliLog("Load sky picture");
-  if ((picture = SAGE_LoadPicture("/data/troll_sky.gif")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/troll_sky.gif")) != NULL) {
     SAGE_AppliLog("Create sky layer");
     if (SAGE_CreateLayer(SKY_LAYER, (SKY_WIDTH+SCREEN_WIDTH), SKY_HEIGHT)) {
       SAGE_BlitPictureToLayer(picture, 0, 0, SKY_WIDTH, SKY_HEIGHT, SKY_LAYER, 0, 0);
@@ -138,7 +138,7 @@ BOOL InitCloudLayer(VOID)
   SAGE_Picture * picture;
 
   SAGE_AppliLog("Load cloud picture");
-  if ((picture = SAGE_LoadPicture("/data/troll_cloud.gif")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/troll_cloud.gif")) != NULL) {
     SAGE_AppliLog("Create cloud layer");
     if (SAGE_CreateLayer(CLOUD_LAYER, (CLOUD_WIDTH+SCREEN_WIDTH), CLOUD_HEIGHT)) {
       SAGE_BlitPictureToLayer(picture, 0, 0, CLOUD_WIDTH, CLOUD_HEIGHT, CLOUD_LAYER, 0, 0);
@@ -157,7 +157,7 @@ BOOL InitBackLayer(VOID)
   SAGE_Picture * picture;
 
   SAGE_AppliLog("Load background picture");
-  if ((picture = SAGE_LoadPicture("/data/troll_bg.gif")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/troll_bg.gif")) != NULL) {
     SAGE_AppliLog("Create background layer");
     if (SAGE_CreateLayer(BACK_LAYER, (BACK_WIDTH+SCREEN_WIDTH), BACK_HEIGHT)) {
       SAGE_BlitPictureToLayer(picture, 0, 0, BACK_WIDTH, BACK_HEIGHT, BACK_LAYER, 0, 0);
@@ -177,7 +177,7 @@ BOOL InitFrontLayer(VOID)
   SAGE_Picture * picture;
 
   SAGE_AppliLog("Load foreground picture");
-  if ((picture = SAGE_LoadPicture("/data/troll_fg.gif")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/troll_fg.gif")) != NULL) {
     SAGE_AppliLog("Create foreground layer");
     if (SAGE_CreateLayer(FRONT_LAYER, (FRONT_WIDTH+SCREEN_WIDTH), FRONT_HEIGHT)) {
       SAGE_BlitPictureToLayer(picture, 0, 0, FRONT_WIDTH, FRONT_HEIGHT, FRONT_LAYER, 0, 0);
@@ -198,7 +198,7 @@ BOOL InitTrollSprite(VOID)
   UWORD sprite;
 
   SAGE_AppliLog("Load sprite picture");
-  if ((picture = SAGE_LoadPicture("/data/troll_sprite.gif")) != NULL) {
+  if ((picture = SAGE_LoadPicture("data/troll_sprite.gif")) != NULL) {
     SAGE_AppliLog("Create sprite bank");
     if (SAGE_CreateSpriteBank(SPR_BANK, NB_SPRITES, picture)) {
       SAGE_SetSpriteBankTransparency(SPR_BANK, TRANSP_COLOR);
@@ -254,7 +254,7 @@ BOOL InitMusic(VOID)
   SAGE_Music * music = NULL;
 
   SAGE_AppliLog("Loading music");
-  if ((music = SAGE_LoadMusic("/data/theme.mod")) != NULL) {
+  if ((music = SAGE_LoadMusic("data/theme.mod")) != NULL) {
     SAGE_AppliLog("Adding music");
     if (SAGE_AddMusic(TROLL_MUSIC, music)) {
       return TRUE;

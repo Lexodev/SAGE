@@ -25,6 +25,7 @@
 #define SBMP_NO_PROPERTY      0UL
 #define SBMP_TRANSPARENT      1UL
 #define SBMP_CUSTOM           2UL
+#define SBMP_FASTCOPY         4UL
 
 // Bitmap size constraint (in pixels)
 #define SBMP_SIZE8BITS        8UL
@@ -93,6 +94,9 @@ BOOL SAGE_SetBitmapTransparency(SAGE_Bitmap *, ULONG);
 
 /** Clear the bitmap */
 BOOL SAGE_ClearBitmap(SAGE_Bitmap *, ULONG, ULONG, ULONG, ULONG);
+
+/** Fill the bitmap with a color */
+BOOL SAGE_FillBitmap(SAGE_Bitmap *, ULONG, ULONG, ULONG, ULONG, ULONG);
 
 /** Blit a block from a bitmap to another */
 BOOL SAGE_BlitBitmap(SAGE_Bitmap *, ULONG, ULONG, ULONG, ULONG, SAGE_Bitmap *, ULONG, ULONG);

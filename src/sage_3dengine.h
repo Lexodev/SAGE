@@ -5,81 +5,68 @@
  * 3D engine functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 August 2021
+ * @version 1.0 January 2022
  */
 
 #ifndef _SAGE_3DENGINE_H_
 #define _SAGE_3DENGINE_H_
 
 #include <exec/types.h>
-#include <Warp3D/Warp3D.h>
 
-//#include "SAGE_camera.h"
-//#include "SAGE_object.h"
-//#include "SAGE_light.h"
-//#include "SAGE_texture.h"
+#include "sage_maths.h"
+#include "sage_3dcamera.h"
+#include "sage_3dentity.h"
+#include "sage_3dmaterial.h"
+#include "sage_3dskybox.h"
 
-/** Engine constants */
-#define S3DE_FOCALE		    90    // Player FOV
-#define S3DE_MAX_POINT		500		// Max object points
-#define DEGTORAD(x)				((x)*PI/180.0)
+#define DEGTORAD(x)           ((x)*PI/180.0)
 
-/** Face clipping constants */
-#define S3DE_NOCLIP			0
-#define S3DE_P1CLIP			(1L<<0)
-#define S3DE_P2CLIP			(1L<<1)
-#define S3DE_P3CLIP			(1L<<2)
-#define S3DE_P4CLIP			(1L<<3)
-#define S3DE_P2MASK			(S3DE_P1CLIP|S3DE_P3CLIP|S3DE_P4CLIP)
-#define S3DE_P4MASK			(S3DE_P1CLIP|S3DE_P2CLIP|S3DE_P3CLIP)
+#define S3DE_PRECISION        4                     // Degree precision (1/precision by degree)
+#define S3DE_ANGLE_90         90*S3DE_PRECISION     // 90 degree
+#define S3DE_ANGLE_180        180*S3DE_PRECISION    // 180 degree
+#define S3DE_ANGLE_270        270*S3DE_PRECISION    // 270 degree
+#define S3DE_ANGLE_360        360*S3DE_PRECISION    // 360 degree
 
-/** Face clipping structure */
+#define S3DE_MAX_VERTICES     256                   // Max entity vertices
+#define S3DE_CLIP_VERTICES    2                     // Small space for clipped vertices
+#define S3DE_VERTEX_CLIP1     S3DE_MAX_VERTICES     // First clipped vertex
+#define S3DE_VERTEX_CLIP2     S3DE_MAX_VERTICES+1   // Second clipped vertex
+
+#define S3DE_NOCLIP           0
+#define S3DE_P1CLIP           1L<<0
+#define S3DE_P2CLIP           1L<<1
+#define S3DE_P3CLIP           1L<<2
+#define S3DE_P4CLIP           1L<<3
+#define S3DE_MASKP4           (S3DE_P1CLIP|S3DE_P2CLIP|S3DE_P3CLIP)
+#define S3DE_MASKP2           (S3DE_P1CLIP|S3DE_P4CLIP|S3DE_P3CLIP)
+
+/** Ordered entities */
 typedef struct {
-  FLOAT t1,t2;
-  FLOAT u1,v1;
-  FLOAT u2,v2;
-  FLOAT u3,v3;
-} SAGE_FaceClip;
+  SAGE_Entity * entity;
+  FLOAT posz;
+} SAGE_SortedEntity;
 
-/** Initialize the tranformation matrix */
-VOID SAGE_TrMatrix(SAGE_Matrix *, FLOAT, FLOAT, FLOAT);
+/** World structure */
+typedef struct {
+  LONGBITS flags;
+  ULONG nb_materials;
+  SAGE_Material * materials[S3DE_MAX_MATERIALS];
+  SAGE_Entity * entities[S3DE_MAX_ENTITIES];
+  ULONG visible_entities;
+  SAGE_SortedEntity ordering[S3DE_MAX_ENTITIES];
+  ULONG active_camera;
+  SAGE_Camera * cameras[S3DE_MAX_CAMERAS];
+  BOOL active_skybox;
+  SAGE_Entity * skybox;
+} SAGE_3DWorld;
 
-/** Setup the rotation matrix */
-VOID SAGE_RxMatrix(SAGE_Matrix *, FLOAT);
-VOID SAGE_RyMatrix(SAGE_Matrix *, FLOAT);
-VOID SAGE_RzMatrix(SAGE_Matrix *, FLOAT);
+/** Init the 3D engine */
+BOOL SAGE_Init3DEngine(VOID);
 
-/** Transform the camera matric */
-VOID SAGE_TransformCameraMatrix(SAGE_Camera *);
+/** Release the 3D engine */
+VOID SAGE_Release3DEngine(VOID);
 
-/** Transform the object matrix */
-VOID SAGE_TransformObjectMatrix(SAGE_Object *);
-
-/** Check if object is in the camera view */
-BOOL SAGE_ObjectCulling(SAGE_Camera *, SAGE_Object *);
-
-/** Transform an object to world system */
-VOID SAGE_LocalToWorld(SAGE_Object *);
-
-/** Remove the invisible faces of an object */
-VOID SAGE_BackFaceCulling(SAGE_Camera *, SAGE_Object *);
-
-//VOID SAGE_DirectionalLight(SAGE_Light *, SAGE_Object *);
-//VOID SAGE_PointLight(SAGE_Light *, SAGE_Object *);
-//VOID SAGE_FaceShading(SAGE_Object *, SAGE_Light **, UWORD);
-
-/** Transform an object to camera system */
-VOID SAGE_WorldToCamera(SAGE_Object *);
-
-/** Clip the object faces in the camera view */
-VOID SAGE_FaceClipping(SAGE_Camera *, SAGE_Object *);
-
-/** Build the list of faces to render */
-UWORD SAGE_SetClipPolyList(SAGE_Object *, SAGE_Texture **, SAGE_Color *, W3D_Triangle *, UWORD, FLOAT);
-
-//VOID SAGE_CopyTriangle1(W3D_Triangle *,UWORD,UWORD,UWORD,UWORD,SAGE_Face *,UWORD,FLOAT,FLOAT,FLOAT,FLOAT);
-//VOID SAGE_CopyTriangle2(W3D_Triangle *,UWORD,UWORD,UWORD,UWORD,SAGE_Face *,UWORD,FLOAT,FLOAT,FLOAT,FLOAT);
-//VOID SAGE_ClipTriangle1(W3D_Triangle *,UWORD,SAGE_Clip *,UWORD,UWORD,UWORD,SAGE_Face *,UWORD,FLOAT,FLOAT,FLOAT,FLOAT,FLOAT);
-//VOID SAGE_ClipTriangle2(W3D_Triangle *,UWORD,SAGE_Clip *,UWORD,UWORD,UWORD,SAGE_Face *,UWORD,FLOAT,FLOAT,FLOAT,FLOAT,FLOAT);
+/** Render the 3D world */
+VOID SAGE_RenderWorld(VOID);
 
 #endif

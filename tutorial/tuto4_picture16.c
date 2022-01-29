@@ -1,7 +1,7 @@
 /**
  * tuto4_picture16.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Display a BMP 24bits picture on a 16bits screen
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

@@ -1,7 +1,7 @@
 /**
  * tuto1_screen.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Opening the screen and write some text
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

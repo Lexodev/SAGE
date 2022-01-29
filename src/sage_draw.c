@@ -169,10 +169,10 @@ BOOL SAGE_DrawClippedPixel(LONG x, LONG y, LONG color)
   ULONG * buffer32;
 
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if (x < screen->clipping.left || x > screen->clipping.right) {
     return TRUE;
   }
@@ -180,10 +180,10 @@ BOOL SAGE_DrawClippedPixel(LONG x, LONG y, LONG color)
     return TRUE;
   }
   bitmap = screen->back_bitmap;
-  if (bitmap == NULL) {
+  SAFE(if (bitmap == NULL) {
     SAGE_SetError(SERR_NO_BITMAP);
     return FALSE;
-  }
+  })
   if (bitmap->depth == SBMP_DEPTH8) {
     buffer8 = (UBYTE *) bitmap->bitmap_buffer;
     buffer8 += (y * bitmap->width) + x;
@@ -223,10 +223,10 @@ BOOL SAGE_DrawPixel(LONG x, LONG y, LONG color)
   ULONG * buffer32;
 
   bitmap = SAGE_GetBackBitmap();
-  if (bitmap == NULL) {
+  SAFE(if (bitmap == NULL) {
     SAGE_SetError(SERR_NO_BITMAP);
     return FALSE;
-  }
+  })
   if (bitmap->depth == SBMP_DEPTH8) {
     buffer8 = (UBYTE *) bitmap->bitmap_buffer;
     buffer8 += (y * bitmap->width) + x;
@@ -265,10 +265,10 @@ BOOL SAGE_DrawPixelArray(SAGE_Pixel * pixels, ULONG nbpixels)
   ULONG * buffer32, index;
 
   bitmap = SAGE_GetBackBitmap();
-  if (bitmap == NULL) {
+  SAFE(if (bitmap == NULL) {
     SAGE_SetError(SERR_NO_BITMAP);
     return FALSE;
-  }
+  })
   index = 0;
   if (bitmap->depth == SBMP_DEPTH8) {
     while (nbpixels--) {
@@ -313,6 +313,99 @@ BOOL SAGE_DrawPixelArray(SAGE_Pixel * pixels, ULONG nbpixels)
  */
 BOOL SAGE_DrawClippedLine(LONG x1, LONG y1, LONG x2, LONG y2, LONG color)
 {
+  SAGE_Screen * screen;
+  SAGE_Bitmap * bitmap;
+  UBYTE * buffer8;
+  UWORD * buffer16;
+  ULONG * buffer32;
+  LONG dx, dy;
+
+  screen = SAGE_GetScreen();
+  SAFE(if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return FALSE;
+  })
+  bitmap = SAGE_GetBackBitmap();
+  SAFE(if (bitmap == NULL) {
+    SAGE_SetError(SERR_NO_BITMAP);
+    return FALSE;
+  })
+  // Always draw from top to bottom
+  if (y1 > y2) {
+    dx = x2;
+    dy = y2;
+    x2 = x1;
+    y2 = y1;
+    x1 = dx;
+    y1 = dy;
+  }
+  // Vertical rejection
+  if (y1 >= screen->clipping.bottom || y2 < screen->clipping.top) {
+    return TRUE;
+  }
+  // Clipping top
+  if (y1 < screen->clipping.top) {
+    // X1' = X1 + ((CLIP_TOP - Y1) * (X2 - X1)) / (Y2 - Y1)
+    x1 = x1 + ((screen->clipping.top - y1) * (x2 - x1) / (y2 - y1));
+    y1 = screen->clipping.top;
+  }
+  // Clipping bottom
+  if (y2 >= screen->clipping.bottom) {
+    // X2' = X2 + ((Y2 - CLIP_BOTTOM) * (X1 - X2)) / (Y2 - Y1)
+    x2 = x2 + ((y2 - screen->clipping.bottom) * (x1 - x2)) / (y2 - y1);
+    y2 = screen->clipping.bottom;
+  }
+  // Horizontal rejection
+  if (x1 < screen->clipping.left && x2 < screen->clipping.left) {
+    return TRUE;
+  }
+  if (x1 >= screen->clipping.right && x2 >= screen->clipping.right) {
+    return TRUE;
+  }
+  // Horizontal clipping
+  if (x1 < x2) {
+    if (x1 < screen->clipping.left) {
+      // Y1' = Y1 + ((CLIP_LEFT - X1) * (Y2 - Y1)) / (X2 - X1)
+      y1 = y1 + ((screen->clipping.left - x1) * (y2 - y1)) / (x2 - x1);
+      x1 = screen->clipping.left;
+    }
+    if (x2 >= screen->clipping.right) {
+      // Y2' = Y2 - ((X2 - CLIP_RIGHT) * (Y2 - Y1)) / (X2 - X1)
+      y2 = y2 - ((x2 - screen->clipping.right) * (y2 - y1)) / (x2 - x1);
+      x2 = screen->clipping.right;
+    }
+  } else {
+    if (x1 >= screen->clipping.right) {
+      // Y1' = Y1 + ((X1 - CLIP_RIGHT) * (Y2 - Y1)) / (X1 - X2)
+      y1 = y1 + ((x1 - screen->clipping.right) * (y2 -y1)) / (x1 - x2);
+      x1 = screen->clipping.right;
+    }
+    if (x2 < screen->clipping.left) {
+      // Y2' = Y2 + ((CLIP_LEFT - X2) * (Y1 - Y2)) / (X1 - X2)
+      y2 = y2 + ((screen->clipping.left - x2) * (y1 -y2)) / (x1 - x2);
+      x2 = screen->clipping.left;
+    }
+  }
+  // Calculate delta
+  dx = x2 - x1;
+  dy = y2 - y1;
+  // Let's draw
+  if (bitmap->depth == SBMP_DEPTH8) {
+    buffer8 = (UBYTE *) bitmap->bitmap_buffer;
+    buffer8 += (y1 * bitmap->width) + x1;
+    SAGE_FastLine8Bits(buffer8, dx, dy, bitmap->bpr, color);
+  } else if (bitmap->depth == SBMP_DEPTH16) {
+    buffer16 = (UWORD *) bitmap->bitmap_buffer;
+    buffer16 += (y1 * bitmap->width) + x1;
+    SAGE_FastLine16Bits(buffer16, dx, dy, bitmap->bpr, color);
+  } else if (bitmap->depth == SBMP_DEPTH24) {
+    SAGE_SetError(SERR_NOT_AVAILABLE);
+    return FALSE;
+  } else if (bitmap->depth == SBMP_DEPTH32) {
+    buffer32 = (ULONG *) bitmap->bitmap_buffer;
+    buffer32 += (y1 * bitmap->width) + x1;
+    SAGE_FastLine32Bits(buffer32, dx, dy, bitmap->bpr, color);
+  }
   return TRUE;
 }
 
@@ -336,10 +429,10 @@ BOOL SAGE_DrawLine(LONG x1, LONG y1, LONG x2, LONG y2, LONG color)
   LONG dx, dy;
 
   bitmap = SAGE_GetBackBitmap();
-  if (bitmap == NULL) {
+  SAFE(if (bitmap == NULL) {
     SAGE_SetError(SERR_NO_BITMAP);
     return FALSE;
-  }
+  })
   // Always draw from top to bottom
   if (y1 > y2) {
     dx = x2;
@@ -421,16 +514,16 @@ BOOL SAGE_DrawTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG y3, LON
   LONG swapx, swapy, * leftcoord, * rightcoord, * tempcoord;
 
   bitmap = SAGE_GetBackBitmap();
-  if (bitmap == NULL) {
+  SAFE(if (bitmap == NULL) {
     SAGE_SetError(SERR_NO_BITMAP);
     return FALSE;
-  }
+  })
   leftcoord = bitmap->first_buffer;
   rightcoord = bitmap->second_buffer;
-  if (leftcoord == NULL || rightcoord == NULL) {
+  SAFE(if (leftcoord == NULL || rightcoord == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   // Always draw from top to bottom
   if (y1 > y2) {
     swapx = x1;
@@ -528,21 +621,21 @@ BOOL SAGE_DrawClippedTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG 
   LONG swapx, swapy, * leftcoord, * rightcoord, * tempcoord, left_points, right_points;
 
   screen = SAGE_GetScreen();
-  if (screen == NULL) {
+  SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   bitmap = SAGE_GetBackBitmap();
-  if (bitmap == NULL) {
+  SAFE(if (bitmap == NULL) {
     SAGE_SetError(SERR_NO_BITMAP);
     return FALSE;
-  }
+  })
   leftcoord = bitmap->first_buffer;
   rightcoord = bitmap->second_buffer;
-  if (leftcoord == NULL || rightcoord == NULL) {
+  SAFE(if (leftcoord == NULL || rightcoord == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   // Always draw from top to bottom
   if (y1 > y2) {
     swapx = x1;

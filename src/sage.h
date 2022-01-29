@@ -16,6 +16,7 @@
 #include "sage_timer.h"
 #include "sage_thread.h"
 #include "sage_vampire.h"
+#include "sage_configfile.h"
 #include "sage_video.h"
 #include "sage_bitmap.h"
 #include "sage_blitter.h"
@@ -40,7 +41,7 @@
 #define SMOD_AUDIO            2L        // Need AHI lib
 #define SMOD_INPUT            4L        // Need lowlevel lib
 #define SMOD_INTERRUPTION     8L        // Also need lowlevel lib
-#define SMOD_3DENGINE         16L       // Need Warp3D lib (not yet available)
+#define SMOD_3D               16L       // Need Warp3D lib (not yet available)
 #define SMOD_NETWORK          32L       // Need ixemul lib
 #define SMOD_ALL              255L
 
@@ -61,5 +62,8 @@ VOID SAGE_UseAMMX(BOOL);
 
 /** Pause the program for some 1/50 of seconds */
 VOID SAGE_Pause(ULONG);
+
+/** Activate/disable trace debug */
+VOID SAGE_SetTraceDebug(BOOL);
 
 #endif

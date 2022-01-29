@@ -93,10 +93,10 @@ BOOL SAGE_CreateTileBank(UWORD index, UWORD tilewidth, UWORD tileheight, UWORD s
 SAGE_TileBank * SAGE_GetTileBank(UWORD index)
 {
   // Check for video device
-  if (SageContext.SageVideo == NULL) {
+  SAFE(if (SageContext.SageVideo == NULL) {
     SAGE_SetError(SERR_NO_VIDEODEVICE);
     return NULL;
-  }
+  })
   if (index >= STIL_MAX_TILEBANK) {
     SAGE_SetError(SERR_TILEBANK_INDEX);
     return NULL;
@@ -146,10 +146,10 @@ BOOL SAGE_AddTileToBank(UWORD index, UWORD tile, ULONG left, ULONG top, LONGBITS
   SAGE_TileBank * bank;
   
   bank = SAGE_GetTileBank(index);
-  if (bank == NULL || bank->tiles == NULL || bank->bitmap == NULL) {
+  SAFE(if (bank == NULL || bank->tiles == NULL || bank->bitmap == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if (bank->bank_size > tile) {
     // Check for size constraint
     if ((left + bank->tile_width) <= bank->bitmap->width && (top + bank->tile_height) <= bank->bitmap->height) {
@@ -178,10 +178,10 @@ BOOL SAGE_AddTilesToBank(UWORD index)
   ULONG left, top;
 
   bank = SAGE_GetTileBank(index);
-  if (bank == NULL || bank->tiles == NULL || bank->bitmap == NULL) {
+  SAFE(if (bank == NULL || bank->tiles == NULL || bank->bitmap == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   tile = 0;
   for (top = 0;(top + bank->tile_height) <= bank->bitmap->height;top += bank->tile_height) {
     for (left = 0;(left + bank->tile_width) <= bank->bitmap->height;left += bank->tile_width) {
@@ -211,10 +211,10 @@ BOOL SAGE_SetTileFlags(UWORD index, UWORD tile, LONGBITS flags)
   SAGE_TileBank * bank;
   
   bank = SAGE_GetTileBank(index);
-  if (bank == NULL) {
+  SAFE(if (bank == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if (bank->bank_size > tile) {
     bank->tiles[tile].flags = flags;
     return TRUE;
@@ -236,10 +236,10 @@ LONGBITS SAGE_GetTileFlags(UWORD index, UWORD tile)
   SAGE_TileBank * bank;
   
   bank = SAGE_GetTileBank(index);
-  if (bank == NULL) {
+  SAFE(if (bank == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return 0;
-  }
+  })
   if (bank->bank_size > tile) {
     return bank->tiles[tile].flags;
   }
@@ -261,10 +261,10 @@ BOOL SAGE_HasTileFlag(UWORD index, UWORD tile, LONGBITS flag)
   SAGE_TileBank * bank;
   
   bank = SAGE_GetTileBank(index);
-  if (bank == NULL) {
+  SAFE(if (bank == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if (bank->bank_size > tile) {
     if (bank->tiles[tile].flags & flag) {
       return TRUE;
@@ -288,10 +288,10 @@ BOOL SAGE_SetTileUserData(UWORD index, UWORD tile, APTR userdata)
   SAGE_TileBank * bank;
   
   bank = SAGE_GetTileBank(index);
-  if (bank == NULL) {
+  SAFE(if (bank == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if (bank->bank_size > tile) {
     bank->tiles[tile].user_data = userdata;
     return TRUE;
@@ -313,10 +313,10 @@ APTR SAGE_GetTileUserData(UWORD index, UWORD tile)
   SAGE_TileBank * bank;
   
   bank = SAGE_GetTileBank(index);
-  if (bank == NULL) {
+  SAFE(if (bank == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return NULL;
-  }
+  })
   if (bank->bank_size > tile) {
     return bank->tiles[tile].user_data;
   }
@@ -342,10 +342,10 @@ BOOL SAGE_BlitTileToLayer(UWORD index, UWORD tile, UWORD l_idx, ULONG x_pos, ULO
   
   bank = SAGE_GetTileBank(index);
   layer = SAGE_GetLayer(l_idx);
-  if (bank == NULL || layer == NULL) {
+  SAFE(if (bank == NULL || layer == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return NULL;
-  }
+  })
   if (bank->bank_size > tile) {
     x_pos %= layer->bitmap->width;
     y_pos %= layer->bitmap->height;
@@ -381,10 +381,10 @@ BOOL SAGE_BlitTileToScreen(UWORD index, UWORD tile, ULONG x_pos, ULONG y_pos)
   
   bank = SAGE_GetTileBank(index);
   screen = SAGE_GetScreen();
-  if (bank == NULL || screen == NULL) {
+  SAFE(if (bank == NULL || screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
-  }
+  })
   if (bank->bank_size > tile) {
     if (x_pos <= (screen->back_bitmap->width - bank->tile_width) && y_pos <= (screen->back_bitmap->height - bank->tile_height)) {
       return SAGE_BlitBitmap(

@@ -1,7 +1,7 @@
 /**
  * tuto5_scrolling.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Simple vertical scroll of a picture
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

@@ -37,6 +37,7 @@ SAGE_Error SAGE_errors[] = {
   {SERR_NO_SCREENTIMER, "No timer available"},
   {SERR_OPENFILE, "Can't open file"},
   {SERR_READFILE, "Can't read file"},
+  {SERR_WRITEFILE, "Can't write file"},
   {SERR_FILEFORMAT, "Bad file format"},
   {SERR_BITMAPFORMAT, "Bad bitmap format"},
   {SERR_BITMAPTYPE, "Not a CGX bitmap"},
@@ -92,6 +93,14 @@ SAGE_Error SAGE_errors[] = {
   {SERR_NO_IOREQUEST, "Can't create IO request"},
   {SERR_NO_3DDRIVER, "No 3D driver available"},
   {SERR_NO_3DCONTEXT, "Can't create 3D context"},
+  {SERR_TEX_INDEX, "Texture index out of bounds"},
+  {SERR_TEX_ALLOC, "Can't allocate texture"},
+  {SERR_LOCKHARDWARE, "Can't lock 3D hardware"},
+  {SERR_DRAWTRIANGLE, "Failed to render triangle"},
+  {SERR_CAMERA_INDEX, "Camera index out of bounds"},
+  {SERR_NO_CAMERA, "No camera at this index"},
+  {SERR_ENTITY_INDEX, "Entity index out of bounds"},
+  {SERR_NO_ENTITY, "No entity at this index"},
   {SERR_NO_SOCKET, "Failed to create socket"},
   {SERR_BIND_SOCKET, "Failed to bind socket"},
   {SERR_RESOLVE_HOST, "Failed to resolve hostname"},
@@ -104,6 +113,10 @@ SAGE_Error SAGE_errors[] = {
   {SERR_RECEIVE_SOCKET, "Socket receive error"},
   {SERR_NOT_SERVERSOCK, "Not a server socket"},
   {SERR_NOT_CLIENTSOCK, "Not a client socket"},
+  {SERR_FILENOTFOUND, "File not found"},
+  {SERR_NOSECTION, "Section not found"},
+  {SERR_NOPARAMETER, "Parameter not found"},
+  {SERR_BUFFERSIZE, "Buffer is too small"},
   {SERR_ENDOF_ERROR, "End mark"}
 };
 
@@ -117,7 +130,6 @@ LONG SAGE_last_error = SERR_NO_ERROR;
  */
 VOID SAGE_SetError(LONG error)
 {
-  SD(SAGE_DebugLog("SAGE_SetError(%d)", error));
   SAGE_last_error = error;
 }
 
@@ -152,7 +164,7 @@ STRPTR SAGE_GetErrorString()
 /**
  * Display error message
  */
-VOID SAGE_DisplayError(VOID)
+VOID SAGE_DisplayError()
 {
   LONG index = 0;
 

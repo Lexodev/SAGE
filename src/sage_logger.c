@@ -11,11 +11,15 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "sage_context.h"
 #include "sage_debug.h"
 #include "sage_logger.h"
 
 /** @var Log level */
 LONG SAGE_LogLevel = SLOG_ALL;
+
+/** SAGE context */
+extern SAGE_Context SageContext;
 
 /**
  * Set the log level
@@ -154,7 +158,7 @@ VOID SAGE_TraceLog(char * format, ...)
   va_list args;
 
   va_start(args, format);
-  if (SAGE_LogLevel <= SLOG_TRACE) {
+  if (SAGE_LogLevel <= SLOG_TRACE && SageContext.TraceDebug) {
     SAGE_MessageLog("TRC", format, args);
   }
   va_end(args);

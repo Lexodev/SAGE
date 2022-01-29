@@ -17,7 +17,7 @@
 #include "sage.h"
 
 /** @var Library version */
-STRPTR SAGE_Version = "$VER: SAGE V1.8 September 2021";
+STRPTR SAGE_Version = "$VER: SAGE V1.9 December 2021";
 
 /** @var Application context */
 SAGE_Context SageContext;
@@ -34,12 +34,15 @@ BOOL SAGE_Init(LONG modules)
   UWORD index;
 
   SAGE_InfoLog("SAGE Init : %s", SAGE_GetVersion());
-  SAGE_DebugLog("Available memory %d KB", SAGE_AvailMem());
+  SAFE(SAGE_InfoLog("SAFE mode activated"));
+  SD(SAGE_DebugLog("Available memory %d KB", SAGE_AvailMem()));
   // The only time where we should set the error to no error
   SAGE_SetError(SERR_NO_ERROR);
   // Init the modules
   SageContext.LoadedModules = SMOD_NONE;
+  SageContext.TraceDebug = FALSE;
   SageContext.AmmxReady = SAGE_AMMX2Available();
+  SageContext.AutoRemap = TRUE;
   SageContext.SageVideo = NULL;
   SageContext.SageAudio = NULL;
   SageContext.SageInput = NULL;
@@ -72,11 +75,11 @@ BOOL SAGE_Init(LONG modules)
     }
     SageContext.LoadedModules |= SMOD_INTERRUPTION;
   }
-  if (modules & SMOD_3DENGINE) {
+  if (modules & SMOD_3D) {
     if (!SAGE_Init3DModule()) {
       return FALSE;
     }
-    SageContext.LoadedModules |= SMOD_3DENGINE;
+    SageContext.LoadedModules |= SMOD_3D;
   }
   if (modules & SMOD_NETWORK) {
     if (!SAGE_InitNetworkModule()) {
@@ -106,7 +109,7 @@ BOOL SAGE_Exit(VOID)
   if (SageContext.LoadedModules & SMOD_NETWORK) {
     SAGE_ReleaseNetworkModule();
   }
-  if (SageContext.LoadedModules & SMOD_3DENGINE) {
+  if (SageContext.LoadedModules & SMOD_3D) {
     SAGE_Release3DModule();
   }
   if (SageContext.LoadedModules & SMOD_INTERRUPTION) {
@@ -176,4 +179,14 @@ VOID SAGE_UseAMMX(BOOL ammx)
 VOID SAGE_Pause(ULONG ticks)
 {
   Delay(ticks);
+}
+
+/**
+ * Activate/disable trace debug
+ *
+ * @param status Trace debug status
+ */
+VOID SAGE_SetTraceDebug(BOOL status)
+{
+  SageContext.TraceDebug = status;
 }

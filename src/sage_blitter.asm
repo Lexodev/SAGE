@@ -53,9 +53,9 @@ _SAGE_FastCopyScreen:
 
 _SAGE_FastClearScreen:
   movem.l d1/d2/d6/a0,-(sp)
+  moveq.l #0,d2
   lsr.w   #3,d1
   subq.w  #1,d1
-  moveq.l #0,d2
   subq.w  #1,d0
 .NextLine:
   move.w  d1,d6
@@ -69,23 +69,29 @@ _SAGE_FastClearScreen:
   rts
 
 ;--------------------------------------
-; Clear a 8bits bitmap
+; Fill a 8bits bitmap with a color
 ;
 ; @in a0.l frame buffer address
 ; @in d0.w number of lines to clear
 ; @in d1.w number of pixels per line
 ; @in d2.l offset to bitmap next line
+; @in d3.l fill value
 ;
 ; @out d0.l Operation success
 ;--------------------------------------
-  xdef _SAGE_BlitClear8Bits
+  xdef _SAGE_BlitFill8Bits
 
-_SAGE_BlitClear8Bits:
-  movem.l d1/d2/d3/d6/a0,-(sp)
+_SAGE_BlitFill8Bits:
+  movem.l d1/d2/d3/d4/d6/a0,-(sp)
+  move.b  d3,d4
+  lsl.l   #8,d3
+  move.b  d4,d3
+  move.w  d3,d4
+  swap    d3
+  move.w  d4,d3                         ; extend the color value to 4 bytes
   lsr.w   #3,d1                         ; 8 bytes by loop (8 pixels)
   subq.w  #1,d1
   subq.w  #1,d0
-  moveq.l #0,d3
 .NextLine:
   move.w  d1,d6
 .NextBlock:
@@ -94,7 +100,7 @@ _SAGE_BlitClear8Bits:
   dbf     d6,.NextBlock
   adda.l  d2,a0
   dbf     d0,.NextLine
-  movem.l (sp)+,d1/d2/d3/d6/a0
+  movem.l (sp)+,d1/d2/d3/d4/d6/a0
   move.l  #-1,d0
   rts
 
@@ -430,23 +436,26 @@ _SAGE_BlitTranspZoomCopy8Bits:
   rts
 
 ;--------------------------------------
-; Clear a 16bits bitmap
+; Fill a 16bits bitmap with a color
 ;
 ; @in a0.l frame buffer address
 ; @in d0.w number of lines to clear
 ; @in d1.w number of pixels per line
 ; @in d2.l offset to bitmap next line
+; @in d3.l fill value
 ;
 ; @out d0.l Operation success
 ;--------------------------------------
-  xdef _SAGE_BlitClear16Bits
+  xdef _SAGE_BlitFill16Bits
 
-_SAGE_BlitClear16Bits:
-  movem.l d1/d2/d3/d6/a0,-(sp)
+_SAGE_BlitFill16Bits:
+  movem.l d1/d2/d3/d4/d6/a0,-(sp)
+  move.w  d3,d4
+  swap    d3
+  move.w  d4,d3                         ; extend the color value to 4 bytes
   lsr.w   #2,d1                         ; 8 bytes by loop (4 pixels)
   subq.w  #1,d1
   subq.w  #1,d0
-  moveq.l #0,d3
 .NextLine:
   move.w  d1,d6
 .NextBlock:
@@ -455,7 +464,7 @@ _SAGE_BlitClear16Bits:
   dbf     d6,.NextBlock
   adda.l  d2,a0
   dbf     d0,.NextLine
-  movem.l (sp)+,d1/d2/d3/d6/a0
+  movem.l (sp)+,d1/d2/d3/d4/d6/a0
   move.l  #-1,d0
   rts
 
@@ -743,53 +752,58 @@ _SAGE_BlitTranspZoomCopy16Bits:
   rts
 
 ;--------------------------------------
-; Clear a 24bits bitmap
+; Fill a 24bits bitmap with a color
 ;
 ; @in a0.l frame buffer address
 ; @in d0.w number of lines to clear
 ; @in d1.w number of pixels per line
 ; @in d2.l offset to bitmap next line
+; @in d3.l fill value
 ;
 ; @out d0.l Operation success
 ;--------------------------------------
-  xdef _SAGE_BlitClear24Bits
+  xdef _SAGE_BlitFill24Bits
 
-_SAGE_BlitClear24Bits:
-  movem.l d1/d2/d3/d6/a0,-(sp)
+_SAGE_BlitFill24Bits:
+  movem.l d1/d2/d3/d4/d6/a0,-(sp)
+  move.l  d3,d4
+  lsl.l   #8,d3
+  swap    d4
+  or.w    d4,d3
+  swap    d4                            ; extend the color value to 6 bytes
   lsr.w   #1,d1                         ; 6 bytes by loop (2 pixels)
   subq.w  #1,d1
   subq.w  #1,d0
-  moveq.l #0,d3
 .NextLine:
   move.w  d1,d6
 .NextBlock:
   move.l  d3,(a0)+
-  move.w  d3,(a0)+
+  move.w  d4,(a0)+
   dbf     d6,.NextBlock
   adda.l  d2,a0
   dbf     d0,.NextLine
-  movem.l (sp)+,d1/d2/d3/d6/a0
+  movem.l (sp)+,d1/d2/d3/d4/d6/a0
   move.l  #-1,d0
   rts
 
 ;--------------------------------------
-; Clear a 32bits bitmap
+; Fill a 32bits bitmap with a color
 ;
 ; @in a0.l frame buffer address
 ; @in d0.w number of lines to clear
 ; @in d1.w number of pixels per line
 ; @in d2.l offset to bitmap next line
+; @in d3.l fill value
 ;
 ; @out d0.l Operation success
 ;--------------------------------------
-  xdef _SAGE_BlitClear32Bits
+  xdef _SAGE_BlitFill32Bits
 
-_SAGE_BlitClear32Bits:
+_SAGE_BlitFill32Bits:
   movem.l d1/d2/d3/d6/a0,-(sp)
   lsr.w   #1,d1                         ; 8 bytes by loop (2 pixels)
   subq.w  #1,d1
   subq.w  #1,d0
-  moveq.l #0,d3
 .NextLine:
   move.w  d1,d6
 .NextBlock:

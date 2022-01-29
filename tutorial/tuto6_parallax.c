@@ -1,7 +1,7 @@
 /**
  * tuto6_parallax.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Parallax horizontal scrolling with transparent layer
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

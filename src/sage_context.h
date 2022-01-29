@@ -23,8 +23,12 @@
 typedef struct {
   /** Loaded modules */
   LONG LoadedModules;
+  /** Trace debug flag */
+  BOOL TraceDebug;
   /** AMMX available */
   BOOL AmmxReady;
+  /** Auto remap picture */
+  BOOL AutoRemap;
   /** SAGE video */
   SAGE_VideoDevice * SageVideo;
   /** SAGE audio */

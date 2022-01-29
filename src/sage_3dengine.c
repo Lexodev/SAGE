@@ -1,832 +1,881 @@
 /**
- * sage_3dengine.h
+ * sage_3dengine.c
  * 
  * SAGE (Simple Amiga Game Engine) project
  * 3D engine functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 August 2021
+ * @version 1.0 January 2022
  */
 
-#include "sage_math.h"
+#include <string.h>
+#include <math.h>
+
+#include <proto/exec.h>
+
+#include "sage_debug.h"
+#include "sage_error.h"
+#include "sage_logger.h"
+#include "sage_memory.h"
+#include "sage_draw.h"
+#include "sage_screen.h"
+#include "sage_loadlwo.h"
+#include "sage_3drender.h"
+#include "sage_3dskybox.h"
 #include "sage_3dengine.h"
 
+/** Precalculs */
+FLOAT Sinus[360*S3DE_PRECISION];
+FLOAT Cosinus[360*S3DE_PRECISION];
+FLOAT Tangente[360*S3DE_PRECISION];
+
+/** Buffer for projected vertices */
+SAGE_EntityVertex projected_vertices[S3DE_MAX_VERTICES+S3DE_CLIP_VERTICES];
+
 /** Transformation matrix */
-SAGE_Matrix ObjectMatrix;
+SAGE_Matrix EntityMatrix;
 SAGE_Matrix CameraMatrix;
 
-/** Temp buffer for calculation */
-SAGE_Point tab_world[S3DE_MAX_POINT];
-SAGE_Vector tab_nworld[S3DE_MAX_POINT];
-SAGE_Point tab_view[S3DE_MAX_POINT];
-//SAGE_Color tab_pcolor[S3DE_MAX_POINT];
+/** Our 3D world */
+SAGE_3DWorld sage_world;
 
-VOID SAGE_TrMatrix(SAGE_Matrix * matrix, FLOAT px, FLOAT py, FLOAT pz)
+extern BOOL debug;
+
+/*****************************************************************************/
+//            DEBUG ONLY
+/*****************************************************************************/
+
+VOID SAGE_DumpEntityMatrix(VOID)
 {
-	SAGE_IdentityMatrix(matrix);
-	matrix->m41 = px;
-	matrix->m42 = py;
-	matrix->m43 = pz;
+  SAGE_DebugLog("Dump entity matrix");
+  SAGE_DebugLog(" => %f\t%f\t%f", EntityMatrix.m11, EntityMatrix.m12, EntityMatrix.m13);
+  SAGE_DebugLog(" => %f\t%f\t%f", EntityMatrix.m21, EntityMatrix.m22, EntityMatrix.m23);
+  SAGE_DebugLog(" => %f\t%f\t%f", EntityMatrix.m31, EntityMatrix.m32, EntityMatrix.m33);
 }
 
-VOID SAGE_RxMatrix(SAGE_Matrix *matrix, FLOAT ax)
+VOID SAGE_DumpCameraMatrix(VOID)
 {
-  FLOAT sin, cos;
-
-  sin = sin(DEGTORAD(ax));
-  cos = cos(DEGTORAD(ax));
-	SAGE_IdentityMatrix(matrix);
-	matrix->m22 = cos;
-	matrix->m23 = sin;
-	matrix->m32 = -sin;
-	matrix->m33 = cos;
+  SAGE_DebugLog("Dump camera matrix");
+  SAGE_DebugLog(" => %f\t%f\t%f", CameraMatrix.m11, CameraMatrix.m12, CameraMatrix.m13);
+  SAGE_DebugLog(" => %f\t%f\t%f", CameraMatrix.m21, CameraMatrix.m22, CameraMatrix.m23);
+  SAGE_DebugLog(" => %f\t%f\t%f", CameraMatrix.m31, CameraMatrix.m32, CameraMatrix.m33);
 }
 
-VOID SAGE_RyMatrix(SAGE_Matrix *matrix, FLOAT ay)
-{
-  FLOAT sin, cos;
+/*****************************************************************************/
 
-  sin = sin(DEGTORAD(ay));
-  cos = cos(DEGTORAD(ay));
-	SAGE_IdentityMatrix(matrix);
-	matrix->m11 = cos;
-	matrix->m13 = -sin;
-	matrix->m31 = sin;
-	matrix->m33 = cos;
+/**
+ * Setup the camera matrix
+ */
+VOID SAGE_SetupCameraMatrix(SAGE_Camera * camera)
+{
+  WORD ax, ay, az;
+
+  ax = -camera->anglex;
+  while (ax < 0) ax += S3DE_ANGLE_360;
+  while (ax >= S3DE_ANGLE_360) ax-= S3DE_ANGLE_360;
+  ay = -camera->angley;
+  while (ay < 0) ay += S3DE_ANGLE_360;
+  while (ay >= S3DE_ANGLE_360) ay-= S3DE_ANGLE_360;
+  az = -camera->anglez;
+  while (az < 0) az += S3DE_ANGLE_360;
+  while (az >= S3DE_ANGLE_360) az-= S3DE_ANGLE_360;
+  CameraMatrix.m11 = Cosinus[ay]*Cosinus[az];
+  CameraMatrix.m12 = Cosinus[ay]*Sinus[az];
+  CameraMatrix.m13 = -Sinus[ay];
+  CameraMatrix.m21 = (Sinus[ax]*Sinus[ay]*Cosinus[az]) - (Cosinus[ax]*Sinus[az]);
+  CameraMatrix.m22 = (Sinus[ax]*Sinus[ay]*Sinus[az]) + (Cosinus[ax]*Cosinus[az]);
+  CameraMatrix.m23 = Sinus[ax]*Cosinus[ay];
+  CameraMatrix.m31 = (Cosinus[ax]*Sinus[ay]*Cosinus[az]) + (Sinus[ax]*Sinus[az]);
+  CameraMatrix.m32 = (Cosinus[ax]*Sinus[ay]*Sinus[az]) - (Sinus[ax]*Cosinus[az]);
+  CameraMatrix.m33 = Cosinus[ax]*Cosinus[ay];
 }
 
-VOID SAGE_RzMatrix(SAGE_Matrix *matrix, FLOAT az)
+ /**
+ * Tell if the entity is in the camera view, partially clipped or totally culled
+ */
+BOOL SAGE_EntityVisibility(SAGE_Entity * entity, SAGE_Camera * camera)
 {
-  FLOAT sin, cos;
+  FLOAT cx, cy, cz, x, y ,z;
+  FLOAT radius, xplane, yplane;
 
-  sin = sin(DEGTORAD(az));
-  cos = cos(DEGTORAD(az));
-	SAGE_IdentityMatrix(matrix);
-	matrix->m11 = cos;
-	matrix->m12 = sin;
-	matrix->m21 = -sin;
-	matrix->m22 = cos;
-}
-
-VOID SAGE_TransformCameraMatrix(SAGE_Camera * camera)
-{
-	LONG ax,ay,az;
-	FLOAT px,py,pz;
-
-	ax = -camera->anglex;
-	ay = -camera->angley;
-	az = -camera->anglez;
-	px = -camera->posx;
-	py = -camera->posy;
-	pz = -camera->posz;
-	ax %= G3D_360DEG;	// ax doit �tre positif et inf�rieur � 360
-	if (ax < 0)	ax += G3D_360DEG;
-	ay %= G3D_360DEG;	// pareil pour ay
-	if (ay < 0) ay += G3D_360DEG;
-	az %= G3D_360DEG;	// et pour az
-	if (az < 0) az += G3D_360DEG;
-	CameraMatrix.m11 = Cosinus[ay]*Cosinus[az];
-	CameraMatrix.m12 = Cosinus[ay]*Sinus[az];
-	CameraMatrix.m13 = -Sinus[ay];
-	CameraMatrix.m14 = 0.0;
-	CameraMatrix.m21 = (Sinus[ax]*Sinus[ay]*Cosinus[az]) - (Cosinus[ax]*Sinus[az]);
-	CameraMatrix.m22 = (Sinus[ax]*Sinus[ay]*Sinus[az]) + (Cosinus[ax]*Cosinus[az]);
-	CameraMatrix.m23 = Sinus[ax]*Cosinus[ay];
-	CameraMatrix.m24 = 0.0;
-	CameraMatrix.m31 = (Cosinus[ax]*Sinus[ay]*Cosinus[az]) + (Sinus[ax]*Sinus[az]);
-	CameraMatrix.m32 = (Cosinus[ax]*Sinus[ay]*Sinus[az]) - (Sinus[ax]*Cosinus[az]);
-	CameraMatrix.m33 = Cosinus[ax]*Cosinus[ay];
-	CameraMatrix.m34 = 0.0;
-	CameraMatrix.m41 = ((((px * Cosinus[ay]) + (((py * Sinus[ax]) + (pz * Cosinus[ax])) * Sinus[ay])) * Cosinus[az]) + (((py * Cosinus[ax]) + (pz * -Sinus[ax])) * -Sinus[az]));
-	CameraMatrix.m42 = ((((px * Cosinus[ay]) + (((py * Sinus[ax]) + (pz * Cosinus[ax])) * Sinus[ay])) * Sinus[az]) + (((py * Cosinus[ax]) + ( pz * -Sinus[ax])) * Cosinus[az]));
-	CameraMatrix.m43 = ((px * -Sinus[ay]) + (((py * Sinus[ax]) + (pz * Cosinus[ax])) * Cosinus[ay]));
-	CameraMatrix.m44 = 1.0;
-}
-
-// Calcul de la matrice de transformation d'un objet
-
-VOID SAGE_TransformObjectMatrix(SAGE_Object *object)
-{
-	LONG ax,ay,az;
-
-	ax = object->anglex;
-	ay = object->angley;
-	az = object->anglez;
-	ax %= G3D_360DEG;	// ax doit �tre positif et inf�rieur � 360
-	if (ax < 0)	ax += G3D_360DEG;
-	ay %= G3D_360DEG;	// pareil pour ay
-	if (ay < 0) ay += G3D_360DEG;
-	az %= G3D_360DEG;	// et pour az
-	if (az < 0) az += G3D_360DEG;
-	ObjectMatrix.m11 = Cosinus[ay]*Cosinus[az];
-	ObjectMatrix.m12 = Cosinus[ay]*Sinus[az];
-	ObjectMatrix.m13 = -Sinus[ay];
-	ObjectMatrix.m14 = 0.0;
-	ObjectMatrix.m21 = (Sinus[ax]*Sinus[ay]*Cosinus[az]) - (Cosinus[ax]*Sinus[az]);
-	ObjectMatrix.m22 = (Sinus[ax]*Sinus[ay]*Sinus[az]) + (Cosinus[ax]*Cosinus[az]);
-	ObjectMatrix.m23 = Sinus[ax]*Cosinus[ay];
-	ObjectMatrix.m24 = 0.0;
-	ObjectMatrix.m31 = (Cosinus[ax]*Sinus[ay]*Cosinus[az]) + (Sinus[ax]*Sinus[az]);
-	ObjectMatrix.m32 = (Cosinus[ax]*Sinus[ay]*Sinus[az]) - (Sinus[ax]*Cosinus[az]);
-	ObjectMatrix.m33 = Cosinus[ax]*Cosinus[ay];
-	ObjectMatrix.m34 = 0.0;
-	ObjectMatrix.m41 = object->posx;
-	ObjectMatrix.m42 = object->posy;
-	ObjectMatrix.m43 = object->posz;
-	ObjectMatrix.m44 = 1.0;
-}
-
-// Test si l'objet est dans le cone de vision
-
-BOOL SAGE_ObjectCulling(SAGE_Camera *camera,SAGE_Object *object)
-{
-	SAGE_Vector obj_center;
-	SAGE_Vector tr_center;
-	FLOAT radius,xplan,yplan;
-
-	obj_center.x = object->posx;
-	obj_center.y = object->posy;
-	obj_center.z = object->posz;
-	SAGE_VectorMatrix4(&tr_center,&obj_center,&CameraMatrix);
-	radius = object->radius;
-	// on test d'abord par rapport aux plans en Z
-	if (((tr_center.z-radius) > camera->far_plane) || ((tr_center.z+radius) < camera->near_plane))
-		return(FALSE);	// l'objet est hors du cone
-	// on test � pr�sent par rapport aux plans latt�raux
-	xplan = (camera->centery*tr_center.z)/camera->focale;
-	if (((tr_center.x-radius) > xplan) || ((tr_center.x+radius) < -xplan))
-		return(FALSE);
-	yplan = (camera->centerx*tr_center.z)/camera->focale;
-	if (((tr_center.y-radius) > yplan) || ((tr_center.y+radius) < -yplan))
-		return(FALSE);
-	if (((tr_center.z+radius) > camera->far_plane) || ((tr_center.z-radius) < camera->near_plane))
-		object->clipped = TRUE;	// une partie de l'objet est hors du cone
-	else if (((tr_center.x+radius) > xplan) || ((tr_center.x-radius) < -xplan))
-		object->clipped = TRUE;
-	else if (((tr_center.y+radius) > yplan) || ((tr_center.y-radius) < -yplan))
-		object->clipped = TRUE;
-	else
-		object->clipped = FALSE;	// l'objet est totalement dans le cone
-	return(TRUE);
-}
-
-// Transforme les coordonn�es de l'objet et les normales
-// de chaque point du rep�re local vers le rep�re du monde
-
-VOID SAGE_LocalToWorld(SAGE_Object *object)
-{
-	UWORD ct_point;
-	SAGE_Point *pt3d;
-	SAGE_Vector *pn3d;
-
-	pt3d = object->tab_point;
-	pn3d = object->tab_pnormal;
-	for (ct_point = 0;ct_point < object->nb_point;ct_point++)
-	{
-		// transforme les coordonn�es du point
-		SAGE_VectorMatrix4((SAGE_Vector *)&(tab_world[ct_point]),(SAGE_Vector *)&(pt3d[ct_point]),&ObjectMatrix);
-		// transforme les normales des points
-		SAGE_VectorMatrix(&(tab_nworld[ct_point]),&(pn3d[ct_point]),&ObjectMatrix);
-		// met la couleur du point � 0
-		tab_pcolor[ct_point].red = 0.0;
-		tab_pcolor[ct_point].green = 0.0;
-		tab_pcolor[ct_point].blue = 0.0;
-	}
-}
-
-// Test les faces cach�es
-
-VOID SAGE_BackFaceCulling(SAGE_Camera *camera,SAGE_Object *object)
-{
-	UWORD ct_face,p1;
-	FLOAT res;
-	SAGE_Face *fa3d;
-	SAGE_Vector sight,normal;
-
-	// Calcul pour chaque face de l'objet
-	fa3d = object->tab_face;
-	for (ct_face = 0;ct_face < object->nb_face;ct_face++)
-	{
-		fa3d[ct_face].clipped = G3D_NOCLIP;
-		if (!fa3d[ct_face].visible)
-			fa3d[ct_face].culled = TRUE;
-		else
-		{
-			if (fa3d[ct_face].double_sided)
-				fa3d[ct_face].culled = FALSE;
-			else
-			{
-				SAGE_VectorMatrix(&normal,&(fa3d[ct_face].normal),&ObjectMatrix);
-				p1 = fa3d[ct_face].p1;
-				sight.x = camera->posx - tab_world[p1].x;
-				sight.y = camera->posy - tab_world[p1].y;
-				sight.z = camera->posz - tab_world[p1].z;
-				// Produit entre la normale � la face et la ligne de vue
-				res = SAGE_DotProduct(&normal,&sight);
-				if (res > 0.0)	// si le produit est positif alors la face est visible
-					fa3d[ct_face].culled = FALSE;
-				else
-					fa3d[ct_face].culled = TRUE;
-			}
-		}
-	}
+  cx = entity->posx - camera->posx;
+  cy = entity->posy - camera->posy;
+  cz = entity->posz - camera->posz;
+  x = cx*CameraMatrix.m11 + cy*CameraMatrix.m21 + cz*CameraMatrix.m31;
+  y = cx*CameraMatrix.m12 + cy*CameraMatrix.m22 + cz*CameraMatrix.m32;
+  z = cx*CameraMatrix.m13 + cy*CameraMatrix.m23 + cz*CameraMatrix.m33;
+  radius = entity->radius;
+  if (debug) SAGE_DebugLog("Visibility (%d)  x=%f  y=%f  z=%f  radius=%f", entity->nb_faces, x, y ,z ,radius);
+  // Check against Z planes
+  if (((z-radius) > camera->far_plane) || ((z+radius) < camera->near_plane)) {
+    return FALSE;
+  }
+  // Check against X planes
+  xplane = (camera->centerx * z) / camera->view_dist;
+  if (debug) SAGE_DebugLog("  xplane=%f", xplane);
+  if (((x-radius) > xplane) || ((x+radius) < -xplane)) {
+    return FALSE;
+  }
+  // Check against Y planes
+  yplane = (camera->centery * z) / camera->view_dist;
+  if (debug) SAGE_DebugLog("  yplane=%f", yplane);
+  if (((y-radius) > yplane) || ((y+radius) < -yplane)) {
+    return FALSE;
+  }
+  // Check for partial clipping
+  if (debug) SAGE_DebugLog("  partial ?");
+  if (((z+radius) > camera->far_plane) || ((z-radius) < camera->near_plane)) {
+    entity->clipped = TRUE;
+  } else if (((x+radius) > xplane) || ((x-radius) < -xplane)) {
+    entity->clipped = TRUE;
+  } else if (((y+radius) > yplane) || ((y-radius) < -yplane)) {
+    entity->clipped = TRUE;
+  } else {
+    entity->clipped = FALSE;
+  }
+  // Set the entity as visible
+  sage_world.ordering[sage_world.visible_entities].entity = entity;
+  sage_world.ordering[sage_world.visible_entities].posz = z;
+  sage_world.visible_entities++;
+  return TRUE;
 }
 
 /**
-VOID SAGE_DirectionalLight(SAGE_Light *light,SAGE_Object *object)
+ * Setup the entity matrix
+ */
+VOID SAGE_SetupEntityMatrix(SAGE_Entity * entity)
 {
-	SAGE_Vector *vlight;
-	UWORD ct_point;
-	FLOAT product;
+  WORD ax, ay, az;
 
-	// une lumi�re directionnelle est une lumi�re dont on
-	// consid�re que les rayons lumineux frappent les objets
-	// toujours selon la m�me direction
-	vlight = &(light->vector);
-	for (ct_point = 0;ct_point < object->nb_point;ct_point++)
-	{
-		product = SAGE_DotProduct(vlight,&(tab_nworld[ct_point]));
-		if (product > 0.0)	// si la lumi�re frappe le point
-		{
-			tab_pcolor[ct_point].red += product;
-			if (tab_pcolor[ct_point].red > G3D_MAX_COLOR)
-				tab_pcolor[ct_point].red = G3D_MAX_COLOR;
-			tab_pcolor[ct_point].green += product;
-			if (tab_pcolor[ct_point].green > G3D_MAX_COLOR)
-				tab_pcolor[ct_point].green = G3D_MAX_COLOR;
-			tab_pcolor[ct_point].blue += product;
-			if (tab_pcolor[ct_point].blue > G3D_MAX_COLOR)
-				tab_pcolor[ct_point].blue = G3D_MAX_COLOR;
-		}
-	}
+  ax = entity->anglex;
+  while (ax < 0) ax += S3DE_ANGLE_360;
+  while (ax >= S3DE_ANGLE_360) ax-= S3DE_ANGLE_360;
+  ay = entity->angley;
+  while (ay < 0) ay += S3DE_ANGLE_360;
+  while (ay >= S3DE_ANGLE_360) ay-= S3DE_ANGLE_360;
+  az = entity->anglez;
+  while (az < 0) az += S3DE_ANGLE_360;
+  while (az >= S3DE_ANGLE_360) az-= S3DE_ANGLE_360;
+  EntityMatrix.m11 = Cosinus[ay]*Cosinus[az];
+  EntityMatrix.m12 = Cosinus[ay]*Sinus[az];
+  EntityMatrix.m13 = -Sinus[ay];
+  EntityMatrix.m21 = (Sinus[ax]*Sinus[ay]*Cosinus[az]) - (Cosinus[ax]*Sinus[az]);
+  EntityMatrix.m22 = (Sinus[ax]*Sinus[ay]*Sinus[az]) + (Cosinus[ax]*Cosinus[az]);
+  EntityMatrix.m23 = Sinus[ax]*Cosinus[ay];
+  EntityMatrix.m31 = (Cosinus[ax]*Sinus[ay]*Cosinus[az]) + (Sinus[ax]*Sinus[az]);
+  EntityMatrix.m32 = (Cosinus[ax]*Sinus[ay]*Sinus[az]) - (Sinus[ax]*Cosinus[az]);
+  EntityMatrix.m33 = Cosinus[ax]*Cosinus[ay];
 }
-*/
 
 /**
-VOID SAGE_PointLight(SAGE_Light *light,SAGE_Object *object)
+ * Transform the entity to the world coordinates
+ */
+VOID SAGE_EntityLocalToWorld(SAGE_Entity * entity)
 {
-	// A FAIRE
+  WORD index;
+  FLOAT x, y, z;
+  
+  for (index = 0;index < entity->nb_vertices;index++) {
+    x = entity->vertices[index].x;
+    y = entity->vertices[index].y;
+    z = entity->vertices[index].z;
+    entity->trans_vertices[index].x = x*EntityMatrix.m11 + y*EntityMatrix.m21 + z*EntityMatrix.m31 + entity->posx;
+    entity->trans_vertices[index].y = x*EntityMatrix.m12 + y*EntityMatrix.m22 + z*EntityMatrix.m32 + entity->posy;
+    entity->trans_vertices[index].z = x*EntityMatrix.m13 + y*EntityMatrix.m23 + z*EntityMatrix.m33 + entity->posz;
+  }
 }
-*/
 
 /**
-VOID SAGE_FaceShading(SAGE_Object *object,SAGE_Light **tab_light,UWORD max_light)
+ * Remove not visible faces
+ */
+VOID SAGE_EntityBackfaceCulling(SAGE_Entity * entity, SAGE_Camera * camera)
 {
-	SAGE_Light *light;
-	UWORD ct_light;
+  UWORD index, p1;
+  FLOAT res, x, y ,z;
+  SAGE_Vector sight, normal;
 
-	for (ct_light = 0;ct_light < max_light;ct_light++)
-	{
-		light = tab_light[ct_light];
-		if (light)
-		{
-			if (light->type == G3D_DIRECTIONNAL_LIGHT)
-				SAGE_DirectionalLight(light,object);
-			else
-				SAGE_PointLight(light,object);
-		}
-	}
-}
-*/
-
-VOID SAGE_WorldToCamera(SAGE_Object *object)
-{
-	UWORD ct_point;
-
-	for (ct_point = 0;ct_point < object->nb_point;ct_point++)
-		SAGE_VectorMatrix4((SAGE_Vector *)&(tab_view[ct_point]),(SAGE_Vector *)&(tab_world[ct_point]),&CameraMatrix);
-}
-
-VOID SAGE_FaceClipping(SAGE_Camera *camera,SAGE_Object *object)
-{
-	UWORD ct_face,p1,p2,p3,p4;
-	FLOAT nearp,farp;
-	FLOAT x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4;
-	SAGE_Face *fa3d;
-
-	nearp = camera->near_plane;
-	farp = camera->far_plane;
-	// Calcul pour chaque face de l'objet
-	fa3d = object->tab_face;
-	for (ct_face = 0;ct_face < object->nb_face;ct_face++)
-	{
-		// On ne fait le calcul que si la face est visible
-		if (!fa3d[ct_face].culled)
-		{
-			p1 = fa3d[ct_face].p1;
-			x1 = tab_view[p1].x; y1 = tab_view[p1].y; z1 = tab_view[p1].z;
-			p2 = fa3d[ct_face].p2;
-			x2 = tab_view[p2].x; y2 = tab_view[p2].y; z2 = tab_view[p2].z;
-			p3 = fa3d[ct_face].p3;
-			x3 = tab_view[p3].x; y3 = tab_view[p3].y; z3 = tab_view[p3].z;
-			if (fa3d[ct_face].quad)
-			{
-				p4 = fa3d[ct_face].p4;
-				x4 = tab_view[p4].x; y4 = tab_view[p4].y; z4 = tab_view[p4].z;
-			}
-			else
-			{
-				p4 = p3;
-				x4 = x3; y4 = y3; z4 = z3;
-			}
-			// On test d'abord les faces totalement en dehors du c�ne
-			if ((z1<nearp && z2<nearp && z3<nearp && z4<nearp) || (z1>farp && z2>farp && z3>farp && z4>farp))
-				fa3d[ct_face].culled = TRUE;
-			else
-			{
-				if ((x1<-z1 && x2<-z2 && x3<-z3 && z4<-z4) || (x1>z1 && x2>z2 && x3>z3 && x4>z4))
-					fa3d[ct_face].culled = TRUE;
-				else
-				{
-					if ((y1<-z1 && y2<-z2 && y3<-z3 && y4<-z4) || (y1>z1 && y2>z2 && y3>z3 && y4>z4))
-						fa3d[ct_face].culled = TRUE;
-					else
-					{
-						if (z1 < nearp)
-							fa3d[ct_face].clipped |= G3D_P1CLIP;
-						if (z2 < nearp)
-							fa3d[ct_face].clipped |= G3D_P2CLIP;
-						if (z3 < nearp)
-							fa3d[ct_face].clipped |= G3D_P3CLIP;
-						if (z4 < nearp)
-							fa3d[ct_face].clipped |= G3D_P4CLIP;
-					}
-				}
-			}
-		}
-	}
+  for (index = 0;index < entity->nb_faces;index++) {
+    // Transform face normal to world space
+    x = entity->faces[index].normal.x;
+    y = entity->faces[index].normal.y;
+    z = entity->faces[index].normal.z;
+    normal.x = x*EntityMatrix.m11 + y*EntityMatrix.m21 + z*EntityMatrix.m31;
+    normal.y = x*EntityMatrix.m12 + y*EntityMatrix.m22 + z*EntityMatrix.m32;
+    normal.z = x*EntityMatrix.m13 + y*EntityMatrix.m23 + z*EntityMatrix.m33;
+    p1 = entity->faces[index].p1;
+    // Build the camera sight
+    sight.x = camera->posx - entity->trans_vertices[p1].x;
+    sight.y = camera->posy - entity->trans_vertices[p1].y;
+    sight.z = camera->posz - entity->trans_vertices[p1].z;
+    // Check face visibility (u*v = xu*xv + yu*yv + zu*zv)
+    res = (normal.x*sight.x) + (normal.y*sight.y) + (normal.z*sight.z);
+    if (res > 0.0) {
+      entity->faces[index].culled = FALSE;
+    } else {
+      entity->faces[index].culled = TRUE;
+    }
+  }
 }
 
-UWORD SAGE_SetClipPolyList(SAGE_Object *object,SAGE_Texture **tab_texture,SAGE_Color *ambiant,W3D_Triangle *vf3d,UWORD ct_vface,FLOAT nearp)
+/**
+ * Transform the entity to the camera coordinates
+ */
+VOID SAGE_EntityWorldToCamera(SAGE_Entity * entity, SAGE_Camera * camera)
 {
-	FLOAT ared,agreen,ablue,falpha,fred,fgreen,fblue;
-	UWORD ct_face,p1,p2,p3,p4;
-	SAGE_Face *fa3d;
-	SAGE_Clip clip;
-
-	fa3d = object->tab_face;
-	ared = ambiant->red;
-	agreen = ambiant->green;
-	ablue = ambiant->blue;
-	// Pour chaque faces de l'objet
-	for (ct_face = 0;ct_face < object->nb_face;ct_face++)
-	{
-		if (!fa3d[ct_face].culled)
-		{
-			p1 = fa3d[ct_face].p1;
-			p2 = fa3d[ct_face].p2;
-			p3 = fa3d[ct_face].p3;
-			p4 = fa3d[ct_face].p4;
-			falpha = fa3d[ct_face].color.alpha;
-			fred = fa3d[ct_face].color.red * ared;
-			fgreen = fa3d[ct_face].color.green * agreen;
-			fblue = fa3d[ct_face].color.blue * ablue;
-			if (fa3d[ct_face].clipped == G3D_NOCLIP)
-			{
-				SAGE_CopyTriangle1(vf3d,ct_vface,p1,p2,p3,fa3d,ct_face,falpha,fred,fgreen,fblue);
-				vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-				ct_vface++;
-				if (fa3d[ct_face].quad)
-				{
-					SAGE_CopyTriangle2(vf3d,ct_vface,p1,p3,p4,fa3d,ct_face,falpha,fred,fgreen,fblue);
-					vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-					ct_vface++;
-				}
-			}
-			else
-			{
-				// on commence par s'occuper du premier triangle
-				switch (fa3d[ct_face].clipped & G3D_P4MASK)
-				{
-				case G3D_NOCLIP:	// tous les points sont dans le c�ne
-					SAGE_CopyTriangle1(vf3d,ct_vface,p1,p2,p3,fa3d,ct_face,falpha,fred,fgreen,fblue);
-					vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-					ct_vface++;
-					break;
-				case G3D_P1CLIP:	// seul le point1 est hors du c�ne
-					clip.t1 = (nearp - tab_view[p1].z) / (tab_view[p2].z - tab_view[p1].z);
-					clip.t2 = (nearp - tab_view[p1].z) / (tab_view[p3].z - tab_view[p1].z);
-					clip.u1 = fa3d[ct_face].u1; clip.v1 = fa3d[ct_face].v1;
-					clip.u2 = fa3d[ct_face].u2; clip.v2 = fa3d[ct_face].v2;
-					clip.u3 = fa3d[ct_face].u3; clip.v3 = fa3d[ct_face].v3;
-					SAGE_ClipTriangle1(vf3d,ct_vface,&clip,p1,p2,p3,fa3d,ct_face,falpha,fred,fgreen,fblue,nearp);
-					vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-					ct_vface++;
-					vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-					ct_vface++;
-					break;
-				case G3D_P2CLIP:	// seul le point2 est hors du c�ne
-					clip.t1 = (nearp - tab_view[p2].z) / (tab_view[p1].z - tab_view[p2].z);
-					clip.t2 = (nearp - tab_view[p2].z) / (tab_view[p3].z - tab_view[p2].z);
-					clip.u1 = fa3d[ct_face].u2; clip.v1 = fa3d[ct_face].v2;
-					clip.u2 = fa3d[ct_face].u1; clip.v2 = fa3d[ct_face].v1;
-					clip.u3 = fa3d[ct_face].u3; clip.v3 = fa3d[ct_face].v3;
-					SAGE_ClipTriangle1(vf3d,ct_vface,&clip,p2,p1,p3,fa3d,ct_face,falpha,fred,fgreen,fblue,nearp);
-					vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-					ct_vface++;
-					vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-					ct_vface++;
-					break;
-				case G3D_P3CLIP:	// seul le point3 est hors du c�ne
-					clip.t1 = (nearp - tab_view[p3].z) / (tab_view[p1].z - tab_view[p3].z);
-					clip.t2 = (nearp - tab_view[p3].z) / (tab_view[p2].z - tab_view[p3].z);
-					clip.u1 = fa3d[ct_face].u3; clip.v1 = fa3d[ct_face].v3;
-					clip.u2 = fa3d[ct_face].u1; clip.v2 = fa3d[ct_face].v1;
-					clip.u3 = fa3d[ct_face].u2; clip.v3 = fa3d[ct_face].v2;
-					SAGE_ClipTriangle1(vf3d,ct_vface,&clip,p3,p1,p2,fa3d,ct_face,falpha,fred,fgreen,fblue,nearp);
-					vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-					ct_vface++;
-					vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-					ct_vface++;
-					break;
-				case G3D_P1CLIP|G3D_P2CLIP:
-					clip.t1 = (nearp - tab_view[p1].z) / (tab_view[p3].z - tab_view[p1].z);
-					clip.t2 = (nearp - tab_view[p2].z) / (tab_view[p3].z - tab_view[p2].z);
-					clip.u1 = fa3d[ct_face].u1; clip.v1 = fa3d[ct_face].v1;
-					clip.u2 = fa3d[ct_face].u2; clip.v2 = fa3d[ct_face].v2;
-					clip.u3 = fa3d[ct_face].u3; clip.v3 = fa3d[ct_face].v3;
-					SAGE_ClipTriangle2(vf3d,ct_vface,&clip,p1,p2,p3,fa3d,ct_face,falpha,fred,fgreen,fblue,nearp);
-					vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-					ct_vface++;
-					break;
-				case G3D_P1CLIP|G3D_P3CLIP:
-					clip.t1 = (nearp - tab_view[p1].z) / (tab_view[p2].z - tab_view[p1].z);
-					clip.t2 = (nearp - tab_view[p3].z) / (tab_view[p2].z - tab_view[p3].z);
-					clip.u1 = fa3d[ct_face].u1; clip.v1 = fa3d[ct_face].v1;
-					clip.u2 = fa3d[ct_face].u3; clip.v2 = fa3d[ct_face].v3;
-					clip.u3 = fa3d[ct_face].u2; clip.v3 = fa3d[ct_face].v2;
-					SAGE_ClipTriangle2(vf3d,ct_vface,&clip,p1,p3,p2,fa3d,ct_face,falpha,fred,fgreen,fblue,nearp);
-					vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-					ct_vface++;
-					break;
-				case G3D_P2CLIP|G3D_P3CLIP:
-					clip.t1 = (nearp - tab_view[p2].z) / (tab_view[p1].z - tab_view[p2].z);
-					clip.t2 = (nearp - tab_view[p3].z) / (tab_view[p1].z - tab_view[p3].z);
-					clip.u1 = fa3d[ct_face].u2; clip.v1 = fa3d[ct_face].v1;
-					clip.u2 = fa3d[ct_face].u3; clip.v2 = fa3d[ct_face].v2;
-					clip.u3 = fa3d[ct_face].u1; clip.v3 = fa3d[ct_face].v1;
-					SAGE_ClipTriangle2(vf3d,ct_vface,&clip,p2,p3,p1,fa3d,ct_face,falpha,fred,fgreen,fblue,nearp);
-					vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-					ct_vface++;
-					break;
-				default:	// tous les points sont hors du c�ne
-					break;
-				}
-				if (fa3d[ct_face].quad)
-				{
-					// on passe au deuxi�me triangle
-					switch (fa3d[ct_face].clipped & G3D_P2MASK)
-					{
-					case G3D_NOCLIP:	// tous les points sont dans le c�ne
-						SAGE_CopyTriangle2(vf3d,ct_vface,p1,p3,p4,fa3d,ct_face,falpha,fred,fgreen,fblue);
-						vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-						ct_vface++;
-						break;
-					case G3D_P1CLIP:	// seul le point1 est hors du c�ne
-						clip.t1 = (nearp - tab_view[p1].z) / (tab_view[p3].z - tab_view[p1].z);
-						clip.t2 = (nearp - tab_view[p1].z) / (tab_view[p4].z - tab_view[p1].z);
-						clip.u1 = fa3d[ct_face].u1; clip.v1 = fa3d[ct_face].v1;
-						clip.u2 = fa3d[ct_face].u3; clip.v2 = fa3d[ct_face].v3;
-						clip.u3 = fa3d[ct_face].u4; clip.v3 = fa3d[ct_face].v4;
-						SAGE_ClipTriangle1(vf3d,ct_vface,&clip,p1,p3,p4,fa3d,ct_face,falpha,fred,fgreen,fblue,nearp);
-						vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-						ct_vface++;
-						vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-						ct_vface++;
-						break;
-					case G3D_P3CLIP:	// seul le point3 est hors du c�ne
-						clip.t1 = (nearp - tab_view[p3].z) / (tab_view[p1].z - tab_view[p3].z);
-						clip.t2 = (nearp - tab_view[p3].z) / (tab_view[p4].z - tab_view[p3].z);
-						clip.u1 = fa3d[ct_face].u3; clip.v1 = fa3d[ct_face].v3;
-						clip.u2 = fa3d[ct_face].u1; clip.v2 = fa3d[ct_face].v1;
-						clip.u3 = fa3d[ct_face].u4; clip.v3 = fa3d[ct_face].v4;
-						SAGE_ClipTriangle1(vf3d,ct_vface,&clip,p3,p1,p4,fa3d,ct_face,falpha,fred,fgreen,fblue,nearp);
-						vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-						ct_vface++;
-						vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-						ct_vface++;
-						break;
-					case G3D_P4CLIP:	// seul le point4 est hors du c�ne
-						clip.t1 = (nearp - tab_view[p4].z) / (tab_view[p1].z - tab_view[p4].z);
-						clip.t2 = (nearp - tab_view[p4].z) / (tab_view[p3].z - tab_view[p4].z);
-						clip.u1 = fa3d[ct_face].u4; clip.v1 = fa3d[ct_face].v4;
-						clip.u2 = fa3d[ct_face].u1; clip.v2 = fa3d[ct_face].v1;
-						clip.u3 = fa3d[ct_face].u3; clip.v3 = fa3d[ct_face].v3;
-						SAGE_ClipTriangle1(vf3d,ct_vface,&clip,p4,p1,p3,fa3d,ct_face,falpha,fred,fgreen,fblue,nearp);
-						vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-						ct_vface++;
-						vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-						ct_vface++;
-						break;
-					case G3D_P1CLIP|G3D_P3CLIP:
-						clip.t1 = (nearp - tab_view[p1].z) / (tab_view[p4].z - tab_view[p1].z);
-						clip.t2 = (nearp - tab_view[p3].z) / (tab_view[p4].z - tab_view[p3].z);
-						clip.u1 = fa3d[ct_face].u1; clip.v1 = fa3d[ct_face].v1;
-						clip.u2 = fa3d[ct_face].u3; clip.v2 = fa3d[ct_face].v3;
-						clip.u3 = fa3d[ct_face].u4; clip.v3 = fa3d[ct_face].v4;
-						SAGE_ClipTriangle2(vf3d,ct_vface,&clip,p1,p3,p4,fa3d,ct_face,falpha,fred,fgreen,fblue,nearp);
-						vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-						ct_vface++;
-						break;
-					case G3D_P1CLIP|G3D_P4CLIP:
-						clip.t1 = (nearp - tab_view[p1].z) / (tab_view[p3].z - tab_view[p1].z);
-						clip.t2 = (nearp - tab_view[p4].z) / (tab_view[p3].z - tab_view[p4].z);
-						clip.u1 = fa3d[ct_face].u1; clip.v1 = fa3d[ct_face].v1;
-						clip.u2 = fa3d[ct_face].u4; clip.v2 = fa3d[ct_face].v4;
-						clip.u3 = fa3d[ct_face].u3; clip.v3 = fa3d[ct_face].v3;
-						SAGE_ClipTriangle2(vf3d,ct_vface,&clip,p1,p4,p3,fa3d,ct_face,falpha,fred,fgreen,fblue,nearp);
-						vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-						ct_vface++;
-						break;
-					case G3D_P3CLIP|G3D_P4CLIP:
-						clip.t1 = (nearp - tab_view[p3].z) / (tab_view[p1].z - tab_view[p3].z);
-						clip.t2 = (nearp - tab_view[p4].z) / (tab_view[p1].z - tab_view[p4].z);
-						clip.u1 = fa3d[ct_face].u3; clip.v1 = fa3d[ct_face].v3;
-						clip.u2 = fa3d[ct_face].u4; clip.v2 = fa3d[ct_face].v4;
-						clip.u3 = fa3d[ct_face].u1; clip.v3 = fa3d[ct_face].v1;
-						SAGE_ClipTriangle2(vf3d,ct_vface,&clip,p3,p4,p1,fa3d,ct_face,falpha,fred,fgreen,fblue,nearp);
-						vf3d[ct_vface].tex = tab_texture[fa3d[ct_face].idx_texture]->texture;
-						ct_vface++;
-						break;
-					default:	// tous les points sont hors du c�ne
-						break;
-					}
-				}
-			}
-		}
-	}
-	return(ct_vface);
+  WORD index;
+  FLOAT x, y, z;
+  
+  for (index = 0;index < entity->nb_vertices;index++) {
+    x = entity->trans_vertices[index].x - camera->posx;
+    y = entity->trans_vertices[index].y - camera->posy;
+    z = entity->trans_vertices[index].z - camera->posz;
+    entity->trans_vertices[index].x = x*CameraMatrix.m11 + y*CameraMatrix.m21 + z*CameraMatrix.m31;
+    entity->trans_vertices[index].y = x*CameraMatrix.m12 + y*CameraMatrix.m22 + z*CameraMatrix.m32;
+    entity->trans_vertices[index].z = x*CameraMatrix.m13 + y*CameraMatrix.m23 + z*CameraMatrix.m33;
+  }
 }
 
-// Copie le premier triangle de la face
-
-VOID SAGE_CopyTriangle1(W3D_Triangle *vf3d,UWORD ct_vface,UWORD p1,UWORD p2,UWORD p3,SAGE_Face *fa3d,UWORD ct_face,FLOAT falpha,FLOAT fred,FLOAT fgreen,FLOAT fblue)
+/**
+ * Check if entity faces are clipped
+ */
+VOID SAGE_EntityFaceClipping(SAGE_Entity * entity, SAGE_Camera * camera)
 {
-	FLOAT red1,green1,blue1,red2,green2,blue2,red3,green3,blue3;
+  WORD index, p1, p2, p3, p4;
+  FLOAT nearp, farp, x1plane, y1plane, x2plane, y2plane, x3plane, y3plane, x4plane, y4plane;
+  FLOAT x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4;
 
-	vf3d[ct_vface].v1.x = tab_view[p1].x;
-	vf3d[ct_vface].v1.y = tab_view[p1].y;
-	vf3d[ct_vface].v1.z = tab_view[p1].z;
-	vf3d[ct_vface].v1.w = 1.0 / tab_view[p1].z;
-	vf3d[ct_vface].v1.u = fa3d[ct_face].u1;
-	vf3d[ct_vface].v1.v = fa3d[ct_face].v1;
-	vf3d[ct_vface].v1.color.a = falpha;
-	red1 = fred + tab_pcolor[p1].red;
-	if (red1 > G3D_MAX_COLOR) red1 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v1.color.r = red1;
-	green1 = fgreen + tab_pcolor[p1].green;
-	if (green1 > G3D_MAX_COLOR) green1 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v1.color.g = green1;
-	blue1 = fblue + tab_pcolor[p1].blue;
-	if (blue1 > G3D_MAX_COLOR) blue1 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v1.color.b = blue1;
-	vf3d[ct_vface].v2.x = tab_view[p2].x;
-	vf3d[ct_vface].v2.y = tab_view[p2].y;
-	vf3d[ct_vface].v2.z = tab_view[p2].z;
-	vf3d[ct_vface].v2.w = 1.0 / tab_view[p2].z;
-	vf3d[ct_vface].v2.u = fa3d[ct_face].u2;
-	vf3d[ct_vface].v2.v = fa3d[ct_face].v2;
-	vf3d[ct_vface].v2.color.a = falpha;
-	red2 = fred + tab_pcolor[p2].red;
-	if (red2 >= G3D_MAX_COLOR) red2 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v2.color.r = red2;
-	green2 = fgreen + tab_pcolor[p2].green;
-	if (green2 > G3D_MAX_COLOR) green2 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v2.color.g = green2;
-	blue2 = fblue + tab_pcolor[p2].blue;
-	if (blue2 > G3D_MAX_COLOR) blue2 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v2.color.b = blue2;
-	vf3d[ct_vface].v3.x = tab_view[p3].x;
-	vf3d[ct_vface].v3.y = tab_view[p3].y;
-	vf3d[ct_vface].v3.z = tab_view[p3].z;
-	vf3d[ct_vface].v3.w = 1.0 / tab_view[p3].z;
-	vf3d[ct_vface].v3.u = fa3d[ct_face].u3;
-	vf3d[ct_vface].v3.v = fa3d[ct_face].v3;
-	vf3d[ct_vface].v3.color.a = falpha;
-	red3 = fred + tab_pcolor[p3].red;
-	if (red3 > G3D_MAX_COLOR) red3 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v3.color.r = red3;
-	green3 = fgreen + tab_pcolor[p3].green;
-	if (green3 > G3D_MAX_COLOR) green3 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v3.color.g = green3;
-	blue3 = fblue + tab_pcolor[p3].blue;
-	if (blue3 > G3D_MAX_COLOR) blue3 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v3.color.b = blue3;
+  nearp = camera->near_plane;
+  farp = camera->far_plane;
+  for (index = 0;index < entity->nb_faces;index++) {
+    if (!entity->faces[index].culled) {
+      p1 = entity->faces[index].p1;
+      x1 = entity->trans_vertices[p1].x; y1 = entity->trans_vertices[p1].y; z1 = entity->trans_vertices[p1].z;
+      p2 = entity->faces[index].p2;
+      x2 = entity->trans_vertices[p2].x; y2 = entity->trans_vertices[p2].y; z2 = entity->trans_vertices[p2].z;
+      p3 = entity->faces[index].p3;
+      x3 = entity->trans_vertices[p3].x; y3 = entity->trans_vertices[p3].y; z3 = entity->trans_vertices[p3].z;
+      if (entity->faces[index].is_quad) {
+        p4 = entity->faces[index].p4;
+        x4 = entity->trans_vertices[p4].x; y4 = entity->trans_vertices[p4].y; z4 = entity->trans_vertices[p4].z;
+      } else {
+        p4 = p3;
+        x4 = x3; y4 = y3; z4 = z3;
+      }
+      // Check if the face is outside of X planes
+      x1plane = (camera->centerx * z1) / camera->view_dist;
+      x2plane = (camera->centerx * z2) / camera->view_dist;
+      x3plane = (camera->centerx * z3) / camera->view_dist;
+      x4plane = (camera->centerx * z4) / camera->view_dist;
+      if ((x1>x1plane && x2>x2plane && x3>x3plane && x4>x4plane) || (x1<-x1plane && x2<-x2plane && x3<-x3plane && x4<-x4plane)) {
+        entity->faces[index].culled = TRUE;
+      } else {
+        // Check if the face is outside of Y planes
+        y1plane = (camera->centery * z1) / camera->view_dist;
+        y2plane = (camera->centery * z2) / camera->view_dist;
+        y3plane = (camera->centery * z3) / camera->view_dist;
+        y4plane = (camera->centery * z4) / camera->view_dist;
+        if ((y1>y1plane && y2>y2plane && y3>y3plane && y4>y4plane) || (y1<-y1plane && y2<-y2plane && y3<-y3plane && y4<-y4plane)) {
+          entity->faces[index].culled = TRUE;
+        } else {
+          // Check if the face is totally or partially outside of Z planes
+          if ((z1<nearp && z2<nearp && z3<nearp && z4<nearp) || (z1>farp && z2>farp && z3>farp && z4>farp)) {
+            entity->faces[index].culled = TRUE;
+          } else {
+            entity->faces[index].clipped = S3DE_NOCLIP;
+            if (z1 < nearp) entity->faces[index].clipped |= S3DE_P1CLIP;
+            if (z2 < nearp) entity->faces[index].clipped |= S3DE_P2CLIP;
+            if (z3 < nearp) entity->faces[index].clipped |= S3DE_P3CLIP;
+            if (z4 < nearp) entity->faces[index].clipped |= S3DE_P4CLIP;
+          }
+        }
+      }
+    }
+  }
 }
 
-// Copie le second triangle de la face
-
-VOID SAGE_CopyTriangle2(W3D_Triangle *vf3d,UWORD ct_vface,UWORD p1,UWORD p3,UWORD p4,SAGE_Face *fa3d,UWORD ct_face,FLOAT falpha,FLOAT fred,FLOAT fgreen,FLOAT fblue)
+/**
+ * Render an entity in wireframe mode
+ */
+VOID SAGE_DrawEntityWireFrame(SAGE_Entity * entity)
 {
-	FLOAT red1,green1,blue1,red3,green3,blue3,red4,green4,blue4;
+  WORD index;
 
-	vf3d[ct_vface].v1.x = tab_view[p1].x;
-	vf3d[ct_vface].v1.y = tab_view[p1].y;
-	vf3d[ct_vface].v1.z = tab_view[p1].z;
-	vf3d[ct_vface].v1.w = 1.0 / tab_view[p1].z;
-	vf3d[ct_vface].v1.u = fa3d[ct_face].u1;
-	vf3d[ct_vface].v1.v = fa3d[ct_face].v1;
-	vf3d[ct_vface].v1.color.a = falpha;
-	red1 = fred + tab_pcolor[p1].red;
-	if (red1 > G3D_MAX_COLOR) red1 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v1.color.r = red1;
-	green1 = fgreen + tab_pcolor[p1].green;
-	if (green1 > G3D_MAX_COLOR) green1 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v1.color.g = green1;
-	blue1 = fblue + tab_pcolor[p1].blue;
-	if (blue1 > G3D_MAX_COLOR) blue1 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v1.color.b = blue1;
-	vf3d[ct_vface].v2.x = tab_view[p3].x;
-	vf3d[ct_vface].v2.y = tab_view[p3].y;
-	vf3d[ct_vface].v2.z = tab_view[p3].z;
-	vf3d[ct_vface].v2.w = 1.0 / tab_view[p3].z;
-	vf3d[ct_vface].v2.u = fa3d[ct_face].u3;
-	vf3d[ct_vface].v2.v = fa3d[ct_face].v3;
-	vf3d[ct_vface].v2.color.a = falpha;
-	red3 = fred + tab_pcolor[p3].red;
-	if (red3 > G3D_MAX_COLOR) red3 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v2.color.r = red3;
-	green3 = fgreen + tab_pcolor[p3].green;
-	if (green3 > G3D_MAX_COLOR) green3 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v2.color.g = green3;
-	blue3 = fblue + tab_pcolor[p3].blue;
-	if (blue3 > G3D_MAX_COLOR) blue3 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v2.color.b = blue3;
-	vf3d[ct_vface].v3.x = tab_view[p4].x;
-	vf3d[ct_vface].v3.y = tab_view[p4].y;
-	vf3d[ct_vface].v3.z = tab_view[p4].z;
-	vf3d[ct_vface].v3.w = 1.0 / tab_view[p4].z;
-	vf3d[ct_vface].v3.u = fa3d[ct_face].u4;
-	vf3d[ct_vface].v3.v = fa3d[ct_face].v4;
-	vf3d[ct_vface].v3.color.a = falpha;
-	red4 = fred + tab_pcolor[p4].red;
-	if (red4 >= G3D_MAX_COLOR) red4 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v3.color.r = red4;
-	green4 = fgreen + tab_pcolor[p4].green;
-	if (green4 > G3D_MAX_COLOR) green4 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v3.color.g = green4;
-	blue4 = fblue + tab_pcolor[p4].blue;
-	if (blue4 > G3D_MAX_COLOR) blue4 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v3.color.b = blue4;
+  for (index = 0;index < entity->nb_faces;index++) {
+    if (entity->faces[index].is_quad) {
+      SAGE_DrawClippedLine(
+        (LONG)(projected_vertices[entity->faces[index].p1].x),
+        (LONG)(projected_vertices[entity->faces[index].p1].y),
+        (LONG)(projected_vertices[entity->faces[index].p2].x),
+        (LONG)(projected_vertices[entity->faces[index].p2].y),
+        entity->faces[index].color
+      );
+      SAGE_DrawClippedLine(
+        (LONG)(projected_vertices[entity->faces[index].p2].x),
+        (LONG)(projected_vertices[entity->faces[index].p2].y),
+        (LONG)(projected_vertices[entity->faces[index].p3].x),
+        (LONG)(projected_vertices[entity->faces[index].p3].y),
+        entity->faces[index].color
+      );
+      SAGE_DrawClippedLine(
+        (LONG)(projected_vertices[entity->faces[index].p3].x),
+        (LONG)(projected_vertices[entity->faces[index].p3].y),
+        (LONG)(projected_vertices[entity->faces[index].p4].x),
+        (LONG)(projected_vertices[entity->faces[index].p4].y),
+        entity->faces[index].color
+      );
+      SAGE_DrawClippedLine(
+        (LONG)(projected_vertices[entity->faces[index].p1].x),
+        (LONG)(projected_vertices[entity->faces[index].p1].y),
+        (LONG)(projected_vertices[entity->faces[index].p4].x),
+        (LONG)(projected_vertices[entity->faces[index].p4].y),
+        entity->faces[index].color
+      );
+    } else {
+      SAGE_DrawClippedLine(
+        (LONG)(projected_vertices[entity->faces[index].p1].x),
+        (LONG)(projected_vertices[entity->faces[index].p1].y),
+        (LONG)(projected_vertices[entity->faces[index].p2].x),
+        (LONG)(projected_vertices[entity->faces[index].p2].y),
+        entity->faces[index].color
+      );
+      SAGE_DrawClippedLine(
+        (LONG)(projected_vertices[entity->faces[index].p2].x),
+        (LONG)(projected_vertices[entity->faces[index].p2].y),
+        (LONG)(projected_vertices[entity->faces[index].p3].x),
+        (LONG)(projected_vertices[entity->faces[index].p3].y),
+        entity->faces[index].color
+      );
+      SAGE_DrawClippedLine(
+        (LONG)(projected_vertices[entity->faces[index].p1].x),
+        (LONG)(projected_vertices[entity->faces[index].p1].y),
+        (LONG)(projected_vertices[entity->faces[index].p3].x),
+        (LONG)(projected_vertices[entity->faces[index].p3].y),
+        entity->faces[index].color
+      );
+    }
+  }
 }
 
-// Clip un triangle de la face ( lorsqu'un seul point est hors du c�ne )
-
-VOID SAGE_ClipTriangle1(W3D_Triangle *vf3d,UWORD ct_vface,SAGE_Clip *clip,UWORD p1,UWORD p2,UWORD p3,SAGE_Face *fa3d,UWORD ct_face,FLOAT falpha,FLOAT fred,FLOAT fgreen,FLOAT fblue,FLOAT nearp)
+/**
+ * Render an entity in flat mode
+ */
+VOID SAGE_DrawEntityFlat(SAGE_Entity * entity)
 {
-	FLOAT red1,green1,blue1,red2,green2,blue2,red3,green3,blue3;
-	FLOAT xp,yp,up,vp,xs,ys,us,vs;
+  WORD index;
 
-	xp = tab_view[p1].x + (tab_view[p2].x - tab_view[p1].x) * clip->t1;
-	yp = tab_view[p1].y + (tab_view[p2].y - tab_view[p1].y) * clip->t1;
-	up = clip->u1 + (clip->u2 - clip->u1) * clip->t1;
-	vp = clip->v1 + (clip->v2 - clip->v1) * clip->t1;
-
-	vf3d[ct_vface].v1.x = xp;
-	vf3d[ct_vface].v1.y = yp;
-	vf3d[ct_vface].v1.z = nearp;
-	vf3d[ct_vface].v1.w = 1.0 / nearp;
-	vf3d[ct_vface].v1.u = up;
-	vf3d[ct_vface].v1.v = vp;
-	vf3d[ct_vface].v1.color.a = falpha;
-	red1 = fred + tab_pcolor[p1].red;
-	if (red1 >= G3D_MAX_COLOR) red1 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v1.color.r = red1;
-	green1 = fgreen + tab_pcolor[p1].green;
-	if (green1 >= G3D_MAX_COLOR) green1 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v1.color.g = green1;
-	blue1 = fblue + tab_pcolor[p1].blue;
-	if (blue1 >= G3D_MAX_COLOR) blue1 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v1.color.b = blue1;
-	vf3d[ct_vface].v2.x = tab_view[p2].x;
-	vf3d[ct_vface].v2.y = tab_view[p2].y;
-	vf3d[ct_vface].v2.z = tab_view[p2].z;
-	vf3d[ct_vface].v2.w = 1.0 / tab_view[p2].z;
-	vf3d[ct_vface].v2.u = clip->u2;
-	vf3d[ct_vface].v2.v = clip->v2;
-	vf3d[ct_vface].v2.color.a = falpha;
-	red2 = fred + tab_pcolor[p2].red;
-	if (red2 > G3D_MAX_COLOR) red2 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v2.color.r = red2;
-	green2 = fgreen + tab_pcolor[p2].green;
-	if (green2 > G3D_MAX_COLOR) green2 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v2.color.g = green2;
-	blue2 = fblue + tab_pcolor[p2].blue;
-	if (blue2 > G3D_MAX_COLOR) blue2 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v2.color.b = blue2;
-	vf3d[ct_vface].v3.x = tab_view[p3].x;
-	vf3d[ct_vface].v3.y = tab_view[p3].y;
-	vf3d[ct_vface].v3.z = tab_view[p3].z;
-	vf3d[ct_vface].v3.w = 1.0 / tab_view[p3].z;
-	vf3d[ct_vface].v3.u = clip->u3;
-	vf3d[ct_vface].v3.v = clip->v3;
-	vf3d[ct_vface].v3.color.a = falpha;
-	red3 = fred + tab_pcolor[p3].red;
-	if (red3 > G3D_MAX_COLOR) red3 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v3.color.r = red3;
-	green3 = fgreen + tab_pcolor[p3].green;
-	if (green3 > G3D_MAX_COLOR) green3 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v3.color.g = green3;
-	blue3 = fblue + tab_pcolor[p3].blue;
-	if (blue3 > G3D_MAX_COLOR) blue3 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v3.color.b = blue3;
-
-	ct_vface++;
-
-	xs = tab_view[p1].x + (tab_view[p3].x - tab_view[p1].x) * clip->t2;
-	ys = tab_view[p1].y + (tab_view[p3].y - tab_view[p1].y) * clip->t2;
-	us = clip->u1 + (clip->u3 - clip->u1) * clip->t2;
-	vs = clip->v1 + (clip->v3 - clip->v1) * clip->t2;
-
-	vf3d[ct_vface].v1.x = xp;
-	vf3d[ct_vface].v1.y = yp;
-	vf3d[ct_vface].v1.z = nearp;
-	vf3d[ct_vface].v1.w = 1.0 / nearp;
-	vf3d[ct_vface].v1.u = up;
-	vf3d[ct_vface].v1.v = vp;
-	vf3d[ct_vface].v1.color.a = falpha;
-	vf3d[ct_vface].v1.color.r = red1;
-	vf3d[ct_vface].v1.color.g = green1;
-	vf3d[ct_vface].v1.color.b = blue1;
-	vf3d[ct_vface].v2.x = xs;
-	vf3d[ct_vface].v2.y = ys;
-	vf3d[ct_vface].v2.z = nearp;
-	vf3d[ct_vface].v2.w = 1.0 / nearp;
-	vf3d[ct_vface].v2.u = us;
-	vf3d[ct_vface].v2.v = vs;
-	vf3d[ct_vface].v2.color.a = falpha;
-	vf3d[ct_vface].v2.color.r = red1;
-	vf3d[ct_vface].v2.color.g = green1;
-	vf3d[ct_vface].v2.color.b = blue1;
-	vf3d[ct_vface].v3.x = tab_view[p3].x;
-	vf3d[ct_vface].v3.y = tab_view[p3].y;
-	vf3d[ct_vface].v3.z = tab_view[p3].z;
-	vf3d[ct_vface].v3.w = 1.0 / tab_view[p3].z;
-	vf3d[ct_vface].v3.u = clip->u3;
-	vf3d[ct_vface].v3.v = clip->v3;
-	vf3d[ct_vface].v3.color.a = falpha;
-	vf3d[ct_vface].v3.color.r = red3;
-	vf3d[ct_vface].v3.color.g = green3;
-	vf3d[ct_vface].v3.color.b = blue3;
+  for (index = 0;index < entity->nb_faces;index++) {
+    if (!entity->faces[index].culled) {
+      SAGE_DrawClippedTriangle(
+        (LONG)(projected_vertices[entity->faces[index].p1].x),
+        (LONG)(projected_vertices[entity->faces[index].p1].y),
+        (LONG)(projected_vertices[entity->faces[index].p2].x),
+        (LONG)(projected_vertices[entity->faces[index].p2].y),
+        (LONG)(projected_vertices[entity->faces[index].p3].x),
+        (LONG)(projected_vertices[entity->faces[index].p3].y),
+        entity->faces[index].color
+      );
+      if (entity->faces[index].is_quad) {
+        SAGE_DrawClippedTriangle(
+          (LONG)(projected_vertices[entity->faces[index].p1].x),
+          (LONG)(projected_vertices[entity->faces[index].p1].y),
+          (LONG)(projected_vertices[entity->faces[index].p4].x),
+          (LONG)(projected_vertices[entity->faces[index].p4].y),
+          (LONG)(projected_vertices[entity->faces[index].p3].x),
+          (LONG)(projected_vertices[entity->faces[index].p3].y),
+          entity->faces[index].color
+        );
+      }
+    }
+  }
 }
 
-// Clip un triangle de la face ( lorsque deux point sont hors du c�ne )
-
-VOID SAGE_ClipTriangle2(W3D_Triangle *vf3d,UWORD ct_vface,SAGE_Clip *clip,UWORD p1,UWORD p2,UWORD p3,SAGE_Face *fa3d,UWORD ct_face,FLOAT falpha,FLOAT fred,FLOAT fgreen,FLOAT fblue,FLOAT nearp)
+/**
+ * Add a textured triangle to render list (first part)
+ */
+VOID SAGE_AddTexturedTriangleP1(SAGE_EntityFace * face)
 {
-	FLOAT red1,green1,blue1,red2,green2,blue2,red3,green3,blue3;
+  SAGE_3DTriangle triangle;
 
-	vf3d[ct_vface].v1.x = tab_view[p1].x + (tab_view[p3].x - tab_view[p1].x) * clip->t1;
-	vf3d[ct_vface].v1.y = tab_view[p1].y + (tab_view[p2].y - tab_view[p1].y) * clip->t1;
-	vf3d[ct_vface].v1.z = nearp;
-	vf3d[ct_vface].v1.w = 1.0 / nearp;
-	vf3d[ct_vface].v1.u = clip->u1 + (clip->u2 - clip->u1) * clip->t1;
-	vf3d[ct_vface].v1.v = clip->v1 + (clip->v2 - clip->v1) * clip->t1;
-	vf3d[ct_vface].v1.color.a = falpha;
-	red1 = fred + tab_pcolor[p1].red;
-	if (red1 >= G3D_MAX_COLOR) red1 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v1.color.r = red1;
-	green1 = fgreen + tab_pcolor[p1].green;
-	if (green1 >= G3D_MAX_COLOR) green1 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v1.color.g = green1;
-	blue1 = fblue + tab_pcolor[p1].blue;
-	if (blue1 >= G3D_MAX_COLOR) blue1 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v1.color.b = blue1;
-	vf3d[ct_vface].v2.x = tab_view[p2].x + (tab_view[p3].x - tab_view[p2].x) * clip->t2;
-	vf3d[ct_vface].v2.y = tab_view[p2].y + (tab_view[p3].y - tab_view[p2].y) * clip->t2;
-	vf3d[ct_vface].v2.z = nearp;
-	vf3d[ct_vface].v2.w = 1.0 / nearp;
-	vf3d[ct_vface].v2.u = clip->u2 + (clip->u3 - clip->u2) * clip->t2;
-	vf3d[ct_vface].v2.v = clip->v2 + (clip->v3 - clip->v2) * clip->t2;
-	vf3d[ct_vface].v2.color.a = falpha;
-	red2 = fred + tab_pcolor[p2].red;
-	if (red2 > G3D_MAX_COLOR) red2 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v2.color.r = red2;
-	green2 = fgreen + tab_pcolor[p2].green;
-	if (green2 > G3D_MAX_COLOR) green2 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v2.color.g = green2;
-	blue2 = fblue + tab_pcolor[p2].blue;
-	if (blue2 > G3D_MAX_COLOR) blue2 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v2.color.b = blue2;
-	vf3d[ct_vface].v3.x = tab_view[p3].x;
-	vf3d[ct_vface].v3.y = tab_view[p3].y;
-	vf3d[ct_vface].v3.z = tab_view[p3].z;
-	vf3d[ct_vface].v3.w = 1.0 / tab_view[p3].z;
-	vf3d[ct_vface].v3.u = clip->u3;
-	vf3d[ct_vface].v3.v = clip->v3;
-	vf3d[ct_vface].v3.color.a = falpha;
-	red3 = fred + tab_pcolor[p3].red;
-	if (red3 > G3D_MAX_COLOR) red3 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v3.color.r = red3;
-	green3 = fgreen + tab_pcolor[p3].green;
-	if (green3 > G3D_MAX_COLOR) green3 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v3.color.g = green3;
-	blue3 = fblue + tab_pcolor[p3].blue;
-	if (blue3 > G3D_MAX_COLOR) blue3 = G3D_MAX_COLOR;
-	vf3d[ct_vface].v3.color.b = blue3;
+  if (debug) SAGE_DebugLog("Add triangle 1");
+  triangle.x1 = projected_vertices[face->p1].x;
+  triangle.y1 = projected_vertices[face->p1].y;
+  triangle.z1 = projected_vertices[face->p1].z;
+  triangle.u1 = face->u1;
+  triangle.v1 = face->v1;
+  triangle.x2 = projected_vertices[face->p2].x;
+  triangle.y2 = projected_vertices[face->p2].y;
+  triangle.z2 = projected_vertices[face->p2].z;
+  triangle.u2 = face->u2;
+  triangle.v2 = face->v2;
+  triangle.x3 = projected_vertices[face->p3].x;
+  triangle.y3 = projected_vertices[face->p3].y;
+  triangle.z3 = projected_vertices[face->p3].z;
+  triangle.u3 = face->u3;
+  triangle.v3 = face->v3;
+  triangle.texture = face->texture;
+  if (debug) SAGE_Dump3DTriangle(&triangle);
+  SAGE_Push3DTriangle(&triangle);
 }
 
-VOID SAGE_Debug(BOOL debug)
+/**
+ * Add a textured triangle to render list (second part)
+ */
+VOID SAGE_AddTexturedTriangleP2(SAGE_EntityFace * face)
 {
-	SAGE_debug = debug;
+  SAGE_3DTriangle triangle;
+
+  if (debug) SAGE_DebugLog("Add triangle 2");
+  triangle.x1 = projected_vertices[face->p1].x;
+  triangle.y1 = projected_vertices[face->p1].y;
+  triangle.z1 = projected_vertices[face->p1].z;
+  triangle.u1 = face->u1;
+  triangle.v1 = face->v1;
+  triangle.x2 = projected_vertices[face->p4].x;
+  triangle.y2 = projected_vertices[face->p4].y;
+  triangle.z2 = projected_vertices[face->p4].z;
+  triangle.u2 = face->u4;
+  triangle.v2 = face->v4;
+  triangle.x3 = projected_vertices[face->p3].x;
+  triangle.y3 = projected_vertices[face->p3].y;
+  triangle.z3 = projected_vertices[face->p3].z;
+  triangle.u3 = face->u3;
+  triangle.v3 = face->v3;
+  triangle.texture = face->texture;
+  if (debug) SAGE_Dump3DTriangle(&triangle);
+  SAGE_Push3DTriangle(&triangle);
+}
+
+/**
+ * Init the 3D engine
+ */
+BOOL SAGE_Init3DEngine(VOID)
+{
+  FLOAT angle, step;
+  LONG i;
+
+  angle = 0.0;
+  step = 1.0 / (FLOAT) S3DE_PRECISION;
+  for (i = 0;i < (360*S3DE_PRECISION);i++) {
+    Sinus[i] = sin(DEGTORAD(angle));
+    Cosinus[i] = cos(DEGTORAD(angle));
+    Tangente[i] = tan(DEGTORAD(angle));
+    angle += step;
+  }
+  sage_world.nb_materials = 0;
+  sage_world.visible_entities = 0;
+  sage_world.active_camera = 0;
+  sage_world.active_skybox = FALSE;
+  sage_world.skybox = SAGE_CreateEntity(8, 6);
+  if (sage_world.skybox != NULL) {
+    SAGE_SetSkyboxRadius((FLOAT)20.0);
+    SAGE_SetSkyboxTextures(0, 0, 0, 0, 0, 0);
+    SAGE_SetEntityRadius(sage_world.skybox);
+    SAGE_SetEntityNormals(sage_world.skybox);
+    SD(SAGE_DumpEntity(sage_world.skybox));
+  }
+  return TRUE;
+}
+
+/**
+ * Release the 3D engine
+ */
+VOID SAGE_Release3DEngine()
+{
+  if (sage_world.skybox != NULL) {
+    SAGE_ReleaseEntity(sage_world.skybox);
+  }
+}
+
+/**
+ * Transform skybox to camera view
+ */
+VOID SAGE_TransformSkybox(SAGE_Camera * camera)
+{
+  SAGE_Entity * entity;
+
+  if (debug) SAGE_DebugLog("Transform skybox");
+  entity = sage_world.skybox;
+  if (entity != NULL && !entity->disabled) {
+    if (SAGE_EntityVisibility(entity, camera)) {
+      SAGE_SetupEntityMatrix(entity);
+      SAGE_EntityLocalToWorld(entity);
+      SAGE_EntityBackfaceCulling(entity, camera);
+      SAGE_EntityWorldToCamera(entity, camera);
+      if (entity->clipped) {
+        SAGE_EntityFaceClipping(entity, camera);
+      }
+      if (debug) SAGE_DumpEntity(entity);
+    }
+  }
+}
+
+/**
+ * Transform entities to camera view
+ */
+VOID SAGE_TransformEntities(SAGE_Camera * camera)
+{
+  SAGE_Entity * entity;
+  ULONG index;
+
+  if (debug) SAGE_DebugLog("Transform entities");
+  for (index = 0;index < S3DE_MAX_ENTITIES;index++) {
+    entity = sage_world.entities[index];
+    if (entity != NULL && !entity->disabled) {
+      if (SAGE_EntityVisibility(entity, camera)) {
+        SAGE_SetupEntityMatrix(entity);
+        SAGE_EntityLocalToWorld(entity);
+        SAGE_EntityBackfaceCulling(entity, camera);
+        SAGE_EntityWorldToCamera(entity, camera);
+        if (entity->clipped) {
+          SAGE_EntityFaceClipping(entity, camera);
+        }
+        if (debug) SAGE_DumpEntity(entity);
+      }
+    }
+  }
+}
+
+/**
+ * Sort visible entities
+ */
+VOID SAGE_SortEntities(SAGE_SortedEntity * entities, LONG low, LONG high)
+{
+  SAGE_SortedEntity temp;
+  FLOAT pivot;
+  LONG idx_low, idx_high;
+
+  if (low >= high) return;
+  idx_low = low+1;
+  idx_high = high;
+  pivot = entities[low].posz;
+  while (idx_low <= idx_high) {
+    while (entities[idx_low].posz >= pivot && idx_low <= high) idx_low++;
+    while (entities[idx_high].posz < pivot && idx_high >= low) idx_high--;
+    if (idx_low < idx_high) {
+      temp.entity = entities[idx_low].entity;
+      temp.posz = entities[idx_low].posz;
+      entities[idx_low].entity = entities[idx_high].entity;
+      entities[idx_low].posz = entities[idx_high].posz;
+      entities[idx_high].entity = temp.entity;
+      entities[idx_high].posz = temp.posz;
+      idx_low++;
+      idx_high--;
+    }
+  }
+  temp.entity = entities[low].entity;
+  temp.posz = entities[low].posz;
+  entities[low].entity = entities[idx_high].entity;
+  entities[low].posz = entities[idx_high].posz;
+  entities[idx_high].entity = temp.entity;
+  entities[idx_high].posz = temp.posz;
+  SAGE_SortEntities(entities, low, idx_high-1);
+  SAGE_SortEntities(entities, idx_high+1, high);
+}
+
+/**
+ * Calculate perspective for all entity vertices
+ */
+VOID SAGE_EntityProjection(SAGE_Entity * entity, SAGE_Camera * camera)
+{
+  WORD index;
+  
+  for (index = 0;index < entity->nb_vertices;index++) {
+    if (entity->trans_vertices[index].z > 0.0) {
+      projected_vertices[index].x = (entity->trans_vertices[index].x * camera->view_dist / entity->trans_vertices[index].z) + camera->centerx;
+      projected_vertices[index].y = (-entity->trans_vertices[index].y * camera->view_dist / entity->trans_vertices[index].z) + camera->centery;
+      projected_vertices[index].z = entity->trans_vertices[index].z;
+    } else {
+      projected_vertices[index].x = 0.0;
+      projected_vertices[index].y = 0.0;
+      projected_vertices[index].z = 0.0;
+    }
+  }
+}
+
+/**
+ * Clip the first point of the face against near plane
+ */
+VOID SAGE_ClipOneFacePoint(SAGE_EntityFace * face, SAGE_EntityVertex * vertices, SAGE_Camera * camera)
+{
+  ULONG p1, p2, p3;
+  FLOAT u1, v1, nearp, clip_inter1, clip_inter2, cx, cy;
+
+  if (debug) SAGE_DebugLog("Clipping one point");
+
+  p1 = face->p1;
+  p2 = face->p2;
+  p3 = face->p3;
+  u1 = face->u1;
+  v1 = face->v1;
+  nearp = camera->near_plane;
+
+  if (debug) SAGE_DebugLog(" => vertex p1 x=%f  y=%f  z=%f  u=%f  v=%f", vertices[p1].x, vertices[p1].y, vertices[p1].z, face->u1, face->v1);
+
+  if (debug) SAGE_DebugLog(" => vertex p2 x=%f  y=%f  z=%f  u=%f  v=%f", vertices[p2].x, vertices[p2].y, vertices[p2].z, face->u2, face->v2);
+  clip_inter1 = (nearp - vertices[p1].z) / (vertices[p2].z - vertices[p1].z);
+  cx = vertices[p1].x + (vertices[p2].x - vertices[p1].x) * clip_inter1;
+  cy = vertices[p1].y + (vertices[p2].y - vertices[p1].y) * clip_inter1;
+  face->u1 = u1 + (face->u2 - u1) * clip_inter1;
+  face->v1 = v1 + (face->v2 - v1) * clip_inter1;
+  if (debug) SAGE_DebugLog(" => clip1=%f  cx=%f  cy=%f  cu=%f  cv=%f", clip_inter1, cx, cy, face->u1, face->v1);
+
+  projected_vertices[S3DE_VERTEX_CLIP1].x = (cx * camera->view_dist / nearp) + camera->centerx;
+  projected_vertices[S3DE_VERTEX_CLIP1].y = (-cy * camera->view_dist / nearp) + camera->centery;
+  projected_vertices[S3DE_VERTEX_CLIP1].z = nearp;
+  if (debug) SAGE_DebugLog(" => px=%f  py=%f  pz=%f", projected_vertices[S3DE_VERTEX_CLIP1].x, projected_vertices[S3DE_VERTEX_CLIP1].y, projected_vertices[S3DE_VERTEX_CLIP1].z);
+
+  face->p1 = S3DE_VERTEX_CLIP1;
+  SAGE_AddTexturedTriangleP1(face);
+
+  if (debug) SAGE_DebugLog(" => vertex p3 x=%f  y=%f  z=%f  u=%f  v=%f", vertices[p3].x, vertices[p3].y, vertices[p3].z, face->u3, face->v3);
+  clip_inter2 = (nearp - vertices[p1].z) / (vertices[p3].z - vertices[p1].z);
+  cx = vertices[p1].x + (vertices[p3].x - vertices[p1].x) * clip_inter2;
+  cy = vertices[p1].y + (vertices[p3].y - vertices[p1].y) * clip_inter2;
+  face->u4 = u1 + (face->u3 - u1) * clip_inter2;
+  face->v4 = v1 + (face->v3 - v1) * clip_inter2;
+  if (debug) SAGE_DebugLog(" => clip2=%f  cx=%f  cy=%f  cu=%f  cv=%f", clip_inter2, cx, cy, face->u4, face->v4);
+
+  projected_vertices[S3DE_VERTEX_CLIP2].x = (cx * camera->view_dist / nearp) + camera->centerx;
+  projected_vertices[S3DE_VERTEX_CLIP2].y = (-cy * camera->view_dist / nearp) + camera->centery;
+  projected_vertices[S3DE_VERTEX_CLIP2].z = nearp;
+  if (debug) SAGE_DebugLog(" => px=%f  py=%f  pz=%f", projected_vertices[S3DE_VERTEX_CLIP2].x, projected_vertices[S3DE_VERTEX_CLIP2].y, projected_vertices[S3DE_VERTEX_CLIP2].z);
+
+  face->p4 = S3DE_VERTEX_CLIP2;
+  SAGE_AddTexturedTriangleP2(face);
+}
+
+/**
+ * Clip the two first points of the face against near plane
+ */
+VOID SAGE_ClipTwoFacePoint(SAGE_EntityFace * face, SAGE_EntityVertex * vertices, SAGE_Camera * camera)
+{
+  ULONG p1, p2, p3;
+  FLOAT u1, v1, u2, v2, nearp, clip_inter1, clip_inter2, cx, cy;
+
+  if (debug) SAGE_DebugLog("Clipping two points");
+
+  p1 = face->p1;
+  p2 = face->p2;
+  p3 = face->p3;
+  u1 = face->u1;
+  v1 = face->v1;
+  u2 = face->u2;
+  v2 = face->v2;
+  nearp = camera->near_plane;
+
+  if (debug) SAGE_DebugLog(" => vertex p1 x=%f  y=%f  z=%f  u=%f  v=%f", vertices[p1].x, vertices[p1].y, vertices[p1].z, face->u1, face->v1);
+  if (debug) SAGE_DebugLog(" => vertex p2 x=%f  y=%f  z=%f  u=%f  v=%f", vertices[p2].x, vertices[p2].y, vertices[p2].z, face->u2, face->v2);
+
+  if (debug) SAGE_DebugLog(" => vertex p3 x=%f  y=%f  z=%f  u=%f  v=%f", vertices[p3].x, vertices[p3].y, vertices[p3].z, face->u3, face->v3);
+  clip_inter1 = (nearp - vertices[p1].z) / (vertices[p3].z - vertices[p1].z);
+  cx = vertices[p1].x + (vertices[p3].x - vertices[p1].x) * clip_inter1;
+  cy = vertices[p1].y + (vertices[p3].y - vertices[p1].y) * clip_inter1;
+  face->u1 = u1 + (face->u3 - u1) * clip_inter1;
+  face->v1 = v1 + (face->v3 - v1) * clip_inter1;
+  if (debug) SAGE_DebugLog(" => clip1=%f  cx=%f  cy=%f  cu=%f  cv=%f", clip_inter1, cx, cy, face->u1, face->v1);
+
+  projected_vertices[S3DE_VERTEX_CLIP1].x = (cx * camera->view_dist / nearp) + camera->centerx;
+  projected_vertices[S3DE_VERTEX_CLIP1].y = (-cy * camera->view_dist / nearp) + camera->centery;
+  projected_vertices[S3DE_VERTEX_CLIP1].z = nearp;
+  if (debug) SAGE_DebugLog(" => px=%f  py=%f  pz=%f", projected_vertices[S3DE_VERTEX_CLIP1].x, projected_vertices[S3DE_VERTEX_CLIP1].y, projected_vertices[S3DE_VERTEX_CLIP1].z);
+
+  clip_inter2 = (nearp - vertices[p2].z) / (vertices[p3].z - vertices[p2].z);
+  cx = vertices[p2].x + (vertices[p3].x - vertices[p2].x) * clip_inter2;
+  cy = vertices[p2].y + (vertices[p3].y - vertices[p2].y) * clip_inter2;
+  face->u2 = u2 + (face->u3 - u2) * clip_inter2;
+  face->v2 = v2 + (face->v3 - v2) * clip_inter2;
+  if (debug) SAGE_DebugLog(" => clip2=%f  cx=%f  cy=%f  cu=%f  cv=%f", clip_inter2, cx, cy, face->u2, face->v2);
+
+  projected_vertices[S3DE_VERTEX_CLIP2].x = (cx * camera->view_dist / nearp) + camera->centerx;
+  projected_vertices[S3DE_VERTEX_CLIP2].y = (-cy * camera->view_dist / nearp) + camera->centery;
+  projected_vertices[S3DE_VERTEX_CLIP2].z = nearp;
+  if (debug) SAGE_DebugLog(" => px=%f  py=%f  pz=%f", projected_vertices[S3DE_VERTEX_CLIP2].x, projected_vertices[S3DE_VERTEX_CLIP2].y, projected_vertices[S3DE_VERTEX_CLIP2].z);
+
+  face->p1 = S3DE_VERTEX_CLIP1;
+  face->p2 = S3DE_VERTEX_CLIP2;
+  SAGE_AddTexturedTriangleP1(face);
+}
+
+/**
+ * Set the list of faces to render and clip them against near plane if necessary
+ */
+VOID SAGE_SetClippedFaceList(SAGE_Entity * entity, SAGE_Camera * camera)
+{
+  WORD index;
+  SAGE_EntityFace * face, clipped_face;
+
+  for (index = 0;index < entity->nb_faces;index++) {
+    face = &(entity->faces[index]);
+    if (!face->culled) {
+      if (face->clipped == S3DE_NOCLIP) {
+        SAGE_AddTexturedTriangleP1(face);
+        if (face->is_quad) {
+          SAGE_AddTexturedTriangleP2(face);
+        }
+      } else {
+        if (debug) SAGE_DebugLog("Clipping first triangle");
+        // Check for points 1, 2 and 3
+        switch (face->clipped & S3DE_MASKP4) {
+          case S3DE_NOCLIP:
+            SAGE_AddTexturedTriangleP1(face);
+            break;
+          case S3DE_P1CLIP:
+            clipped_face.p1 = face->p1; clipped_face.u1 = face->u1; clipped_face.v1 = face->v1;
+            clipped_face.p2 = face->p2; clipped_face.u2 = face->u2; clipped_face.v2 = face->v2;
+            clipped_face.p3 = face->p3; clipped_face.u3 = face->u3; clipped_face.v3 = face->v3;
+            clipped_face.texture = face->texture;
+            SAGE_ClipOneFacePoint(&clipped_face, entity->trans_vertices, camera);
+            break;
+          case S3DE_P2CLIP:
+            clipped_face.p1 = face->p2; clipped_face.u1 = face->u2; clipped_face.v1 = face->v2;
+            clipped_face.p2 = face->p3; clipped_face.u2 = face->u3; clipped_face.v2 = face->v3;
+            clipped_face.p3 = face->p1; clipped_face.u3 = face->u1; clipped_face.v3 = face->v1;
+            clipped_face.texture = face->texture;
+            SAGE_ClipOneFacePoint(&clipped_face, entity->trans_vertices, camera);
+            break;
+          case S3DE_P3CLIP:
+            clipped_face.p1 = face->p3; clipped_face.u1 = face->u3; clipped_face.v1 = face->v3;
+            clipped_face.p2 = face->p1; clipped_face.u2 = face->u1; clipped_face.v2 = face->v1;
+            clipped_face.p3 = face->p2; clipped_face.u3 = face->u2; clipped_face.v3 = face->v2;
+            clipped_face.texture = face->texture;
+            SAGE_ClipOneFacePoint(&clipped_face, entity->trans_vertices, camera);
+            break;
+          case S3DE_P1CLIP|S3DE_P2CLIP:
+            clipped_face.p1 = face->p1; clipped_face.u1 = face->u1; clipped_face.v1 = face->v1;
+            clipped_face.p2 = face->p2; clipped_face.u2 = face->u2; clipped_face.v2 = face->v2;
+            clipped_face.p3 = face->p3; clipped_face.u3 = face->u3; clipped_face.v3 = face->v3;
+            clipped_face.texture = face->texture;
+            SAGE_ClipTwoFacePoint(&clipped_face, entity->trans_vertices, camera);
+            break;
+          case S3DE_P1CLIP|S3DE_P3CLIP:
+            clipped_face.p1 = face->p3; clipped_face.u1 = face->u3; clipped_face.v1 = face->v3;
+            clipped_face.p2 = face->p1; clipped_face.u2 = face->u1; clipped_face.v2 = face->v1;
+            clipped_face.p3 = face->p2; clipped_face.u3 = face->u2; clipped_face.v3 = face->v2;
+            clipped_face.texture = face->texture;
+            SAGE_ClipTwoFacePoint(&clipped_face, entity->trans_vertices, camera);
+            break;
+          case S3DE_P2CLIP|S3DE_P3CLIP:
+            clipped_face.p1 = face->p2; clipped_face.u1 = face->u2; clipped_face.v1 = face->v2;
+            clipped_face.p2 = face->p3; clipped_face.u2 = face->u3; clipped_face.v2 = face->v3;
+            clipped_face.p3 = face->p1; clipped_face.u3 = face->u1; clipped_face.v3 = face->v1;
+            clipped_face.texture = face->texture;
+            SAGE_ClipTwoFacePoint(&clipped_face, entity->trans_vertices, camera);
+            break;
+        }
+        if (face->is_quad) {
+          if (debug) SAGE_DebugLog("Clipping second triangle");
+          // Check for points 1,3 and 4
+          switch (face->clipped & S3DE_MASKP2) {
+            case S3DE_NOCLIP:
+              SAGE_AddTexturedTriangleP2(face);
+              break;
+            case S3DE_P1CLIP:
+              clipped_face.p1 = face->p1; clipped_face.u1 = face->u1; clipped_face.v1 = face->v1;
+              clipped_face.p2 = face->p4; clipped_face.u2 = face->u4; clipped_face.v2 = face->v4;
+              clipped_face.p3 = face->p3; clipped_face.u3 = face->u3; clipped_face.v3 = face->v3;
+              clipped_face.texture = face->texture;
+              SAGE_ClipOneFacePoint(&clipped_face, entity->trans_vertices, camera);
+              break;
+            case S3DE_P4CLIP:
+              clipped_face.p1 = face->p4; clipped_face.u1 = face->u4; clipped_face.v1 = face->v4;
+              clipped_face.p2 = face->p3; clipped_face.u2 = face->u3; clipped_face.v2 = face->v3;
+              clipped_face.p3 = face->p1; clipped_face.u3 = face->u1; clipped_face.v3 = face->v1;
+              clipped_face.texture = face->texture;
+              SAGE_ClipOneFacePoint(&clipped_face, entity->trans_vertices, camera);
+              break;
+            case S3DE_P3CLIP:
+              clipped_face.p1 = face->p3; clipped_face.u1 = face->u3; clipped_face.v1 = face->v3;
+              clipped_face.p2 = face->p1; clipped_face.u2 = face->u1; clipped_face.v2 = face->v1;
+              clipped_face.p3 = face->p4; clipped_face.u3 = face->u4; clipped_face.v3 = face->v4;
+              clipped_face.texture = face->texture;
+              SAGE_ClipOneFacePoint(&clipped_face, entity->trans_vertices, camera);
+              break;
+            case S3DE_P1CLIP|S3DE_P4CLIP:
+              clipped_face.p1 = face->p1; clipped_face.u1 = face->u1; clipped_face.v1 = face->v1;
+              clipped_face.p2 = face->p4; clipped_face.u2 = face->u4; clipped_face.v2 = face->v4;
+              clipped_face.p3 = face->p3; clipped_face.u3 = face->u3; clipped_face.v3 = face->v3;
+              clipped_face.texture = face->texture;
+              SAGE_ClipTwoFacePoint(&clipped_face, entity->trans_vertices, camera);
+              break;
+            case S3DE_P1CLIP|S3DE_P3CLIP:
+              clipped_face.p1 = face->p3; clipped_face.u1 = face->u3; clipped_face.v1 = face->v3;
+              clipped_face.p2 = face->p1; clipped_face.u2 = face->u1; clipped_face.v2 = face->v1;
+              clipped_face.p3 = face->p4; clipped_face.u3 = face->u4; clipped_face.v3 = face->v4;
+              clipped_face.texture = face->texture;
+              SAGE_ClipTwoFacePoint(&clipped_face, entity->trans_vertices, camera);
+              break;
+            case S3DE_P4CLIP|S3DE_P3CLIP:
+              clipped_face.p1 = face->p4; clipped_face.u1 = face->u4; clipped_face.v1 = face->v4;
+              clipped_face.p2 = face->p3; clipped_face.u2 = face->u3; clipped_face.v2 = face->v3;
+              clipped_face.p3 = face->p1; clipped_face.u3 = face->u1; clipped_face.v3 = face->v1;
+              clipped_face.texture = face->texture;
+              SAGE_ClipTwoFacePoint(&clipped_face, entity->trans_vertices, camera);
+              break;
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Render skybox
+ */
+VOID SAGE_RenderSkybox(SAGE_Camera * camera)
+{
+  SAGE_Entity * entity;
+
+  if (debug) SAGE_DebugLog("Rendering skybox");
+  entity = sage_world.skybox;
+  SAGE_EntityProjection(entity, camera);
+  SAGE_SetClippedFaceList(entity, camera);
+  SAGE_Render3DTriangles();
+  sage_world.visible_entities = 0;
+}
+
+/**
+ * Render ordered entities
+ */
+VOID SAGE_RenderEntities(SAGE_Camera * camera)
+{
+  SAGE_Entity * entity;
+  WORD index;
+
+  if (debug) SAGE_DebugLog("Render entities");
+  if (sage_world.visible_entities > 1) {
+    SAGE_SortEntities(sage_world.ordering, 0, sage_world.visible_entities-1);
+  }
+  for (index = 0;index < sage_world.visible_entities;index++) {
+    entity = sage_world.ordering[index].entity;
+    SAGE_EntityProjection(entity, camera);
+    if (entity->rendering == S3DE_RENDER_WIRE) {
+      SAGE_DrawEntityWireFrame(entity);
+    } else if (entity->rendering == S3DE_RENDER_FLAT) {
+      SAGE_DrawEntityFlat(entity);
+    } else {
+      SAGE_SetClippedFaceList(entity, camera);
+      SAGE_Render3DTriangles();
+    }
+  }
+}
+
+/**
+ * Render the 3D world
+ */
+VOID SAGE_RenderWorld(VOID)
+{
+  SAGE_Camera * camera;
+
+  sage_world.visible_entities = 0;
+  camera = sage_world.cameras[sage_world.active_camera];
+  if (camera != NULL) {
+    SAGE_SetScreenClip(camera->view_left, camera->view_top, camera->view_width, camera->view_height);
+    SAGE_SetupCameraMatrix(camera);
+    if (sage_world.active_skybox) {
+      SAGE_TransformSkybox(camera);
+      SAGE_RenderSkybox(camera);
+    }
+    SAGE_TransformEntities(camera);
+    SAGE_RenderEntities(camera);
+  }
 }

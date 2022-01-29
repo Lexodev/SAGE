@@ -75,6 +75,9 @@ BOOL SAGE_SetSpriteBankTransparency(UWORD, ULONG);
 /** Add a sprite to the bank */
 BOOL SAGE_AddSpriteToBank(UWORD, UWORD, ULONG, ULONG, ULONG, ULONG, UWORD);
 
+/** Get a sprite from a sprite bank */
+SAGE_Sprite * SAGE_GetSprite(UWORD, UWORD);
+
 /** Set the sprite flip flags */
 BOOL SAGE_SetSpriteFlipping(UWORD, UWORD, BOOL, BOOL);
 
@@ -83,6 +86,9 @@ BOOL SAGE_SetSpriteZoom(UWORD, UWORD, FLOAT, FLOAT);
 
 /** Set the sprite hotspot */
 BOOL SAGE_SetSpriteHotspot(UWORD, UWORD, UWORD);
+
+/** Check for collision between two sprites */
+BOOL SAGE_SpriteCollide(UWORD, UWORD, LONG, LONG, UWORD, UWORD, LONG, LONG);
 
 /** Blit a sprite to the screen */
 BOOL SAGE_BlitSpriteToScreen(UWORD, UWORD, LONG, LONG);

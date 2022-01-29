@@ -1,7 +1,14 @@
 ** TODO LIST
 
 - Sources
-  . Implémenter traçage de lignes clippées (sage_draw.c)
-  . Implémenter le zoom des sprites
+  . Implémenter traçage de lignes strip & array (sage_draw.c)
+  . Implémenter flat quad pour 24 bits (sage_draw.c)
   . Implémenter le mirroring des sprites
-  . Implémenter le moteur 3D
+  . Finaliser la gestion des tiles et des tilemaps
+  . ClearScreen + ClearView (screen.c) clear avec la couleur de fond
+
+- Test
+  . Revoir data pour video_sprite et video_tile
+
+- Tutorial
+  . Revoir data pour tuto6_parallx et tuto7_sprite

@@ -33,7 +33,7 @@ void main(void)
     printf("Opening screen\n");
     if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_DOUBLEBUF)) {
       printf("Loading module\n");
-      if ((music = SAGE_LoadMusic("/data/theme.mod")) == NULL) {
+      if ((music = SAGE_LoadMusic("/data/bubble.mod")) == NULL) {
         finish = TRUE;
         SAGE_DisplayError();
       } else {

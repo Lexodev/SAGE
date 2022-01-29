@@ -80,10 +80,10 @@ BOOL SAGE_ScanPort(SAGE_PortScan * scan, UWORD port)
 {
   ULONG port_scan;
 
-  if (scan == NULL) {
+  SAFE(if (scan == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   if (port < SINP_NB_JOYPORT) {
     port_scan = ReadJoyPort(port);
     switch (port_scan & JP_TYPE_MASK) {

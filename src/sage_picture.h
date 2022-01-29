@@ -36,6 +36,9 @@ SAGE_Picture * SAGE_LoadPicture(STRPTR);
 /** Save a picture into a file */
 //BOOL SAGE_SavePicture(SAGE_Picture *, STRPTR);
 
+/** Set the picture auto remap feature */
+VOID SAGE_AutoRemapPicture(BOOL);
+
 /** Set the picture transparency */
 BOOL SAGE_SetPictureTransparency(SAGE_Picture *, ULONG);
 

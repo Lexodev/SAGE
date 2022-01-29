@@ -85,10 +85,10 @@ BOOL SAGE_GetSysTime(SAGE_Timer * timer)
 {
   struct timeval tv;
 
-  if (timer == NULL) {
+  SAFE(if (timer == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   GetSysTime(&tv);
   timer->seconds = tv.tv_secs;
   timer->micro_seconds = tv.tv_micro;
@@ -106,10 +106,10 @@ ULONG SAGE_ElapsedTime(SAGE_Timer * timer)
 {
   struct timeval tv;
 
-  if (timer == NULL) {
+  SAFE(if (timer == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return -1;
-  }
+  })
   GetSysTime(&(timer->time_current));
   tv.tv_secs = timer->time_current.tv_secs;
   tv.tv_micro = timer->time_current.tv_micro;
@@ -134,10 +134,10 @@ BOOL SAGE_Delay(SAGE_Timer * timer, ULONG duration)
 {
   struct timeval tv;
 
-  if (timer == NULL) {
+  SAFE(if (timer == NULL) {
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
-  }
+  })
   tv.tv_secs = (duration >> STIM_SECONDS_SHIFT) & STIM_SECONDS_MASK;
   tv.tv_micro = duration & STIM_MICRO_MASK;
   timer->io_request->tr_node.io_Command = TR_ADDREQUEST;

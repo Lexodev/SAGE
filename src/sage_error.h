@@ -65,13 +65,14 @@
 // Picture errors
 #define SERR_OPENFILE         50L
 #define SERR_READFILE         51L
-#define SERR_FILEFORMAT       52L
-#define SERR_PIXELFORMAT      53L
-#define SERR_PICMAPPING       54L
-#define SERR_PICTURE_SIZE     55L
+#define SERR_WRITEFILE        53L
+#define SERR_FILEFORMAT       53L
+#define SERR_PIXELFORMAT      54L
+#define SERR_PICMAPPING       55L
+#define SERR_PICTURE_SIZE     56L
 // Layer errors
-#define SERR_LAYER_SIZE       56L
-#define SERR_LAYER_INDEX      57L
+#define SERR_LAYER_SIZE       58L
+#define SERR_LAYER_INDEX      59L
 // Sprite errors
 #define SERR_SPRITE_SIZE      60L
 #define SERR_SPRITE_INDEX     61L
@@ -110,7 +111,15 @@
 // 3D errors
 #define SERR_NO_3DDRIVER      100L
 #define SERR_NO_3DCONTEXT     101L
-// Network erros
+#define SERR_TEX_INDEX        102L
+#define SERR_TEX_ALLOC        103L
+#define SERR_LOCKHARDWARE     104L
+#define SERR_DRAWTRIANGLE     105L
+#define SERR_CAMERA_INDEX     110L
+#define SERR_NO_CAMERA        111L
+#define SERR_ENTITY_INDEX     112L
+#define SERR_NO_ENTITY        113L
+// Network errors
 #define SERR_NO_SOCKET        150L
 #define SERR_BIND_SOCKET      151L
 #define SERR_RESOLVE_HOST     152L
@@ -123,6 +132,11 @@
 #define SERR_RECEIVE_SOCKET   159L
 #define SERR_NOT_SERVERSOCK   160L
 #define SERR_NOT_CLIENTSOCK   161L
+// Configuration file errors
+#define SERR_FILENOTFOUND     170L
+#define SERR_NOSECTION        171L
+#define SERR_NOPARAMETER      172L
+#define SERR_BUFFERSIZE       173L
 
 /** SAGE error */
 typedef struct {

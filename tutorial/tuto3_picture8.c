@@ -1,7 +1,7 @@
 /**
  * tuto3_picture8.c
  * 
- * SAGE (Small Amiga Game Engine) project
+ * SAGE (Simple Amiga Game Engine) project
  * Display a PNG 8bits picture on a 8bits screen and load his palette
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>

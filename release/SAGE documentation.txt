@@ -1,7 +1,7 @@
 ***************************************
-** SAGE library V1.8
+** SAGE library V1.9
 ** Functions reference
-** September 2021
+** January 2022
 *****************************************
 
 0 - Preambule
@@ -16,6 +16,7 @@ SAGE library is still in a development phase, some functions can change in futur
                       SMOD_INPUT          - Input module (keyboard, mouse & joystick)
                       SMOD_INTERRUPTION   - Interruption module (Timer & IT)
                       SMOD_NETWORK        - Network module (UDP & TCP sockets)
+                      SMOD_3D             - 3D render module (texture mapping)
 - BOOL SAGE_Exit(VOID) : exit SAGE library and release all resources, return TRUE on success, FALSE on error.
 - BOOL SAGE_LoadedModule(LONG module) : tell if a module has been loaded.
 - STRPTR SAGE_GetVersion(VOID) : return the library version string.
@@ -95,8 +96,16 @@ SAGE library is still in a development phase, some functions can change in futur
 - BOOL SAGE_SetVampireFrameBuffer(APTR adr) : set the vampire frame buffer address (prefer the system function), return FALSE on error.
 - APTR SAGE_GetVampireFrameBuffer(VOID) : get the vampire frame buffer address.
 
+8 - Configuration file functions
 
-8 - Video functions
+- BOOL SAGE_GetParameterFromFile(STRPTR filename, STRPTR section, STRPTR parameter, STRPTR default, STRPTR buffer, LONG size) :
+- SAGE_Configuration * SAGE_LoadConfigurationFile(STRPTR filename) :
+- BOOL SAGE_SaveConfigurationFile(SAGE_Configuration * config, STRPTR filename, STRPTR header) :
+- VOID SAGE_ReleaseConfigurationFile(SAGE_Configuration * config) :
+- STRPTR SAGE_GetParameter(SAGE_Configuration * config, STRPTR section, STRPTR parameter, STRPTR default) :
+- BOOL SAGE_SetParameterValue(SAGE_Configuration * config, STRPTR section, STRPTR name, STRPTR value) :
+
+9 - Video functions
 
  a) Screen
 - BOOL SAGE_IsSupportedPixFormat(ULONG pixformat) : tell if a pixel format is supported.
@@ -145,6 +154,7 @@ SAGE library is still in a development phase, some functions can change in futur
 - UWORD SAGE_GetFps(VOID) : get the frame rate value (frame per second).
 
  b) Pictures
+- VOID SAGE_AutoRemapPicture(BOOL flag) : enable/disable the picture auto remap feature (enable by default)
 - SAGE_Picture * SAGE_LoadPicture(STRPTR picture) : load a picture and remap it to screen pixel format (use datatypes), return NULL on error.
 - BOOL SAGE_SetPictureTransparency(SAGE_Picture * picture, ULONG color) : set the transparent color of a picture, return FALSE on error.
 - BOOL SAGE_LoadPictureColorMap(SAGE_Picture * picture) : load picture colormap into screen colors, return FALSE on error.
@@ -167,15 +177,27 @@ SAGE library is still in a development phase, some functions can change in futur
 - BOOL SAGE_AddSpriteToBank(UWORD index, UWORD sprite, ULONG left, ULONG top, ULONG width, ULONG height, UWORD hotspot) : add a sprite to the sprite bank, return FALSE on error.
 - BOOL SAGE_SetSpriteHotspot(UWORD index, UWORD sprite, UWORD hotspot) : set the sprite hotspot, return FALSE on error.
 - BOOL SAGE_BlitSpriteToScreen(UWORD index, UWORD sprite, LONG x, LONG y) : copy the sprite of a sprite bank to a screen position, return FALSE on error.
- 
- e) Tiles
+- BOOL SAGE_SetSpriteZoom(UWORD index, UWORD sprite, FLOAT zoom_x, FLOAT zoom_y) : set the sprite X & Y zoom factors, return FALSE on error.
+
+ e) Primitives
+- BOOL SAGE_DrawClippedPixel(LONG x, LONG y, LONG color) : draw a clipped pixel at x,y with color on the back bitmap, return FALSE on error.
+- BOOL SAGE_DrawPixel(LONG x, LONG y, LONG color) : draw a pixel at x,y with color on the back bitmap, return FALSE on error.
+- BOOL SAGE_DrawPixelArray(SAGE_Pixel * pixels, ULONG nbpixels) : draw an array of nbpixels pixels on the back bitmap, return FALSE on error.
+- BOOL SAGE_DrawClippedLine(LONG x1, LONG y1, LONG x2, LONG y2, LONG color) : not yet available
+- BOOL SAGE_DrawLine(LONG x1, LONG y1, LONG x2, LONG y2, LONG color) : draw a line from x1,y1 to x2,y2 with color on the back bitmap, return FALSE on error.
+- BOOL SAGE_DrawLineStrip(SAGE_Pixel * lines, ULONG nblines) : not yet available
+- BOOL SAGE_DrawLineArray(SAGE_Line * lines, ULONG nblines) : not yet available
+- BOOL SAGE_DrawTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG y3, LONG color) : draw a triangle with color on the back bitmap, return FALSE on error.
+- BOOL SAGE_DrawClippedTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG y3, LONG color) : draw a clipped triangle with color on the back bitmap, return FALSE on error.
+
+ f) Tiles
 - BOOL SAGE_CreateTileBank(UWORD index, UWORD tilewidth, UWORD tileheight, UWORD size, SAGE_Picture * picture) : create a tilebank at index from a picture with size tiles of tilewidth*tileheight, return FALSE on error.
 - BOOL SAGE_ReleaseTileBank(UWORD index) : release a tile bank and all resources, return FALSE on error.
 
- f) Tilemap
+ g) Tilemap
 * Still in progress
 
-9 - Audio functions
+10 - Audio functions
 
  a) Music
 ** Music functions support trackmod and aiff files.
@@ -201,7 +223,7 @@ SAGE library is still in a development phase, some functions can change in futur
 - BOOL SAGE_PlaySound(UWORD index, UWORD channel) : play the sound of the bank slot on the channel, return FALSE on error.
 
 
-10 - Input functions
+11 - Input functions
 - BOOL SAGE_HandleInputEvents(VOID) : handle all input events, return FALSE on error.
 
  a) Keyboard
@@ -224,7 +246,7 @@ SAGE library is still in a development phase, some functions can change in futur
 - BOOL SAGE_ClearJoyportHandlers(VOID) : clear all handlers of joyport, return FALSE on error.
 
 
-11 - Interruption functions
+12 - Interruption functions
 - BOOL SAGE_AddInterruptionHandler(UWORD index, VOID __asm (*f)(register __a5 APTR), APTR userdata) : create a new interruption handler (you have 8 handlers available), return FALSE on error.
 - BOOL SAGE_RemoveInterruptionHandler(UWORD index) : remove an interruption handler, return FALSE on error.
 - BOOL SAGE_StartInterruption(UWORD index, UWORD ticks) : start interruption each tick (1 tick = 0,05 second), return FALSE on error.
@@ -232,7 +254,7 @@ SAGE library is still in a development phase, some functions can change in futur
 - BOOL SAGE_StopAllInterruptions(VOID) : stop all running interruptions, return FALSE on error.
 
 
-12 - Network functions
+13 - Network functions
 
 - SAGE_BsdSocket * SAGE_OpenServer(UWORD protocol, UWORD port) : create a server of protocol (SNET_TCP_PROTOCOL or SNET_UDP_PROTOCOL) on port, return NULL on error.
 - SAGE_BsdSocket * SAGE_OpenClient(UWORD protocol, STRPTR ip, UWORD port) : create a client of protocol to ip and port, return NULL on error.
@@ -245,3 +267,62 @@ SAGE library is still in a development phase, some functions can change in futur
 - LONG SAGE_ReceiveString(SAGE_BsdSocket * socket, STRPTR buffer, LONG len) : receive  a string from a socket, return string len received.
 - LONG SAGE_GetLastNetworkError(VOID) : get the last network error.
 - LONG SAGE_GetLastSocketError(SAGE_BsdSocket * socket) : get the last socket error.
+
+
+14 - 3D functions
+
+ a) Rendering
+- BOOL SAGE_Set3DRenderMode(UWORD mode) : set the rendering mode internal or W3D
+- BOOL SAGE_Push3DTriangle(SAGE_3DTriangle * triangle) : push a triangle to the rendering queue
+- VOID SAGE_Sort3DTriangles(VOID) : sort the triangles in the rendering queue
+- BOOL SAGE_Render3DTriangles(VOID) : render all triangles in the rendering queue
+
+ b) Texture management
+- BOOL SAGE_CreateTextureFromPicture(UWORD index, UWORD left, UWORD top, UWORD size, SAGE_Picture * picture) : create a texture from a picture
+- SAGE_3DTexture * SAGE_GetTexture(UWORD index) : get a texture from her index
+- W3D_Texture * SAGE_GetW3DTexture(UWORD index) : get a W3D texture from her index
+- APTR SAGE_GetTextureBuffer(UWORD index) : get the texture buffer
+- BOOL SAGE_ReleaseTexture(UWORD index) : release a texture
+- BOOL SAGE_AddTexture(UWORD index) : add a texture to the card memory (W3D feature)
+- BOOL SAGE_RemoveTexture(UWORD index) : remove a texture from the card memory (W3D feature)
+- BOOL SAGE_FlushTextures(VOID) : flush all textures from card (W3D feature)
+
+
+15 - 3D engine (work in progress)
+ 
+  a) Core
+- BOOL SAGE_InitEngine(VOID) : init the 3D engine
+- VOID SAGE_RenderWorld(VOID) : render the 3D world
+
+  b) Camera management
+- BOOL SAGE_AddCamera(ULONG index, LONG left, LONG top, LONG width, LONG height) : add a camera to the world
+- VOID SAGE_RemoveCamera(ULONG index) : remove the camera from the world
+- SAGE_Camera * SAGE_GetCamera(ULONG index) : get the camera from her index
+- BOOL SAGE_SetActiveCamera(ULONG index) : set the active camera
+- BOOL SAGE_SetCameraAngle(ULONG index, WORD ax, WORD ay, WORD az) : set the camera angles
+- BOOL SAGE_RotateCamera(ULONG index, WORD dax, WORD day, WORD daz) : rotate the camera
+- BOOL SAGE_SetCameraPosition(ULONG index, FLOAT px, FLOAT py, FLOAT pz) : set the camera position
+- BOOL SAGE_MoveCamera(ULONG index, FLOAT dpx, FLOAT dpy, FLOAT dpz) : move the camera 
+- BOOL SAGE_SetCameraView(ULONG index, LONG left, LONG top, LONG widht, LONG height, WORD fov) : set the camera view
+- BOOL SAGE_SetCameraPlane(ULONG index, FLOAT np, FLOAT fp) : set the camera planes
+
+  c) Entity management
+- SAGE_Entity * SAGE_LoadEntity(STRPTR filename) : Load an entity from a file
+- VOID SAGE_ReleaseEntity(SAGE_Entity * entity) : Release an entity
+- BOOL SAGE_AddEntity(ULONG index, SAGE_Entity * entity) : add an entity to the world
+- VOID SAGE_RemoveEntity(ULONG index) : remove entity from the world
+- SAGE_Entity * SAGE_GetEntity(ULONG index) : get an entity from her index
+- BOOL SAGE_SetEntityAngle(ULONG index, WORD ax, WORD ay, WORD az) : set the entity angle
+- BOOL SAGE_RotateEntity(ULONG index, WORD dax, WORD day, WORD daz) : rotate the entity
+- BOOL SAGE_SetEntityPosition(ULONG index, FLOAT px, FLOAT py, FLOAT pz) : set the entity position
+- BOOL SAGE_MoveEntity(ULONG index, FLOAT dpx, FLOAT dpy, FLOAT dpz) : move the entity 
+- BOOL SAGE_SetEntityRenderMode(ULONG index, UWORD mode) : set the entity rendering mode
+
+  d) Material management
+- VOID SAGE_ReleaseMaterial(SAGE_Material * material) : release a material
+- BOOL SAGE_AddMaterial(STRPTR file, STRPTR name, LONG left, LONG top, LONG size, LONG index) : add a single material to the world
+- BOOL SAGE_AddMaterials(SAGE_Material * materials, LONG nb)  : add multiple (nb) materials to the world
+- BOOL SAGE_LoadMaterials(VOID) : load all materials to the card memory if needed
+- VOID SAGE_FlushMaterials(VOID) : flush all materials from the card memory if needed
+  
+  e) Terrain management

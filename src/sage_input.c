@@ -35,7 +35,7 @@ extern SAGE_Context SageContext;
  *
  * @return Operation success
  */
-BOOL SAGE_InitInputModule(VOID)
+BOOL SAGE_InitInputModule()
 {
   SD(SAGE_DebugLog("Init Input module"));
   if ((LowLevelBase = OpenLibrary("lowlevel.library", LOWLEVELVERSION)) == NULL) {
@@ -54,7 +54,7 @@ BOOL SAGE_InitInputModule(VOID)
  *
  * @return Operation success
  */
-BOOL SAGE_ReleaseInputModule(VOID)
+BOOL SAGE_ReleaseInputModule()
 {
   SD(SAGE_DebugLog("Release Input module"));
   if (SageContext.SageInput != NULL) {
@@ -72,7 +72,7 @@ BOOL SAGE_ReleaseInputModule(VOID)
  *
  * @return Operation success
  */
-BOOL SAGE_AllocInputDevice(VOID)
+BOOL SAGE_AllocInputDevice()
 {
   SAGE_InputDevice * device;
   
@@ -136,10 +136,10 @@ BOOL SAGE_HandleInputEvents()
   
   // Check for input device
   input = SageContext.SageInput;
-  if (input == NULL) {
+  SAFE(if (input == NULL) {
     SAGE_SetError(SERR_NO_INPUTDEVICE);
     return FALSE;
-  }
+  })
   if (input->nb_handlers > 0) {
     QueryKeys((struct KeyQuery *) input->key_scan, input->nb_handlers);
     for (handler = 0;handler < input->nb_handlers;handler++) {
