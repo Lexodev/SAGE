@@ -29,7 +29,7 @@ SAGE_Context SageContext;
  * 
  * @return Operation success
  */
-BOOL SAGE_Init(LONG modules)
+BOOL SAGE_Init(LONGBITS modules)
 {
   UWORD index;
 

@@ -46,12 +46,12 @@
 #define SMOD_ALL              255L
 
 /** Initialize SAGE library */
-BOOL SAGE_Init(LONG);
+BOOL SAGE_Init(LONGBITS);
 
 /** Close et clean SAGE library */
 BOOL SAGE_Exit(VOID);
 
-/** Tell which modules are loaded */
+/** Tell if a module has been loaded */
 BOOL SAGE_LoadedModule(LONG);
 
 /** Get SAGE library version */

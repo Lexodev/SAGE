@@ -245,8 +245,7 @@ BOOL SAGE_SetupScreenBuffer(struct Screen * custom_screen, SAGE_ScreenBuffer * s
 UBYTE * SAGE_GetScreenBitMapAddress(VOID)
 {
   SAGE_Screen * screen;
-  APTR cgx_handle = NULL;
-  ULONG base_adr;
+  UBYTE * bitmap_adr;
 
   screen = SAGE_GetScreen();
   if (screen == NULL) {
@@ -254,24 +253,66 @@ UBYTE * SAGE_GetScreenBitMapAddress(VOID)
     SAGE_SetError(SERR_NO_SCREEN);
     return NULL;
   }
-  if (GetCyberMapAttr(screen->system_screen->RastPort.BitMap, CYBRMATTR_ISCYBERGFX)) {
-    cgx_handle = LockBitMapTags(
-      screen->system_screen->RastPort.BitMap,
-      LBMI_BASEADDRESS, &base_adr,
-      TAG_DONE
-    );
-    if (cgx_handle != NULL) {
-      UnLockBitMap(cgx_handle);
-      return (UBYTE *) base_adr;
-    } else {
-      SAGE_ErrorLog("Lock bitmap has failed !");
-      SAGE_SetError(SERR_LOCKBITMAP);
-    }
-  } else {
-    SAGE_ErrorLog("Bitmap is not CGX !");
-    SAGE_SetError(SERR_BITMAPFORMAT);
+  bitmap_adr = (UBYTE *)SAGE_GetBitmapAddress(screen->system_screen->RastPort.BitMap);
+  if (bitmap_adr != 0) {
+    return bitmap_adr;
   }
   return NULL;
+}
+
+/**
+ * Setup the screen indirect frame buffers
+ *
+ * @param screen SAGE screen structure
+ *
+ * @return Operation success
+ */
+BOOL SAGE_SetupIndirectFrameBuffer(SAGE_Screen * screen)
+{
+  UBYTE * bitmap_adr;
+
+  SD(SAGE_DebugLog("Setup screen indirect frame buffers"));
+  screen->indirect_bitmap = AllocBitMap(screen->width, screen->height, screen->depth, BMF_CLEAR, NULL);
+  if (screen->indirect_bitmap == NULL) {
+    return FALSE;
+  }
+  bitmap_adr = (UBYTE *)SAGE_GetBitmapAddress(screen->system_screen->RastPort.BitMap);
+  if (bitmap_adr == 0) {
+    return FALSE;
+  }
+  SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Indirect bitmap adr 0x%X", bitmap_adr));
+  SD(SAGE_DumpSystemBitmap(screen->indirect_bitmap));
+  if ((screen->front_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->pixformat, bitmap_adr)) == NULL) {
+    return FALSE;
+  }
+  if (!SAGE_AllocateFastDrawBuffers(screen->front_bitmap)) {
+    return FALSE;
+  }
+  SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Front bitmap"));
+  SD(SAGE_DumpBitmap(screen->front_bitmap));
+  SAGE_ClearBitmap(screen->front_bitmap, 0, 0, screen->width, screen->height);
+  if ((screen->back_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->pixformat, bitmap_adr)) == NULL) {
+    return FALSE;
+  }
+  if (!SAGE_AllocateFastDrawBuffers(screen->back_bitmap)) {
+    return FALSE;
+  }
+  SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Back bitmap"));
+  SD(SAGE_DumpBitmap(screen->back_bitmap));
+  SAGE_ClearBitmap(screen->back_bitmap, 0, 0, screen->width, screen->height);
+  if (screen->flags & SSCR_TRIPLEBUF) {
+    if ((screen->wait_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->pixformat, bitmap_adr)) == NULL) {
+      return FALSE;
+    }
+    if (!SAGE_AllocateFastDrawBuffers(screen->wait_bitmap)) {
+      return FALSE;
+    }
+    SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Wait bitmap"));
+    SD(SAGE_DumpBitmap(screen->wait_bitmap));
+    SAGE_ClearBitmap(screen->wait_bitmap, 0, 0, screen->width, screen->height);
+  }
+  screen->screen_buffer.work_rastport.BitMap = screen->indirect_bitmap;
+  return TRUE;
 }
 
 /**
@@ -354,6 +395,10 @@ BOOL SAGE_SetupFrameBuffer(SAGE_Screen * screen)
  */
 VOID SAGE_ReleaseFrameBuffer(SAGE_Screen * screen)
 {
+  // Release indirect bitmap
+  if (screen->indirect_bitmap != NULL) {
+    FreeBitMap(screen->indirect_bitmap);
+  }
   // Release SAGE bitmap
   if (screen->wait_bitmap != NULL) {
     SAGE_ReleaseBitmap(screen->wait_bitmap);
@@ -399,7 +444,7 @@ BOOL SAGE_IsSupportedPixFormat(ULONG pixformat)
  *
  * @return Operation success
  */
-BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONG flags)
+BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONGBITS flags)
 {
   ULONG display_id, pixformat;
   LONG display_width, display_height, display_depth, win_flags, win_idcmp;
@@ -427,6 +472,7 @@ BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONG flags)
   screen->front_bitmap = NULL;
   screen->back_bitmap = NULL;
   screen->wait_bitmap = NULL;
+  screen->indirect_bitmap = NULL;
   screen->drawing_mode = SSCR_TXTREPLACE;
   screen->frontpen = 1;
   screen->backpen = 0;
@@ -514,9 +560,16 @@ BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONG flags)
     return FALSE;
   }
   // Allocate bitmap buffer
-  if (!SAGE_SetupFrameBuffer(screen)) {
-    SAGE_CloseScreen();
-    return FALSE;
+  if (screen->flags&SSCR_INDIRECT) {
+    if (!SAGE_SetupIndirectFrameBuffer(screen)) {
+      SAGE_CloseScreen();
+      return FALSE;
+    }
+  } else {
+    if (!SAGE_SetupFrameBuffer(screen)) {
+      SAGE_CloseScreen();
+      return FALSE;
+    }
   }
   // Allocate screen event structure
   if ((screen->event = SAGE_AllocEvent()) == NULL) {
@@ -795,15 +848,31 @@ BOOL SAGE_MaximumFPS(ULONG maxfps)
  */
 BOOL SAGE_RefreshScreen()
 {
+  struct BitMap * bitmap;
   struct ScreenBuffer * temp_screenbuffer;
   SAGE_Bitmap * temp_bitmap;
   SAGE_Screen * screen;
+  APTR cgx_handle = NULL;
+  ULONG bmp_adr;
   
   screen = SAGE_GetScreen();
   SAFE(if (screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
   })
+  // Copy the buffer to the screen for indirect mode
+  if (screen->flags & SSCR_INDIRECT) {
+    bitmap = screen->screen_buffer.back_buffer->sb_BitMap;
+    if (GetCyberMapAttr(bitmap, CYBRMATTR_ISCYBERGFX)) {
+      cgx_handle = LockBitMapTags(bitmap, LBMI_BASEADDRESS, &bmp_adr, TAG_DONE);
+      if (cgx_handle != NULL) {
+        SAGE_FastCopyScreen((ULONG)screen->back_bitmap->bitmap_buffer, bmp_adr, screen->back_bitmap->height, screen->back_bitmap->bpr, 0);
+        UnLockBitMap(cgx_handle);
+      } else {
+        SAGE_WarningLog("System failed to lock the screen bitmap !");
+      }
+    }
+  }
   // Wait for intuition display message that say it's ready for change
   if (!screen->screen_buffer.safe_change) {
     Wait(screen->screen_buffer.display_sigbit);
@@ -820,7 +889,6 @@ BOOL SAGE_RefreshScreen()
       screen->screen_buffer.front_buffer = screen->screen_buffer.back_buffer;
       screen->screen_buffer.back_buffer = screen->screen_buffer.wait_buffer;
       screen->screen_buffer.wait_buffer = temp_screenbuffer;
-      screen->screen_buffer.work_rastport.BitMap = screen->screen_buffer.back_buffer->sb_BitMap;
       temp_bitmap = screen->front_bitmap;
       screen->front_bitmap = screen->back_bitmap;
       screen->back_bitmap = screen->wait_bitmap;
@@ -829,10 +897,12 @@ BOOL SAGE_RefreshScreen()
       temp_screenbuffer = screen->screen_buffer.front_buffer;
       screen->screen_buffer.front_buffer = screen->screen_buffer.back_buffer;
       screen->screen_buffer.back_buffer = temp_screenbuffer;
-      screen->screen_buffer.work_rastport.BitMap = screen->screen_buffer.back_buffer->sb_BitMap;
       temp_bitmap = screen->front_bitmap;
       screen->front_bitmap = screen->back_bitmap;
       screen->back_bitmap = temp_bitmap;
+    }
+    if (!(screen->flags & SSCR_INDIRECT)) {
+      screen->screen_buffer.work_rastport.BitMap = screen->screen_buffer.back_buffer->sb_BitMap;
     }
   } else {
     SAGE_WarningLog("System failed to change the screen buffer !");

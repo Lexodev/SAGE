@@ -22,7 +22,7 @@
 /** SAGE context */
 typedef struct {
   /** Loaded modules */
-  LONG LoadedModules;
+  LONGBITS LoadedModules;
   /** Trace debug flag */
   BOOL TraceDebug;
   /** AMMX available */

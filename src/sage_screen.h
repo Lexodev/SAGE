@@ -37,6 +37,7 @@
 #define SSCR_NOWINDOWEVT      4
 #define SSCR_TRACKMOUSE       8
 #define SSCR_DELTAMOUSE       16
+#define SSCR_INDIRECT         32
 
 // Text drawing mode
 #define SSCR_TXTTRANSP        JAM1
@@ -86,13 +87,14 @@ typedef struct {
   /** Pixel format */
   ULONG pixformat;
   /** Screen flags */
-  LONG flags;
+  LONGBITS flags;
   /** Screen clipping */
   SAGE_Clipping clipping;
   /** Screen buffer management */
   SAGE_ScreenBuffer screen_buffer;
   /** Screen bitmaps */
   SAGE_Bitmap * front_bitmap, * back_bitmap, * wait_bitmap;
+  struct BitMap * indirect_bitmap;
   /** Drawing mode and text color */
   UBYTE drawing_mode, frontpen, backpen;
   /** Mouse status */
@@ -111,7 +113,7 @@ typedef struct {
 BOOL SAGE_IsSupportedPixFormat(ULONG);
 
 /** Open SAGE screen */
-BOOL SAGE_OpenScreen(LONG, LONG, LONG, LONG);
+BOOL SAGE_OpenScreen(LONG, LONG, LONG, LONGBITS);
 
 /** Get the screen structure */
 SAGE_Screen * SAGE_GetScreen(VOID);

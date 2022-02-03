@@ -15,7 +15,7 @@
 #define SCREEN_WIDTH          320L
 #define SCREEN_HEIGHT         240L
 #define SCREEN_DEPTH          8L
-#define FOYER                 2
+#define FOYER                 1
 #define SIZE_TAB              SCREEN_WIDTH*32
 #define MASK_TAB              SIZE_TAB-1
 
@@ -25,6 +25,9 @@ UBYTE rand_foyer[SIZE_TAB];
 ULONG id_rf = 0;
 UBYTE rand_x[SIZE_TAB];
 ULONG id_rx = 0;
+
+// Render data
+UBYTE string_buffer[256];
 
 VOID InitPrecalc(VOID)
 {
@@ -77,6 +80,22 @@ VOID SetFlames(UBYTE * physic, UBYTE * logic)
   }
 }
 
+VOID SetFlames2(UBYTE * physic, UBYTE * logic)
+{
+  ULONG x,y;
+
+  for (y = 0;y < SCREEN_HEIGHT-FOYER;y++) {
+    for (x = 1;x < SCREEN_WIDTH-1;x++) {
+      logic[x+y*SCREEN_WIDTH] = (
+          physic[(x-1)+(y+1)*SCREEN_WIDTH] +
+          physic[(x)+(y+1)*SCREEN_WIDTH] +
+          physic[(x+1)+(y+1)*SCREEN_WIDTH] +
+          physic[(x)+(y+2)*SCREEN_WIDTH]
+      ) * 32 / 129;
+    }
+  }
+}
+
 void main(void)
 {
   SAGE_Event * event = NULL;
@@ -87,9 +106,12 @@ void main(void)
   SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("SAGE library fire demo V1.0");
   SAGE_AppliLog("Initialize SAGE");
-  if (SAGE_Init(SMOD_VIDEO)) {
+  if (SAGE_Init(SMOD_VIDEO|SMOD_INTERRUPTION)) {
     SAGE_AppliLog("Opening screen");
-    if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES)) {
+    if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES|SSCR_INDIRECT)) {
+      if (!SAGE_EnableFrameCount(TRUE)) {
+        SAGE_ErrorLog("Can't activate frame rate counter !");
+      }
       SAGE_AppliLog("Load colormap");
       SAGE_LoadFileColorMap("/data/flame.rgb", 0, 256, SSCR_RGBCOLOR);
       InitPrecalc();
@@ -122,7 +144,12 @@ void main(void)
           }
         }
         FeedFoyer((UBYTE *) SAGE_GetBackBitmap()->bitmap_buffer);
-        SetFlames((UBYTE *) SAGE_GetFrontBitmap()->bitmap_buffer, (UBYTE *) SAGE_GetBackBitmap()->bitmap_buffer);
+        SetFlames2((UBYTE *) SAGE_GetFrontBitmap()->bitmap_buffer, (UBYTE *) SAGE_GetBackBitmap()->bitmap_buffer);
+
+        // Draw the fps counter
+        sprintf(string_buffer, "%d fps", SAGE_GetFps());
+        SAGE_PrintText(string_buffer, 260, 10);
+
         if (!SAGE_RefreshScreen()) {
           SAGE_DisplayError();
         }
