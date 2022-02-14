@@ -66,6 +66,9 @@ void main(void)
           SAGE_DisplayError();
         }
         SAGE_ReleasePicture(picture);
+      } else {
+        finish = TRUE;
+        SAGE_DisplayError();
       }
       while (!finish) {
         if (SAGE_IsFrontMostScreen()) {

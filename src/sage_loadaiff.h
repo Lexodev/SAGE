@@ -15,6 +15,7 @@
 #include <dos/dos.h>
 
 #include "sage_music.h"
+#include "sage_sound.h"
 
 #define SMUS_AIFFTAG          0x41494646
 #define SMUS_AIFFOFFSET       0x8
@@ -33,7 +34,10 @@ typedef struct {
   UBYTE rate_ieee[10];
 } SAGE_AiffFmt;
 
-/** Load an AIFF file */
+/** Load an AIFF music file */
 SAGE_Music * SAGE_LoadAIFFMusic(BPTR);
+
+/** Load an AIFF sound file */
+SAGE_Sound * SAGE_LoadAIFFSound(BPTR);
 
 #endif

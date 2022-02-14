@@ -25,8 +25,8 @@ struct _my_data {
 /**
  * this is our interrupt handler
  */
-__asm __interrupt __saveds void MyHandler(
-  register __a5 APTR UserData
+ASM INTERRUPT SAVEDS void MyHandler(
+  REG(a5, APTR UserData)
 )
 {
   struct _my_data * data;

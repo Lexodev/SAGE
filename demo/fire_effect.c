@@ -108,7 +108,7 @@ void main(void)
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_INTERRUPTION)) {
     SAGE_AppliLog("Opening screen");
-    if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES|SSCR_INDIRECT)) {
+    if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES)) {
       if (!SAGE_EnableFrameCount(TRUE)) {
         SAGE_ErrorLog("Can't activate frame rate counter !");
       }

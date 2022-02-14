@@ -10,6 +10,7 @@
 #ifndef _SAGE_H_
 #define _SAGE_H_
 
+#include "sage_compiler.h"
 #include "sage_logger.h"
 #include "sage_error.h"
 #include "sage_memory.h"

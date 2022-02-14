@@ -16,6 +16,7 @@
 #include <proto/exec.h>
 #include <proto/ahi.h>
 
+#include "sage_compiler.h"
 #include "sage_debug.h"
 #include "sage_error.h"
 #include "sage_logger.h"
@@ -48,10 +49,10 @@ extern SAGE_Context SageContext;
 /**
  * this is the interrupt timer
  */
-__asm __interrupt __saveds static void SAGE_PTPlayer(
-  register __a0 struct Hook * Hook,
-  register __a2 struct AHIAudioCtrl * AHIAudioCtrl,
-  register __a1 APTR Random
+ASM INTERRUPT SAVEDS static void SAGE_PTPlayer(
+  REG(a0, struct Hook * Hook),
+  REG(a2, struct AHIAudioCtrl * AHIAudioCtrl),
+  REG(a1, APTR Random)
 )
 {
   if (Hook->h_Data != NULL) {

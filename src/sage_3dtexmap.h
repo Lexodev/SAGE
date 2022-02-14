@@ -13,6 +13,7 @@
 
 #include <exec/types.h>
 
+#include "sage_compiler.h"
 #include "sage_bitmap.h"
 #include "sage_screen.h"
 #include "sage_3dtexture.h"
@@ -48,25 +49,25 @@ typedef struct {
 } S3D_Triangle;
 
 /** External function for 8bits texture mapping */
-extern BOOL __asm SAGE_FastMap8BitsTexture(
-  register __d0 LONG lines,
-  register __a0 UBYTE * texture,
-  register __d1 ULONG textwidth,
-  register __a1 UBYTE * bitmap,
-  register __d2 ULONG bitmapwidth,
-  register __a2 LONG * deltas,
-  register __a3 LONG * coords
+extern BOOL ASM SAGE_FastMap8BitsTexture(
+  REG(d0, LONG lines),
+  REG(a0, UBYTE * texture),
+  REG(d1, ULONG textwidth),
+  REG(a1, UBYTE * bitmap),
+  REG(d2, ULONG bitmapwidth),
+  REG(a2, LONG * deltas),
+  REG(a3, LONG * coords)
 );
 
 /** External function for 16bits texture mapping */
-extern BOOL __asm SAGE_FastMap16BitsTexture(
-  register __d0 LONG lines,
-  register __a0 UWORD * texture,
-  register __d1 ULONG textwidth,
-  register __a1 UWORD * bitmap,
-  register __d2 ULONG bitmapwidth,
-  register __a2 LONG * deltas,
-  register __a3 LONG * coords
+extern BOOL ASM SAGE_FastMap16BitsTexture(
+  REG(d0, LONG lines),
+  REG(a0, UWORD * texture),
+  REG(d1, ULONG textwidth),
+  REG(a1, UWORD * bitmap),
+  REG(d2, ULONG bitmapwidth),
+  REG(a2, LONG * deltas),
+  REG(a3, LONG * coords)
 );
 
 /** DEBUG !!! */

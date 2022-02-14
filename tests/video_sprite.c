@@ -61,8 +61,12 @@ void main(void)
           }
         } else {
           ok = FALSE;
+          SAGE_DisplayError();
         }
         SAGE_ReleasePicture(picture);
+      } else {
+        ok = FALSE;
+        SAGE_DisplayError();
       }
       if (ok) {
         printf("Load a picture for the background\n");

@@ -64,18 +64,18 @@ SAGE_Sound * SAGE_LoadWAVESound(BPTR file_handle)
     SAGE_FreeMem(sound);
     return NULL;
   }
-  audio_fmt.format = SAGE_WORDTOBE(audio_fmt.format);
-  audio_fmt.channel = SAGE_WORDTOBE(audio_fmt.channel);
+  sound->type = SAGE_WORDTOBE(audio_fmt.format);
+  sound->channel = SAGE_WORDTOBE(audio_fmt.channel);
   sound->frequency = SAGE_LONGTOBE(audio_fmt.frequency);
   sound->bitrate = SAGE_LONGTOBE(audio_fmt.bitrate);
-  audio_fmt.sample = SAGE_WORDTOBE(audio_fmt.sample);
+  sound->sample = SAGE_WORDTOBE(audio_fmt.sample);
   SD(SAGE_DebugLog(
-    "Audio format=%d, Nb channels=%d, Frequency=%d, Bitrate=%d, Sample size=%d",
-    audio_fmt.format, audio_fmt.channel, sound->frequency, sound->bitrate, audio_fmt.sample
+    "Audio type=%d, Nb channels=%d, Frequency=%d, Bitrate=%d, Sample size=%d",
+    sound->type, sound->channel, sound->frequency, sound->bitrate, sound->sample
   ));
   SD(SAGE_DebugLog("Loading sample data"));
   // Load only PCM sound, mono or stereo and 16bits max sample
-  if (audio_fmt.format != 1 || audio_fmt.channel > 2 || audio_fmt.sample > 16) {
+  if (sound->type != 1 || sound->channel > 2 || sound->sample > 16) {
     SAGE_SetError(SERR_FILEFORMAT);
     SAGE_FreeMem(sound);
     return NULL;
@@ -114,8 +114,8 @@ SAGE_Sound * SAGE_LoadWAVESound(BPTR file_handle)
   }
   sound->volume = 64 * 1024;
   sound->pan = 32 * 1024;
-  if (audio_fmt.sample == 8) {
-    if (audio_fmt.channel == 1) {
+  if (sound->sample == 8) {
+    if (sound->channel == 1) {
       sound->sample_info.ahisi_Type = SSND_SAMPLE8M;
     } else {
       sound->sample_info.ahisi_Type = SSND_SAMPLE8S;
@@ -125,7 +125,7 @@ SAGE_Sound * SAGE_LoadWAVESound(BPTR file_handle)
       sound_buffer8[data_size] -= 128;
     }
   } else {
-    if (audio_fmt.channel == 1) {
+    if (sound->channel == 1) {
       sound->sample_info.ahisi_Type = SSND_SAMPLE16M;
     } else {
       sound->sample_info.ahisi_Type = SSND_SAMPLE16S;

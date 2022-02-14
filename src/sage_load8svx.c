@@ -64,11 +64,19 @@ SAGE_Sound * SAGE_Load8SVXSound(BPTR file_handle)
     SAGE_FreeMem(sound);
     return NULL;
   }
+  sound->type = 1;
+  sound->channel = 1;
+  sound->sample = 8;
   sound->size = file_header.oneShotHiSamples + file_header.repeatHiSamples;
   sound->frequency = file_header.samplesPerSec;
   sound->bitrate = file_header.samplesPerSec;
   sound->volume = file_header.vol;
   sound->pan = 32 * 1024;
+  SD(SAGE_DebugLog(
+    "Audio type=%d, Nb channels=%d, Frequency=%d, Bitrate=%d, Sample size=%d",
+    sound->type, sound->channel, sound->frequency, sound->bitrate, sound->sample
+  ));
+  SD(SAGE_DebugLog("Loading sample data"));
   // Search the BODY tag
   body = FALSE;
   while (!body) {

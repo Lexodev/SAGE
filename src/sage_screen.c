@@ -10,6 +10,7 @@
 
 #include <string.h>
 
+#include "sage_compiler.h"
 #include "sage_debug.h"
 #include "sage_logger.h"
 #include "sage_error.h"
@@ -272,7 +273,7 @@ BOOL SAGE_SetupIndirectFrameBuffer(SAGE_Screen * screen)
   UBYTE * bitmap_adr;
 
   SD(SAGE_DebugLog("Setup screen indirect frame buffers"));
-  screen->indirect_bitmap = AllocBitMap(screen->width, screen->height, screen->depth, BMF_CLEAR, NULL);
+  screen->indirect_bitmap = AllocBitMap(screen->width, screen->height, screen->depth, BMF_CLEAR|BMF_MINPLANES|BMF_SPECIALFMT, NULL);
   if (screen->indirect_bitmap == NULL) {
     return FALSE;
   }
@@ -290,7 +291,6 @@ BOOL SAGE_SetupIndirectFrameBuffer(SAGE_Screen * screen)
   }
   SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Front bitmap"));
   SD(SAGE_DumpBitmap(screen->front_bitmap));
-  SAGE_ClearBitmap(screen->front_bitmap, 0, 0, screen->width, screen->height);
   if ((screen->back_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->pixformat, bitmap_adr)) == NULL) {
     return FALSE;
   }
@@ -299,7 +299,6 @@ BOOL SAGE_SetupIndirectFrameBuffer(SAGE_Screen * screen)
   }
   SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Back bitmap"));
   SD(SAGE_DumpBitmap(screen->back_bitmap));
-  SAGE_ClearBitmap(screen->back_bitmap, 0, 0, screen->width, screen->height);
   if (screen->flags & SSCR_TRIPLEBUF) {
     if ((screen->wait_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->pixformat, bitmap_adr)) == NULL) {
       return FALSE;
@@ -309,7 +308,6 @@ BOOL SAGE_SetupIndirectFrameBuffer(SAGE_Screen * screen)
     }
     SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Wait bitmap"));
     SD(SAGE_DumpBitmap(screen->wait_bitmap));
-    SAGE_ClearBitmap(screen->wait_bitmap, 0, 0, screen->width, screen->height);
   }
   screen->screen_buffer.work_rastport.BitMap = screen->indirect_bitmap;
   return TRUE;
@@ -1610,8 +1608,8 @@ BOOL SAGE_PrintDirectText(STRPTR text, UWORD posx, UWORD posy)
 /**
  * Frame rate interrupt
  */
-__asm __interrupt __saveds VOID FpsHandler(
-  register __a5 APTR UserData
+ASM INTERRUPT SAVEDS VOID FpsHandler(
+  REG(a5, APTR UserData)
 )
 {
   SAGE_FpsCounter * counter;

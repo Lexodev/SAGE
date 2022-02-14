@@ -13,6 +13,7 @@
  * i should investigate to know why
  */
  
+#include "sage_compiler.h"
 #include "sage_debug.h"
 #include "sage_logger.h"
 #include "sage_error.h"
@@ -57,7 +58,7 @@ BOOL SAGE_AddThread(SAGE_Thread * thread)
  *
  * @return Operation success
  */
-__saveds __asm BOOL SAGE_RunThread(register __a0 STRPTR args)
+SAVEDS ASM BOOL SAGE_RunThread(REG(a0, STRPTR args))
 {
   SAGE_Thread * thread;
   LONG (*user_func)(APTR);

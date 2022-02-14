@@ -18,6 +18,7 @@
 #include "sage_context.h"
 #include "sage_loadwave.h"
 #include "sage_load8svx.h"
+#include "sage_loadaiff.h"
 #include "sage_sound.h"
 
 #include <proto/ahi.h>
@@ -27,6 +28,22 @@
 
 /** SAGE context */
 extern SAGE_Context SageContext;
+
+/** Dump sound structure */
+VOID SAGE_DumpSound(SAGE_Sound * sound)
+{
+  if (sound != NULL) {
+    SAGE_DebugLog("** Sound structure **");
+    SAGE_DebugLog(". Type = %d", sound->type);
+    SAGE_DebugLog(". Size = %d", sound->size);
+    SAGE_DebugLog(". Channel = %d", sound->channel);
+    SAGE_DebugLog(". Sample = %d", sound->sample);
+    SAGE_DebugLog(". Frequency = %d", sound->frequency);
+    SAGE_DebugLog(". Bitrate = %d", sound->bitrate);
+    SAGE_DebugLog(". Volume = %d", sound->volume);
+    SAGE_DebugLog(". Pan = %d", sound->pan);
+  }
+}
 
 /**
  *  Get the type of a sound file
@@ -63,6 +80,18 @@ UWORD SAGE_GetSoundFileType(BPTR file_handle)
     bytes_read = Seek(file_handle, 0, OFFSET_BEGINNING);
     return SSND_8SVX;
   }
+  // Check for AIFF sound
+  bytes_read = Seek(file_handle, SMUS_AIFFOFFSET, OFFSET_BEGINNING);
+  bytes_read = Read(file_handle, &sound_tag, 4);
+  if (bytes_read != 4) {
+    SAGE_SetError(SERR_READFILE);
+    return SMUS_UNDEFINED;
+  }
+  if (sound_tag == SMUS_AIFFTAG) {
+    SD(SAGE_DebugLog("This is an AIFF sound"));
+    bytes_read = Seek(file_handle, 0, OFFSET_BEGINNING);
+    return SSND_AIFF;
+  }
   return SSND_UNDEFINED;
 }
 
@@ -88,6 +117,8 @@ SAGE_Sound * SAGE_LoadSound(STRPTR file_name)
       sound = SAGE_Load8SVXSound(file_handle);
     } else if (type == SSND_WAVE) {
       sound = SAGE_LoadWAVESound(file_handle);
+    } else if (type == SSND_AIFF) {
+      sound = SAGE_LoadAIFFSound(file_handle);
     } else {
       SAGE_SetError(SERR_FILEFORMAT);
     }
@@ -95,6 +126,7 @@ SAGE_Sound * SAGE_LoadSound(STRPTR file_name)
   } else {
     SAGE_SetError(SERR_OPENFILE);
   }
+  SD(SAGE_DumpSound(sound));
   return sound;
 }
 

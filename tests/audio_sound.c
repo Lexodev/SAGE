@@ -18,11 +18,12 @@
 
 #define SOUND_EVIL            1
 #define SOUND_RAGE            2
+#define SOUND_BLABLA          3
 
 void main(void)
 {
   SAGE_Event * event;
-  SAGE_Sound * sound1, * sound2;
+  SAGE_Sound * sound1, * sound2, * sound3;
   BOOL finish = FALSE;
 
   printf("--------------------------------------------------------------------------------\n");
@@ -34,40 +35,39 @@ void main(void)
       printf("Loading sounds\n");
       sound1 = SAGE_LoadSound("/data/evil.wav");
       sound2 = SAGE_LoadSound("/data/hiya.8svx");
-      printf("Sound volumes %d / %d\n", sound1->volume, sound2->volume);
-      if (sound1 == NULL || sound2 == NULL) {
+      sound3 = SAGE_LoadSound("/data/blabla.aiff");
+      if (sound1 == NULL || sound2 == NULL || sound3 == NULL) {
         finish = TRUE;
         SAGE_DisplayError();
       } else {
-        if (!SAGE_AddSound(SOUND_EVIL, sound1) || !SAGE_AddSound(SOUND_RAGE, sound2)) {
+        printf("Sound volumes %d / %d / %d\n", sound1->volume, sound2->volume, sound3->volume);
+        if (!SAGE_AddSound(SOUND_EVIL, sound1) || !SAGE_AddSound(SOUND_RAGE, sound2) || !SAGE_AddSound(SOUND_BLABLA, sound3)) {
           printf("Add sound error !!!\n");
           finish = TRUE;
           SAGE_DisplayError();
         }
       }
-      SAGE_PrintText("PRESS SPACE FOR SOUND 1", 20, 20);
-      SAGE_PrintText("      ENTER FOR SOUND 2", 20, 40);
-      SAGE_PrintText("      MOUSE FOR EXIT", 20, 60);
+      SAGE_PrintText("PRESS F1 FOR SOUND 1", 20, 20);
+      SAGE_PrintText("      F2 FOR SOUND 2", 20, 40);
+      SAGE_PrintText("      F3 FOR SOUND 3", 20, 60);
+      SAGE_PrintText("      MOUSE FOR EXIT", 20, 80);
       SAGE_RefreshScreen();
       while (!finish) {
         while ((event = SAGE_GetEvent()) != NULL) {
-          printf(
-            "Event polled type %d, code %d, mouse %d,%d\n",
-            event->type,
-            event->code,
-            event->mousex,
-            event->mousey
-          );
           if (event->type == SEVT_MOUSEBT) {
             printf("Exit loop\n");
             finish = TRUE;
           } else if (event->type == SEVT_RAWKEY) {
-            if (event->code == SKEY_FR_SPACE) {
+            if (event->code == SKEY_FR_F1) {
               if (!SAGE_PlaySound(SOUND_EVIL, 0)) {
                 printf("Sound play error !\n");
               }
-            } else if (event->code == SKEY_FR_ENTER) {
+            } else if (event->code == SKEY_FR_F2) {
               if (!SAGE_PlaySound(SOUND_RAGE, 2)) {
+                printf("Sound play error !\n");
+              }
+            } else if (event->code == SKEY_FR_F3) {
+              if (!SAGE_PlaySound(SOUND_BLABLA, 1)) {
                 printf("Sound play error !\n");
               }
             }

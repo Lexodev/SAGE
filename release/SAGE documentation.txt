@@ -7,6 +7,7 @@
 0 - Preambule
 SAGE library is still in a development phase, some functions can change in future versions.
 
+
 1 - Library management functions
 
 - BOOL SAGE_Init(LONG modules) : init the SAGE library and activate modules, return TRUE on success, FALSE on error.
@@ -96,6 +97,7 @@ SAGE library is still in a development phase, some functions can change in futur
 - BOOL SAGE_SetVampireFrameBuffer(APTR adr) : set the vampire frame buffer address (prefer the system function), return FALSE on error.
 - APTR SAGE_GetVampireFrameBuffer(VOID) : get the vampire frame buffer address.
 
+
 8 - Configuration file functions
 
 - BOOL SAGE_GetParameterFromFile(STRPTR filename, STRPTR section, STRPTR parameter, STRPTR default, STRPTR buffer, LONG size) :
@@ -104,6 +106,7 @@ SAGE library is still in a development phase, some functions can change in futur
 - VOID SAGE_ReleaseConfigurationFile(SAGE_Configuration * config) :
 - STRPTR SAGE_GetParameter(SAGE_Configuration * config, STRPTR section, STRPTR parameter, STRPTR default) :
 - BOOL SAGE_SetParameterValue(SAGE_Configuration * config, STRPTR section, STRPTR name, STRPTR value) :
+
 
 9 - Video functions
 
@@ -122,6 +125,9 @@ SAGE library is still in a development phase, some functions can change in futur
                     SSCR_TRIPLEBUF        - Activate triple buffer
                     SSCR_STRICTRES        - Open only the requested resolution
                     SSCR_NOWINDOWEVT      - Don't listen for window events
+                    SSCR_TRACKMOUSE       - Track mouse movements
+                    SSCR_DELTAMOUSE       - Report delta mouse move instead of absolute coordinates
+                    SSCR_INDIRECT         - Activate indirect rendering
 - SAGE_Screen * SAGE_GetScreen(VOID) : return the SAGE screen structure (don't use it directly)
 - BOOL SAGE_CloseScreen(VOID) : close the screen, return FALSE on error.
 - BOOL SAGE_ClearScreen(VOID) : clear the screen (fill with color 0), return FALSE on error.
@@ -197,6 +203,7 @@ SAGE library is still in a development phase, some functions can change in futur
  g) Tilemap
 * Still in progress
 
+
 10 - Audio functions
 
  a) Music
@@ -213,7 +220,7 @@ SAGE library is still in a development phase, some functions can change in futur
 - BOOL SAGE_ResumeMusic(VOID) : resume the current music (only available for mod files), return FALSE on error.
 
  b) Sound
-** Sound functions support 8svx and wave files.
+** Sound functions support 8svx, aiff and wave files.
 - SAGE_Sound * SAGE_LoadSound(STRPTR filename) : load a sound sample, return NULL on error.
 - VOID SAGE_ReleaseSound(SAGE_Sound * sound) : release the sound resource.
 - BOOL SAGE_AddSound(UWORD index, SAGE_Sound * sound) : add the sound in the sound bank (you have 128 sound slots available), return FALSE on error.
@@ -325,4 +332,6 @@ SAGE library is still in a development phase, some functions can change in futur
 - BOOL SAGE_LoadMaterials(VOID) : load all materials to the card memory if needed
 - VOID SAGE_FlushMaterials(VOID) : flush all materials from the card memory if needed
   
-  e) Terrain management
+  e) Skybox management
+  
+  f) Terrain management

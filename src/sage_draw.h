@@ -31,98 +31,98 @@ typedef struct {
 } SAGE_Triangle;
 
 /** External function for 8bits line draw */
-extern BOOL __asm SAGE_FastLine8Bits(
-  register __a0 UBYTE * buffer,
-  register __d0 LONG dx,
-  register __d1 LONG dy,
-  register __d2 ULONG offset,
-  register __d3 LONG color
+extern BOOL ASM SAGE_FastLine8Bits(
+  REG(a0, UBYTE * buffer),
+  REG(d0, LONG dx),
+  REG(d1, LONG dy),
+  REG(d2, ULONG offset),
+  REG(d3, LONG color)
 );
 
 /** External function for 16bits line draw */
-extern BOOL __asm SAGE_FastLine16Bits(
-  register __a0 UWORD * buffer,
-  register __d0 LONG dx,
-  register __d1 LONG dy,
-  register __d2 ULONG offset,
-  register __d3 LONG color
+extern BOOL ASM SAGE_FastLine16Bits(
+  REG(a0, UWORD * buffer),
+  REG(d0, LONG dx),
+  REG(d1, LONG dy),
+  REG(d2, ULONG offset),
+  REG(d3, LONG color)
 );
 
 /** External function for 32bits line draw */
-extern BOOL __asm SAGE_FastLine32Bits(
-  register __a0 ULONG * buffer,
-  register __d0 LONG dx,
-  register __d1 LONG dy,
-  register __d2 ULONG offset,
-  register __d3 LONG color
+extern BOOL ASM SAGE_FastLine32Bits(
+  REG(a0, ULONG * buffer),
+  REG(d0, LONG dx),
+  REG(d1, LONG dy),
+  REG(d2, ULONG offset),
+  REG(d3, LONG color)
 );
 
 /** Fast left edge X coord calculation */
-extern BOOL __asm SAGE_FastLeftEdgeCalculation(
-  register __a0 LONG * buffer,
-  register __d0 LONG x1,
-  register __d1 LONG y1,
-  register __d2 LONG x2,
-  register __d3 LONG y2
+extern BOOL ASM SAGE_FastLeftEdgeCalculation(
+  REG(a0, LONG * buffer),
+  REG(d0, LONG x1),
+  REG(d1, LONG y1),
+  REG(d2, LONG x2),
+  REG(d3, LONG y2)
 );
 
 /** Fast right edge X coord calculation */
-extern BOOL __asm SAGE_FastRightEdgeCalculation(
-  register __a0 LONG * buffer,
-  register __d0 LONG x1,
-  register __d1 LONG y1,
-  register __d2 LONG x2,
-  register __d3 LONG y2
+extern BOOL ASM SAGE_FastRightEdgeCalculation(
+  REG(a0, LONG * buffer),
+  REG(d0, LONG x1),
+  REG(d1, LONG y1),
+  REG(d2, LONG x2),
+  REG(d3, LONG y2)
 );
 
 /** Fast left edge X coord calculation */
-extern LONG __asm SAGE_FastClippedLeftEdgeCalc(
-  register __a0 LONG * buffer,
-  register __d0 LONG x1,
-  register __d1 LONG y1,
-  register __d2 LONG x2,
-  register __d3 LONG y2,
-  register __a1 SAGE_Clipping *
+extern LONG ASM SAGE_FastClippedLeftEdgeCalc(
+  REG(a0, LONG * buffer),
+  REG(d0, LONG x1),
+  REG(d1, LONG y1),
+  REG(d2, LONG x2),
+  REG(d3, LONG y2),
+  REG(a1, SAGE_Clipping *)
 );
 
 /** Fast right edge X coord calculation */
-extern LONG __asm SAGE_FastClippedRightEdgeCalc(
-  register __a0 LONG * buffer,
-  register __d0 LONG x1,
-  register __d1 LONG y1,
-  register __d2 LONG x2,
-  register __d3 LONG y2,
-  register __a1 SAGE_Clipping *
+extern LONG ASM SAGE_FastClippedRightEdgeCalc(
+  REG(a0, LONG * buffer),
+  REG(d0, LONG x1),
+  REG(d1, LONG y1),
+  REG(d2, LONG x2),
+  REG(d3, LONG y2),
+  REG(a1, SAGE_Clipping *)
 );
 
 /** Fast 8bits flat quad draw */
-extern BOOL __asm SAGE_DrawFlatQuad8Bits(
-  register __a0 UBYTE * buffer,
-  register __a1 LONG * leftcrd,
-  register __a2 LONG * rightcrd,
-  register __d0 LONG nbline,
-  register __d1 LONG offset,
-  register __d2 LONG color
+extern BOOL ASM SAGE_DrawFlatQuad8Bits(
+  REG(a0, UBYTE * buffer),
+  REG(a1, LONG * leftcrd),
+  REG(a2, LONG * rightcrd),
+  REG(d0, LONG nbline),
+  REG(d1, LONG offset),
+  REG(d2, LONG color)
 );
 
 /** Fast 16bits flat quad draw */
-extern BOOL __asm SAGE_DrawFlatQuad16Bits(
-  register __a0 UWORD * buffer,
-  register __a1 LONG * leftcrd,
-  register __a2 LONG * rightcrd,
-  register __d0 LONG nbline,
-  register __d1 LONG offset,
-  register __d2 LONG color
+extern BOOL ASM SAGE_DrawFlatQuad16Bits(
+  REG(a0, UWORD * buffer),
+  REG(a1, LONG * leftcrd),
+  REG(a2, LONG * rightcrd),
+  REG(d0, LONG nbline),
+  REG(d1, LONG offset),
+  REG(d2, LONG color)
 );
 
 /** Fast 32bits flat quad draw */
-extern BOOL __asm SAGE_DrawFlatQuad32Bits(
-  register __a0 ULONG * buffer,
-  register __a1 LONG * leftcrd,
-  register __a2 LONG * rightcrd,
-  register __d0 LONG nbline,
-  register __d1 LONG offset,
-  register __d2 LONG color
+extern BOOL ASM SAGE_DrawFlatQuad32Bits(
+  REG(a0, ULONG * buffer),
+  REG(a1, LONG * leftcrd),
+  REG(a2, LONG * rightcrd),
+  REG(d0, LONG nbline),
+  REG(d1, LONG offset),
+  REG(d2, LONG color)
 );
 
 VOID SAGE_DumpLineCoords(LONG, LONG, LONG, LONG);

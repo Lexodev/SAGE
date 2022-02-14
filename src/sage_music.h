@@ -42,7 +42,7 @@ typedef struct {
   /** Music buffer */
   APTR buffer;
   /** Music size */
-  LONG size;
+  ULONG size;
   /** Music type, nb channels, samples size */
   UWORD type, channel, sample;
   /** Music frequency and bit rate */

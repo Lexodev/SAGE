@@ -14,6 +14,7 @@
 
 #include "sage_debug.h"
 #include "sage_error.h"
+#include "sage_logger.h"
 #include "sage_memory.h"
 #include "sage_loadaiff.h"
 #include "sage_music.h"
@@ -21,6 +22,91 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 #include <proto/ahi.h>
+
+/**
+ * Load the COMM chunk of an AIFF file
+ *
+ * @param file_handle File handle
+ * @param info        File info structure
+ * 
+ * @return Operation success
+ */
+BOOL SAGE_LoadAIFFInfo(BPTR file_handle, SAGE_AiffFmt * info)
+{
+  LONG bytes_read, file_tag;
+  
+  // Read the COMM chunk
+  bytes_read = Seek(file_handle, 12, OFFSET_BEGINNING);
+  bytes_read = Read(file_handle, &file_tag, 4);
+  if (bytes_read != 4) {
+    SAGE_SetError(SERR_READFILE);
+    return FALSE;
+  }
+  if (file_tag == SMUS_COMMTAG) {
+    bytes_read = Seek(file_handle, 4, OFFSET_CURRENT);
+    bytes_read = Read(file_handle, info, sizeof(SAGE_AiffFmt));
+    if (bytes_read != (sizeof(SAGE_AiffFmt))) {
+      SAGE_SetError(SERR_READFILE);
+      return FALSE;
+    }
+    return TRUE;
+  }
+  SAGE_SetError(SERR_FILEFORMAT);
+  return FALSE;
+}
+
+/**
+ * Load the SSND chunk of an AIFF file
+ *
+ * @param file_handle File handle
+ * @param size        Data size
+ * 
+ * @return Sound data buffer
+ */
+APTR SAGE_LoadAIFFData(BPTR file_handle, ULONG * size)
+{
+  LONG bytes_read, file_tag, data;
+  APTR buffer;
+  BOOL data_chunk;
+  
+  buffer = NULL;
+  data_chunk = FALSE;
+  while (!data_chunk) {
+    // Read the SSND chunk
+    bytes_read = Read(file_handle, &file_tag, 4);
+    if (bytes_read != 4) {
+      SAGE_SetError(SERR_READFILE);
+      return NULL;
+    }
+    bytes_read = Read(file_handle, &data, 4);
+    if (bytes_read != 4) {
+      SAGE_SetError(SERR_READFILE);
+      return NULL;
+    }
+    SD(SAGE_DebugLog("Chnunk found 0X%d of size %d", file_tag, data));
+    if (file_tag == SMUS_SSNDTAG) {
+      *size = data;
+      buffer = SAGE_AllocMem(data);
+      if (buffer == NULL) {
+        return NULL;
+      }
+      bytes_read = Read(file_handle, buffer, data);
+      if (bytes_read != data) {
+        SAGE_FreeMem(buffer);
+        SAGE_SetError(SERR_READFILE);
+        return NULL;
+      }
+      data_chunk = TRUE;
+    } else {
+      // Data size should be always even
+      if (data & 1) {
+        data += 1;
+      }
+      bytes_read = Seek(file_handle, data, OFFSET_CURRENT);
+    }
+  }
+  return buffer;
+}
 
 /**
  * Convert a 80 bits IEEE-754 number to a DOUBLE
@@ -63,27 +149,12 @@ SAGE_Music * SAGE_LoadAIFFMusic(BPTR file_handle)
 {
   SAGE_Music * music;
   SAGE_AiffFmt info;
-  LONG bytes_read, file_tag, data;
 
+  SD(SAGE_DebugLog("Loading AIFF music"));
   if ((music = SAGE_AllocMusic()) == NULL) {
     return NULL;
   }
-  // Read the COMM chunk
-  bytes_read = Seek(file_handle, 12, OFFSET_BEGINNING);
-  bytes_read = Read(file_handle, &file_tag, 4);
-  if (bytes_read != 4) {
-    SAGE_ReleaseMusic(music);
-    SAGE_SetError(SERR_READFILE);
-    return NULL;
-  }
-  if (file_tag == SMUS_COMMTAG) {
-    bytes_read = Seek(file_handle, 4, OFFSET_CURRENT);
-    bytes_read = Read(file_handle, &info, sizeof(SAGE_AiffFmt));
-    if (bytes_read != (sizeof(SAGE_AiffFmt))) {
-      SAGE_ReleaseMusic(music);
-      SAGE_SetError(SERR_READFILE);
-      return NULL;
-    }
+  if (SAGE_LoadAIFFInfo(file_handle, &info)) {
     // Play only mono or stereo and 8 or 16bits sample
     if (info.channel > 2 || info.size > 16) {
       SAGE_ReleaseMusic(music);
@@ -94,32 +165,14 @@ SAGE_Music * SAGE_LoadAIFFMusic(BPTR file_handle)
     music->sample = info.size;
     music->frequency = SAGE_Convert80Bits(info.rate_ieee);
     music->bitrate = music->channel * (music->sample / 8) * music->frequency;
-    // Read the SSND chunk
-    bytes_read = Read(file_handle, &file_tag, 4);
-    if (bytes_read != 4) {
-      SAGE_ReleaseMusic(music);
-      SAGE_SetError(SERR_READFILE);
-      return NULL;
-    }
-    if (file_tag == SMUS_SSNDTAG) {
-      bytes_read = Read(file_handle, &data, 4);
-      if (bytes_read != 4) {
-        SAGE_ReleaseMusic(music);
-        SAGE_SetError(SERR_READFILE);
-        return NULL;
-      }
-      music->size = data;
-      music->buffer = SAGE_AllocMem(music->size);
-      if (music->buffer == NULL) {
-        SAGE_ReleaseMusic(music);
-        return NULL;
-      }
-      bytes_read = Read(file_handle, music->buffer, music->size);
-      if (bytes_read != music->size) {
-        SAGE_ReleaseMusic(music);
-        SAGE_SetError(SERR_LOADMUSIC);
-        return NULL;
-      }
+    SD(SAGE_DebugLog(
+      "Audio Nb channels=%d, Frequency=%d, Bitrate=%d, Sample size=%d",
+      info.channel, music->frequency, music->bitrate, info.size
+    ));
+    SD(SAGE_DebugLog("Loading sample data"));
+    music->buffer = SAGE_LoadAIFFData(file_handle, &(music->size));
+    if (music->buffer != NULL) {
+      SD(SAGE_DebugLog("Data size=%d", music->size));
       // Setup music info for AHI
       if (music->sample == 8) {
         if (music->channel == 1) {
@@ -137,7 +190,71 @@ SAGE_Music * SAGE_LoadAIFFMusic(BPTR file_handle)
       music->music_info.ahisi_Address = music->buffer;
       music->music_info.ahisi_Length = music->size / AHI_SampleFrameSize(music->music_info.ahisi_Type);
       music->type = SMUS_AIFF;
+      return music;
     }
   }
-  return music;
+  SAGE_ReleaseMusic(music);
+  return NULL;
+}
+
+/**
+ * Load an AIFF sound
+ * 
+ * @param file_handle Music file handle
+ * 
+ * @return SAGE sound structure
+ */
+SAGE_Sound * SAGE_LoadAIFFSound(BPTR file_handle)
+{
+  SAGE_Sound * sound = NULL;
+  SAGE_AiffFmt info;
+
+  SD(SAGE_DebugLog("Loading AIFF sound"));
+  // Allocate structure
+  if ((sound = (SAGE_Sound *) SAGE_AllocMem(sizeof(SAGE_Sound))) == NULL) {
+    return NULL;
+  }
+  if (SAGE_LoadAIFFInfo(file_handle, &info)) {
+    // Play only mono or stereo and 8 or 16bits sample
+    if (info.channel > 2 || info.size > 16) {
+      SAGE_FreeMem(sound);
+      SAGE_SetError(SERR_FILEFORMAT);
+      return NULL;
+    }
+    sound->type = 1;
+    sound->channel = info.channel;
+    sound->sample = info.size;
+    sound->frequency = SAGE_Convert80Bits(info.rate_ieee);
+    sound->bitrate = sound->channel * (sound->sample / 8) * sound->frequency;
+    sound->volume = 64 * 1024;
+    sound->pan = 32 * 1024;
+    SD(SAGE_DebugLog(
+      "Audio type=%d, Nb channels=%d, Frequency=%d, Bitrate=%d, Sample size=%d",
+      sound->type, sound->channel, sound->frequency, sound->bitrate, sound->sample
+    ));
+    SD(SAGE_DebugLog("Loading sample data"));
+    sound->sample_buffer = SAGE_LoadAIFFData(file_handle, &(sound->size));
+    if (sound->sample_buffer != NULL) {
+      SD(SAGE_DebugLog("Data size=%d", sound->size));
+      // Setup sound info for AHI
+      if (sound->sample == 8) {
+        if (sound->channel == 1) {
+          sound->sample_info.ahisi_Type = SMUS_SAMPLE8M;
+        } else {
+          sound->sample_info.ahisi_Type = SMUS_SAMPLE8S;
+        }
+      } else {
+        if (sound->channel == 1) {
+          sound->sample_info.ahisi_Type = SMUS_SAMPLE16M;
+        } else {
+          sound->sample_info.ahisi_Type = SMUS_SAMPLE16S;
+        }
+      }
+      sound->sample_info.ahisi_Address = sound->sample_buffer;
+      sound->sample_info.ahisi_Length = sound->size / AHI_SampleFrameSize(sound->sample_info.ahisi_Type);
+      return sound;
+    }
+  }
+  SAGE_FreeMem(sound);
+  return NULL;
 }

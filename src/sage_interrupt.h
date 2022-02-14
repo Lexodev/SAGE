@@ -13,6 +13,8 @@
 
 #include <exec/types.h>
 
+#include "sage_compiler.h"
+
 #define SINT_MAX_INTERRUPT    8
 
 #define SINT_ONE_SECOND       20
@@ -26,7 +28,7 @@ typedef struct {
   /** User data */
   APTR data;
   /** Interruption handler */
-  VOID __asm (*handler)(register __a5 APTR);
+  VOID ASM (*handler)(REG(a5, APTR));
 } SAGE_Interruption;
 
 /** Init the interruption module */
@@ -36,7 +38,7 @@ BOOL SAGE_InitInterruptionModule(VOID);
 BOOL SAGE_ReleaseInterruptionModule(VOID);
 
 /** Add an intetruption handler to the interruptions list */
-BOOL SAGE_AddInterruptionHandler(UWORD, VOID __asm (*f)(register __a5 APTR), APTR);
+BOOL SAGE_AddInterruptionHandler(UWORD, VOID ASM (*f)(REG(a5, APTR)), APTR);
 
 /** Remove an interruption handler */
 BOOL SAGE_RemoveInterruptionHandler(UWORD);
@@ -51,6 +53,6 @@ BOOL SAGE_StopInterruption(UWORD);
 BOOL SAGE_StopAllInterruptions(VOID);
 
 /** External function for interruption management */
-extern VOID __asm SAGE_ITServer(VOID);
+extern VOID ASM SAGE_ITServer(VOID);
 
 #endif

@@ -176,7 +176,7 @@ UBYTE string_buffer[256];
 BOOL OpenScreen(VOID)
 {
   SAGE_AppliLog("Opening screen");
-  if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_TRIPLEBUF|SSCR_STRICTRES)) {
+  if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_TRIPLEBUF|SSCR_STRICTRES|SSCR_INDIRECT)) {
     SAGE_SetScreenClip(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     SAGE_SetTextColor(2, 1);
     return TRUE;
@@ -709,7 +709,7 @@ VOID _Render(VOID)
  */
 void main(void)
 {
-  SAGE_SetLogLevel(SLOG_WARNING);
+  //SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("** SAGE library SOTB ehanced demo V1.0 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_AUDIO|SMOD_INPUT|SMOD_INTERRUPTION)) {

@@ -13,16 +13,18 @@
 
 #include <exec/types.h>
 
+#include "sage_compiler.h"
+
 /** External function for VBL IT installation */
-extern VOID __asm SAGE_InstallVblInterrupt(VOID);
+extern VOID ASM SAGE_InstallVblInterrupt(VOID);
 
 /** External function for VBL IT remove */
-extern VOID __asm SAGE_RemoveVblInterrupt(VOID);
+extern VOID ASM SAGE_RemoveVblInterrupt(VOID);
 
 /** External function for VBL count retrieve */
-extern ULONG __asm SAGE_GetVblCount(VOID);
+extern ULONG ASM SAGE_GetVblCount(VOID);
 
 /** External function for VBL count reset */
-extern ULONG __asm SAGE_ResetVblCount(VOID);
+extern ULONG ASM SAGE_ResetVblCount(VOID);
 
 #endif

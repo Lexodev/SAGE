@@ -91,7 +91,7 @@ BOOL SAGE_ReleaseInterruptionModule()
  *
  * @return Operation success
  */
-BOOL SAGE_AddInterruptionHandler(UWORD index, VOID __asm (*handler)(register __a5 APTR), APTR data)
+BOOL SAGE_AddInterruptionHandler(UWORD index, VOID ASM (*handler)(REG(a5, APTR)), APTR data)
 {
   if (!SageContext.Interruptions[index].used) {
     SageContext.Interruptions[index].active = FALSE;

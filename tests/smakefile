@@ -10,7 +10,7 @@ LIB=/lib/sage.lib
 
 # Files
 COREEXE=core_logger core_error core_memory core_timer core_thread core_vampire core_config
-VIDEOEXE=video_video video_screen video_dblbuf video_event video_bitmap video_layer video_sprite video_tile video_picture video_text video_draw video_line video_triangle video_zoom
+VIDEOEXE=video_video video_screen video_dblbuf video_event video_bitmap video_layer video_sprite video_tile video_picture video_text video_draw video_line video_triangle video_zoom video_indirect
 INPUTEXE=input_input input_keyboard input_joyport input_handler
 AUDIOEXE=audio_audio audio_sound audio_music audio_mix
 INTEXE=interrupt_interrupt interrupt_handler
@@ -53,6 +53,9 @@ video_video: video_video.c $(LIB)
 
 video_screen: video_screen.c $(LIB)
   sc LINK video_screen.c $(OPT) $(LIB)
+
+video_indirect: video_indirect.c $(LIB)
+  sc LINK video_indirect.c $(OPT) $(LIB)
 
 video_dblbuf: video_dblbuf.c $(LIB)
   sc LINK video_dblbuf.c $(OPT) $(LIB)

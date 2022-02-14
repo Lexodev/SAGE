@@ -28,7 +28,7 @@
 
 extern struct Library * PTReplayBase;
 
-VOID __asm MyInterrupt(register __a1 APTR) {}
+VOID ASM MyInterrupt(REG(a1, APTR data)) {}
 
 void ShowTimer(void)
 {

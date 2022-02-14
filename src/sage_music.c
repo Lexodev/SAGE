@@ -299,7 +299,10 @@ BOOL SAGE_PlayMusic(UWORD index)
             AHIP_Vol, 64 * 1024,
             AHIP_Pan, 32 * 1024,
             AHIP_Sound, 0,
-            AHIP_LoopSound, AHI_NOSOUND,
+            AHIP_LoopFreq, music->frequency,
+            AHIP_LoopVol, 64 * 1024,
+            AHIP_LoopPan, 32 * 1024,
+            AHIP_LoopSound, 0,
             AHIP_EndChannel, NULL,
             TAG_DONE
           );

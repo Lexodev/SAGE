@@ -23,6 +23,7 @@
 #define SSND_UNDEFINED        0
 #define SSND_WAVE             1
 #define SSND_8SVX             2
+#define SSND_AIFF             3
 
 #define SSND_SAMPLE8M         AHIST_M8S
 #define SSND_SAMPLE8S         AHIST_S8S
@@ -33,6 +34,8 @@
 typedef struct {
   /** Size of the sample */
   ULONG size;
+  /** Nb channels, samples size */
+  UWORD type, channel, sample;
   /** Frequency, bit rate, volume and panning of the sample */
   ULONG frequency, bitrate, volume, pan;
   /** Sample buffer */

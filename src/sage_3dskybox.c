@@ -38,15 +38,18 @@ VOID SAGE_SetSkyboxVertex(ULONG vertex, FLOAT x, FLOAT y, FLOAT z)
  */
 VOID SAGE_SetSkyboxRadius(FLOAT radius)
 {
+  FLOAT suidar;
+  
+  suidar = (FLOAT) -radius;
   sage_world.skybox->radius = radius;
-  SAGE_SetSkyboxVertex(0, -radius, radius, radius);
+  SAGE_SetSkyboxVertex(0, suidar, radius, radius);
   SAGE_SetSkyboxVertex(1, radius, radius, radius);
-  SAGE_SetSkyboxVertex(2, radius, -radius, radius);
-  SAGE_SetSkyboxVertex(3, -radius, -radius, radius);
-  SAGE_SetSkyboxVertex(4, -radius, radius, -radius);
-  SAGE_SetSkyboxVertex(5, radius, radius, -radius);
-  SAGE_SetSkyboxVertex(6, radius, -radius, -radius);
-  SAGE_SetSkyboxVertex(7, -radius, -radius, -radius);
+  SAGE_SetSkyboxVertex(2, radius, suidar, radius);
+  SAGE_SetSkyboxVertex(3, suidar, suidar, radius);
+  SAGE_SetSkyboxVertex(4, suidar, radius, suidar);
+  SAGE_SetSkyboxVertex(5, radius, radius, suidar);
+  SAGE_SetSkyboxVertex(6, radius, suidar, suidar);
+  SAGE_SetSkyboxVertex(7, suidar, suidar, suidar);
 }
 
 /**

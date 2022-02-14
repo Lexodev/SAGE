@@ -65,7 +65,7 @@
 // Picture errors
 #define SERR_OPENFILE         50L
 #define SERR_READFILE         51L
-#define SERR_WRITEFILE        53L
+#define SERR_WRITEFILE        52L
 #define SERR_FILEFORMAT       53L
 #define SERR_PIXELFORMAT      54L
 #define SERR_PICMAPPING       55L
