@@ -20,7 +20,7 @@
 
 #include "ext/PT-AHIPlay.h"
 
-#define SMUS_MAX_MUSICS       4
+#define SMUS_MAX_MUSICS       32
 
 #define SMUS_UNDEFINED        0
 #define SMUS_MODULE           1

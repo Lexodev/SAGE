@@ -14,7 +14,7 @@
 #include "sage_bitmap.h"
 #include "sage_layer.h"
 
-#define STIL_MAX_TILEBANK     8
+#define STIL_MAX_TILEBANK     16
 
 #define STIL_MAPINBYTE        1
 #define STIL_MAPINWORD        2

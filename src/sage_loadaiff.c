@@ -72,7 +72,6 @@ APTR SAGE_LoadAIFFData(BPTR file_handle, ULONG * size)
   buffer = NULL;
   data_chunk = FALSE;
   while (!data_chunk) {
-    // Read the SSND chunk
     bytes_read = Read(file_handle, &file_tag, 4);
     if (bytes_read != 4) {
       SAGE_SetError(SERR_READFILE);
@@ -83,15 +82,17 @@ APTR SAGE_LoadAIFFData(BPTR file_handle, ULONG * size)
       SAGE_SetError(SERR_READFILE);
       return NULL;
     }
-    SD(SAGE_DebugLog("Chnunk found 0X%d of size %d", file_tag, data));
+    SD(SAGE_DebugLog("Chunk found 0X%d of size %d", file_tag, data));
     if (file_tag == SMUS_SSNDTAG) {
-      *size = data;
+      SD(SAGE_DebugLog("SSND chunk, skip offset and blocksize"));
+      bytes_read = Seek(file_handle, 8, OFFSET_CURRENT);
+      *size = data - 8;
       buffer = SAGE_AllocMem(data);
       if (buffer == NULL) {
         return NULL;
       }
-      bytes_read = Read(file_handle, buffer, data);
-      if (bytes_read != data) {
+      bytes_read = Read(file_handle, buffer, *size);
+      if (bytes_read != *size) {
         SAGE_FreeMem(buffer);
         SAGE_SetError(SERR_READFILE);
         return NULL;

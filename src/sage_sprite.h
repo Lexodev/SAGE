@@ -14,7 +14,7 @@
 #include "sage_bitmap.h"
 #include "sage_picture.h"
 
-#define SSPR_MAX_SPRBANK      32
+#define SSPR_MAX_SPRBANK      64
 
 #define SSPR_HS_TOPLEFT       0
 #define SSPR_HS_TOPMID        1

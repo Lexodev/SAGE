@@ -13,7 +13,7 @@
 
 #include <exec/types.h>
 
-#define S3DE_MAX_MATERIALS    64                    // Max materials in the world
+#define S3DE_MAX_MATERIALS    256                   // Max materials in the world
 
 typedef struct
 {

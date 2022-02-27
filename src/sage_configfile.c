@@ -338,6 +338,12 @@ BOOL SAGE_PushParameter(SAGE_Configuration * config, STRPTR name, STRPTR value)
 
 /**
  * Get the parameter from the supplied section with supplied name
+ *
+ * @param config  Config structure
+ * @param section Section name or NULL
+ * @param name    Parameter name
+ *
+ * @return Configuration parameter
  */
 SAGE_ConfParameter * SAGE_GetParameter(SAGE_Configuration * config, STRPTR section, STRPTR name)
 {
@@ -368,6 +374,13 @@ SAGE_ConfParameter * SAGE_GetParameter(SAGE_Configuration * config, STRPTR secti
 
 /**
  * Update/create a parameter in a config
+ *
+ * @param config  Config structure
+ * @param section Section name or NULL
+ * @param name    Parameter name
+ * @param value   Parameter value or NULL
+ *
+ * @return Operation success
  */
 BOOL SAGE_SetParameter(SAGE_Configuration * config, STRPTR section, STRPTR name, STRPTR value)
 {
@@ -427,6 +440,12 @@ BOOL SAGE_SetParameter(SAGE_Configuration * config, STRPTR section, STRPTR name,
 
 /**
  * Remove a parameter from config
+ *
+ * @param config  Config structure
+ * @param section Section name or NULL
+ * @param name    Parameter name
+ *
+ * @return Operation success
  */
 BOOL SAGE_RemoveParameter(SAGE_Configuration * config, STRPTR section, STRPTR name)
 {

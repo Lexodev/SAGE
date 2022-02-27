@@ -15,7 +15,7 @@
 #include <dos/dos.h>
 #include <dos/dostags.h>
 
-#define STHD_MAX_THREAD       32
+#define STHD_MAX_THREAD       8
 
 /** SAGE thread structure */
 typedef struct {

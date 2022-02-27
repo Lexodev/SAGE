@@ -15,7 +15,7 @@
 
 #include "sage_maths.h"
 
-#define S3DE_MAX_ENTITIES     64                    // Max entities in the world
+#define S3DE_MAX_ENTITIES     128                   // Max entities in the world
 
 #define S3DE_RENDER_WIRE      0                     // Wireframe entity rendering
 #define S3DE_RENDER_FLAT      1                     // Flat entity rendering

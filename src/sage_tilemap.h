@@ -11,7 +11,7 @@
 #ifndef _SAGE_TILEMAP_H_
 #define _SAGE_TILEMAP_H_
 
-#define STIL_MAX_TILEMAP      8
+#define STIL_MAX_TILEMAP      16
 
 #define STIL_MAPBPT_BYTE      1
 #define STIL_MAPBPT_WORD      2
