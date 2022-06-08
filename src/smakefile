@@ -5,9 +5,9 @@
 #----------------------------------------------------------
 
 # Build options
-OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far DEFINE=_SAGE_DEBUG_MODE_=1 DEFINE=_SAGE_SAFE_MODE_=1
-#OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far DEFINE=_SAGE_SAFE_MODE_=1
-#OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far
+OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far DEFINE=_SAGE_DEBUG_MODE_=1 DEFINE=_SAGE_SAFE_MODE_=1 nostackcheck
+#OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far DEFINE=_SAGE_SAFE_MODE_=1 nostackcheck
+#OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far nostackcheck
 SAGELIB=/lib/sage.lib
 
 # Objects
@@ -16,7 +16,8 @@ VIDEOOBJ=sage_video.o sage_bitmap.o sage_event.o sage_screen.o sage_layer.o sage
 INPUTOBJ=sage_input.o sage_keyboard.o sage_joyport.o
 AUDIOOBJ=sage_audio.o sage_loadwave.o sage_load8svx.o sage_sound.o sage_loadtracker.o sage_loadaiff.o sage_music.o
 INTOBJ=sage_interrupt.o
-S3DOBJ=sage_3d.o sage_3dtexture.o sage_3drender.o sage_3dtexmap.o sage_3dengine.o sage_3dentity.o sage_3dcamera.o sage_3dmaterial.o sage_3dskybox.o sage_loadlwo.o
+S3DOBJ=sage_3d.o sage_3dtexture.o sage_3drender.o sage_3dtexmap.o
+S3EOBJ= sage_3dengine.o sage_3dentity.o sage_3dcamera.o sage_3dmaterial.o sage_3dskybox.o sage_3dterrain.o sage_loadlwo.o sage_loadobj.o
 NETOBJ=sage_network.o
 ASMOBJ=sage_blitter.o sage_ammxblit.o sage_vblint.o sage_fastdraw.o sage_itserver.o sage_fastmap.o
 
@@ -33,8 +34,8 @@ core: $(LIBOBJ) $(COREOBJ)
   oml $(SAGELIB) Add $(COREOBJ)
   @echo "** Core build complete **"
 
-module: $(INPUTOBJ) $(AUDIOOBJ) $(INTOBJ) $(NETOBJ) $(VIDEOOBJ) $(S3DOBJ)
-  oml $(SAGELIB) Add $(INPUTOBJ) $(AUDIOOBJ) $(INTOBJ) $(NETOBJ) $(VIDEOOBJ) $(S3DOBJ)
+module: $(INPUTOBJ) $(AUDIOOBJ) $(INTOBJ) $(NETOBJ) $(VIDEOOBJ) $(S3DOBJ) $(S3EOBJ)
+  oml $(SAGELIB) Add $(INPUTOBJ) $(AUDIOOBJ) $(INTOBJ) $(NETOBJ) $(VIDEOOBJ) $(S3DOBJ) $(S3EOBJ)
   @echo "** Module build complete **"
 
 external: ext/PT-AHIPlay.o
@@ -172,7 +173,7 @@ sage_interrupt.o: sage_interrupt.c sage_interrupt.h
   sc sage_interrupt.c $(OPT)
 
 # Build 3D module
-build3d: $(S3DOBJ)
+build3d: $(S3DOBJ) $(S3EOBJ)
 
 sage_3d.o: sage_3d.c sage_3d.h
   sc sage_3d.c $(OPT)
@@ -201,8 +202,14 @@ sage_3dmaterial.o: sage_3dmaterial.c sage_3dmaterial.h
 sage_3dskybox.o: sage_3dskybox.c sage_3dskybox.h
   sc sage_3dskybox.c $(OPT)
 
+sage_3dterrain.o: sage_3dterrain.c sage_3dterrain.h
+  sc sage_3dterrain.c $(OPT)
+
 sage_loadlwo.o: sage_loadlwo.c sage_loadlwo.h
   sc sage_loadlwo.c $(OPT)
+
+sage_loadobj.o: sage_loadobj.c sage_loadobj.h
+  sc sage_loadobj.c $(OPT)
 
 # Build network module
 buildnet: $(NETOBJ)

@@ -1,5 +1,7 @@
 ** TODO LIST
 
+- Check
+
 - Sources
   . Implémenter traçage de lignes strip & array (sage_draw.c)
   . Implémenter flat quad pour 24 bits (sage_draw.c)

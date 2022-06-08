@@ -175,6 +175,9 @@ BOOL SAGE_SetColor(UWORD, ULONG);
 /** Set multiple screen colors */
 BOOL SAGE_SetColorMap(ULONG *, UWORD, UWORD);
 
+/** Get the screen colors */
+ULONG * SAGE_GetColorMap(VOID);
+
 /** Get a color from an index */
 ULONG SAGE_GetColor(UWORD);
 

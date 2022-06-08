@@ -24,6 +24,20 @@
 extern SAGE_Context SageContext;
 
 /**
+ * Check if texture size is valid
+ */
+BOOL SAGE_CheckTextureSize(ULONG width, ULONG height)
+{
+  if (width != height) {
+    return FALSE;
+  }
+  if (width != STEX_SIZE64 && width != STEX_SIZE128 && width != STEX_SIZE256 && width != STEX_SIZE512) {
+    return FALSE;
+  }
+  return TRUE;
+}
+
+/**
  * Create a texture from a picture
  *
  * @param index   Texture index
@@ -59,6 +73,18 @@ BOOL SAGE_CreateTextureFromPicture(UWORD index, UWORD left, UWORD top, UWORD siz
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
   }
+  // Check for size compliance
+  if (size == STEX_FULLSIZE) {
+    if (!SAGE_CheckTextureSize(picture->bitmap->width, picture->bitmap->height)) {
+      SAGE_SetError(SERR_TEXTURE_SIZE);
+      return NULL;
+    }
+    size = picture->bitmap->width;
+  }
+  if (SageContext.Sage3D == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
+    return NULL;
+  }
   if (SageContext.Sage3D->textures[index] != NULL) {
     SAGE_ReleaseTexture(index);
   }
@@ -66,8 +92,8 @@ BOOL SAGE_CreateTextureFromPicture(UWORD index, UWORD left, UWORD top, UWORD siz
   texture = (SAGE_3DTexture *) SAGE_AllocMem(sizeof(SAGE_3DTexture));
   if (texture != NULL) {
     texture->size = size;
-    if ((texture->bitmap = SAGE_AllocBitmap(size, size, screen->depth, screen->pixformat, NULL)) != NULL) {
-      if (SAGE_BlitPictureToBitmap(picture, left, top, size, size, texture->bitmap, 0, 0)) {
+    if ((texture->bitmap = SAGE_AllocBitmap(texture->size, texture->size, screen->depth, screen->pixformat, NULL)) != NULL) {
+      if (SAGE_BlitPictureToBitmap(picture, left, top, texture->size, texture->size, texture->bitmap, 0, 0)) {
         // Set texture format
         switch (screen->pixformat) {
           case PIXFMT_CLUT:
@@ -114,9 +140,9 @@ BOOL SAGE_CreateTextureFromPicture(UWORD index, UWORD left, UWORD top, UWORD siz
  */
 SAGE_3DTexture * SAGE_GetTexture(UWORD index)
 {
-  // Check for video device
-  SAFE(if (SageContext.SageVideo == NULL) {
-    SAGE_SetError(SERR_NO_VIDEODEVICE);
+  // Check for 3d device
+  SAFE(if (SageContext.Sage3D == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
     return NULL;
   })
   SAFE(if (index >= STEX_MAX_TEXTURES) {
@@ -135,9 +161,9 @@ SAGE_3DTexture * SAGE_GetTexture(UWORD index)
  */
 W3D_Texture * SAGE_GetW3DTexture(UWORD index)
 {
-  // Check for video device
-  SAFE(if (SageContext.SageVideo == NULL) {
-    SAGE_SetError(SERR_NO_VIDEODEVICE);
+  // Check for 3d device
+  SAFE(if (SageContext.Sage3D == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
     return NULL;
   })
   SAFE(if (index >= STEX_MAX_TEXTURES) {
@@ -145,6 +171,49 @@ W3D_Texture * SAGE_GetW3DTexture(UWORD index)
     return NULL;
   })
   return SageContext.Sage3D->textures[index]->w3dtex;
+}
+
+/**
+ * Return the first free slot in texture array
+ *
+ * @return Free texture index or -1 when no slot is available
+ */
+WORD SAGE_GetFreeTextureIndex()
+{
+  WORD index;
+  
+  // Check for 3d device
+  SAFE(if (SageContext.Sage3D == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
+    return NULL;
+  })
+  for (index = 0;index < STEX_MAX_TEXTURES;index++) {
+    if (SageContext.Sage3D->textures[index] == NULL) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+/**
+ * Get a texture size by his index
+ *
+ * @param index Texture index
+ *
+ * @return Texture size
+ */
+UWORD SAGE_GetTextureSize(UWORD index)
+{
+  // Check for 3d device
+  SAFE(if (SageContext.Sage3D == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
+    return 0;
+  })
+  SAFE(if (index >= STEX_MAX_TEXTURES) {
+    SAGE_SetError(SERR_TEX_INDEX);
+    return 0;
+  })
+  return SageContext.Sage3D->textures[index]->size;
 }
 
 /**
@@ -156,9 +225,9 @@ W3D_Texture * SAGE_GetW3DTexture(UWORD index)
  */
 APTR SAGE_GetTextureBuffer(UWORD index)
 {
-  // Check for video device
-  SAFE(if (SageContext.SageVideo == NULL) {
-    SAGE_SetError(SERR_NO_VIDEODEVICE);
+  // Check for 3d device
+  SAFE(if (SageContext.Sage3D == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
     return NULL;
   })
   SAFE(if (index >= STEX_MAX_TEXTURES) {
@@ -179,7 +248,6 @@ BOOL SAGE_ReleaseTexture(UWORD index)
 {
   SAGE_3DTexture * texture;
 
-  SD(SAGE_DebugLog("Release texture #%d", index));
   texture = SAGE_GetTexture(index);
   if (texture != NULL) {
     SAGE_RemoveTexture(index);
@@ -203,6 +271,7 @@ BOOL SAGE_AddTexture(UWORD index)
   SAGE_3DDevice * device;
   SAGE_3DTexture * texture;
   
+  SD(SAGE_DebugLog("Add texture #%d", index));
   device = SageContext.Sage3D;
   if (device == NULL) {
     SAGE_SetError(SERR_NO_3DDEVICE);
@@ -211,8 +280,8 @@ BOOL SAGE_AddTexture(UWORD index)
   if (texture == NULL) {
     return FALSE;
   }
-  // Don't have to push texture on card when we are in internal mode
-  if (device->render_mode == S3DR_S3DMODE) {
+  // Don't have to push texture on card when we are not using Warp3D
+  if (device->render_system != S3DD_W3DRENDER) {
     texture->w3dtex = NULL;
     return TRUE;
   }
@@ -249,6 +318,7 @@ BOOL SAGE_RemoveTexture(UWORD index)
   SAGE_3DDevice * device;
   SAGE_3DTexture * texture;
   
+  SD(SAGE_DebugLog("Remove texture #%d", index));
   device = SageContext.Sage3D;
   if (device == NULL) {
     SAGE_SetError(SERR_NO_3DDEVICE);
@@ -266,7 +336,7 @@ BOOL SAGE_RemoveTexture(UWORD index)
 }
 
 /**
- * Remove all textures from card memory
+ * Remove all textures from card memory and relesae ressources
  * 
  * @return Operation success
  */
@@ -274,8 +344,9 @@ BOOL SAGE_FlushTextures()
 {
   UWORD index;
 
+  SD(SAGE_DebugLog("Flush textures (%d)", STEX_MAX_TEXTURES));
   for (index = 0;index < STEX_MAX_TEXTURES;index++) {
-    SAGE_RemoveTexture(index);
+    SAGE_ReleaseTexture(index);
   }
   return TRUE;
 }

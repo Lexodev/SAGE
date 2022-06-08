@@ -25,23 +25,32 @@ ULONG cube_colors[8] = {
   0x00FFFF00,0x00FF00FF,0x0000FFFF,0x00FFFFFF
 };
 
-struct cube_point {
-  FLOAT x, y, z;
-};
-
-struct cube_face {
-  ULONG p1, p2, p3, p4, color;
-};
-
-struct cube_object {
+typedef struct {
   WORD anglex,angley,anglez;
   FLOAT posx, posy, posz;
-  struct cube_point points[CUBE_POINTS];
-  struct cube_face faces[CUBE_FACES];
-};
+  FLOAT dist, centerx, centery;
+} Camera;
 
-// Demo Data
-struct cube_object Cube = {
+typedef struct {
+  FLOAT x, y, z;
+} Vertex;
+
+typedef struct {
+  BOOL culled;
+  ULONG p1, p2, p3, p4, color;
+} Face;
+
+typedef struct {
+  WORD anglex,angley,anglez;
+  FLOAT posx, posy, posz;
+  Vertex points[CUBE_POINTS];
+  Face faces[CUBE_FACES];
+  Vertex trans_points[CUBE_POINTS];
+} CubeObject;
+
+Camera ViewCam = { 0.0,0.0,0.0, 0,0,0, 200.0,SCREEN_WIDTH/2,SCREEN_HEIGHT/2 };
+
+CubeObject FrontCube = {
   0,0,0,
   0.0,0.0,50.0,
   {
@@ -55,58 +64,119 @@ struct cube_object Cube = {
     { -10.0,-10.0,10.0 }
   },
   {
-    { 0,1,2,3, 1 },
-    { 1,5,6,2, 2 },
-    { 5,4,7,6, 3 },
-    { 4,0,3,7, 4 },
-    { 4,5,1,0, 5 },
-    { 3,2,6,7, 6 }
+    { FALSE, 0,1,2,3, 1 },
+    { FALSE, 1,5,6,2, 2 },
+    { FALSE, 5,4,7,6, 3 },
+    { FALSE, 4,0,3,7, 4 },
+    { FALSE, 4,5,1,0, 5 },
+    { FALSE, 3,2,6,7, 6 }
   }
 };
 
-struct cube_point transf[CUBE_POINTS];
-BOOL finish = FALSE;
+CubeObject LeftCube = {
+  0,0,0,
+  -50.0,0.0,0.0,
+  {
+    { -10.0,10.0,-10.0 },
+    { 10.0,10.0,-10.0 },
+    { 10.0,-10.0,-10.0 },
+    { -10.0,-10.0,-10.0 },
+    { -10.0,10.0,10.0 },
+    { 10.0,10.0,10.0 },
+    { 10.0,-10.0,10.0 },
+    { -10.0,-10.0,10.0 }
+  },
+  {
+    { FALSE, 0,1,2,3, 1 },
+    { FALSE, 1,5,6,2, 2 },
+    { FALSE, 5,4,7,6, 3 },
+    { FALSE, 4,0,3,7, 4 },
+    { FALSE, 4,5,1,0, 5 },
+    { FALSE, 3,2,6,7, 6 }
+  }
+};
 
-// Controls
-#define KEY_NBR               10
-#define KEY_UP                0
-#define KEY_DOWN              1
-#define KEY_LEFT              2
-#define KEY_RIGHT             3
-#define KEY_SPACE             4
-#define KEY_A                 5
-#define KEY_Z                 6
-#define KEY_Q                 7
-#define KEY_W                 8
-#define KEY_QUIT              9
-
-UBYTE keyboard_state[KEY_NBR];
-
-SAGE_KeyScan keys[KEY_NBR] = {
-  { SKEY_FR_UP, FALSE },
-  { SKEY_FR_DOWN, FALSE },
-  { SKEY_FR_LEFT, FALSE },
-  { SKEY_FR_RIGHT, FALSE },
-  { SKEY_FR_SPACE, FALSE },
-  { SKEY_FR_A, FALSE },
-  { SKEY_FR_Z, FALSE },
-  { SKEY_FR_Q, FALSE },
-  { SKEY_FR_W, FALSE },
-  { SKEY_FR_ESC, FALSE }
+CubeObject BottomCube = {
+  0,0,0,
+  0.0,-50.0,0.0,
+  {
+    { -10.0,10.0,-10.0 },
+    { 10.0,10.0,-10.0 },
+    { 10.0,-10.0,-10.0 },
+    { -10.0,-10.0,-10.0 },
+    { -10.0,10.0,10.0 },
+    { 10.0,10.0,10.0 },
+    { 10.0,-10.0,10.0 },
+    { -10.0,-10.0,10.0 }
+  },
+  {
+    { FALSE, 0,1,2,3, 1 },
+    { FALSE, 1,5,6,2, 2 },
+    { FALSE, 5,4,7,6, 3 },
+    { FALSE, 4,0,3,7, 4 },
+    { FALSE, 4,5,1,0, 5 },
+    { FALSE, 3,2,6,7, 6 }
+  }
 };
 
 // Engine
 #define RAD(x)                ((x)*PI/180.0)
-FLOAT Sinus[360];
-FLOAT Cosinus[360];
+FLOAT Sin[360];
+FLOAT Cos[360];
+
+Vertex ProjectedPoints[CUBE_POINTS];
+
+SAGE_Matrix ViewMatrix;
+SAGE_Matrix CubeMatrix;
 
 // Render data
+WORD cax = 0, cay = 0, crx = 0, cry = 0, crz = 0;
+FLOAT cpx = 0.0, cpy = 0.0;
 UBYTE string_buffer[256];
+BOOL finish = FALSE, debug = FALSE;
+
+VOID DumpMatrix(SAGE_Matrix * matrix)
+{
+  printf("Dump matrix 3x3\n");
+  printf(" => %f\t%f\t%f\n", matrix->m11, matrix->m12, matrix->m13);
+  printf(" => %f\t%f\t%f\n", matrix->m21, matrix->m22, matrix->m23);
+  printf(" => %f\t%f\t%f\n", matrix->m31, matrix->m32, matrix->m33);
+}
+
+VOID DumpMatrix4(SAGE_Matrix4 * matrix)
+{
+  printf("Dump matrix 4x4\n");
+  printf(" => %f\t%f\t%f\t%f\n", matrix->m11, matrix->m12, matrix->m13, matrix->m14);
+  printf(" => %f\t%f\t%f\t%f\n", matrix->m21, matrix->m22, matrix->m23, matrix->m24);
+  printf(" => %f\t%f\t%f\t%f\n", matrix->m31, matrix->m32, matrix->m33, matrix->m34);
+  printf(" => %f\t%f\t%f\t%f\n", matrix->m41, matrix->m42, matrix->m43, matrix->m44);
+}
+
+VOID DumpCube(CubeObject * cube)
+{
+  UWORD index;
+  
+  printf("** Cube\n");
+  printf(" - ax %d  ay %d  az %d\n", cube->anglex, cube->angley, cube->anglez);
+  printf(" - px %f  py %f  pz %f\n", cube->posx, cube->posy, cube->posz);
+  printf("* Points\n");
+  for (index = 0;index < CUBE_POINTS;index++) {
+    printf(" - #%d : %f, %f, %f\n", index, cube->points[index].x, cube->points[index].y, cube->points[index].z);
+  }
+  printf("* Faces\n");
+  for (index = 0;index < CUBE_FACES;index++) {
+    printf(" - #%d : %d->%d->%d->%d  0x%04X\n", index, cube->faces[index].p1, cube->faces[index].p2, cube->faces[index].p3, cube->faces[index].p4, cube->faces[index].color);
+  }
+  printf("* Transformed points\n");
+  for (index = 0;index < CUBE_POINTS;index++) {
+    printf(" - #%d : %f, %f, %f\n", index, cube->trans_points[index].x, cube->trans_points[index].y, cube->trans_points[index].z);
+  }
+}
 
 BOOL OpenScreen(VOID)
 {
   SAGE_AppliLog("Opening screen");
-  if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_TRIPLEBUF|SSCR_STRICTRES)) {
+  if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_TRIPLEBUF|SSCR_STRICTRES|SSCR_TRACKMOUSE|SSCR_DELTAMOUSE)) {
     SAGE_SetColorMap(cube_colors, 0, 8);
     SAGE_RefreshColors(0, 256);
     SAGE_SetTextColor(6, 0);
@@ -124,8 +194,8 @@ BOOL InitEngine(VOID)
 
   angle = 0.0;
   for (i = 0;i < 360;i++) {
-    Sinus[i] = sin(RAD(angle));
-    Cosinus[i] = cos(RAD(angle));
+    Sin[i] = sin(RAD(angle));
+    Cos[i] = cos(RAD(angle));
     angle += 1.0;
   }
   return TRUE;
@@ -164,110 +234,327 @@ VOID _Restore(VOID)
   SAGE_CloseScreen();
 }
 
-VOID ScanKeyboard(VOID)
+VOID SetViewCamAngle(WORD ax, WORD ay, WORD az)
 {
-  if (SAGE_ScanKeyboard(keys, KEY_NBR)) {
-    keyboard_state[KEY_UP] = keys[KEY_UP].key_pressed;
-    keyboard_state[KEY_DOWN] = keys[KEY_DOWN].key_pressed;
-    keyboard_state[KEY_LEFT] = keys[KEY_LEFT].key_pressed;
-    keyboard_state[KEY_RIGHT] = keys[KEY_RIGHT].key_pressed;
-    keyboard_state[KEY_SPACE] = keys[KEY_SPACE].key_pressed;
-    keyboard_state[KEY_A] = keys[KEY_A].key_pressed;
-    keyboard_state[KEY_Z] = keys[KEY_Z].key_pressed;
-    keyboard_state[KEY_Q] = keys[KEY_Q].key_pressed;
-    keyboard_state[KEY_W] = keys[KEY_W].key_pressed;
-    keyboard_state[KEY_QUIT] = keys[KEY_QUIT].key_pressed;
-  }
+  ViewCam.anglex = ax;
+  while (ViewCam.anglex < 0) ViewCam.anglex += 360;
+  while (ViewCam.anglex >= 360) ViewCam.anglex -= 360;
+  ViewCam.angley = ay;
+  while (ViewCam.angley < 0) ViewCam.angley += 360;
+  while (ViewCam.angley >= 360) ViewCam.angley -= 360;
+  ViewCam.anglez = az;
+  while (ViewCam.anglez < 0) ViewCam.anglez += 360;
+  while (ViewCam.anglez >= 360) ViewCam.anglez -= 360;
+}
+
+VOID RotateCube(CubeObject * cube, WORD dx, WORD dy, WORD dz)
+{
+  cube->anglex += dx;
+  while (cube->anglex < 0) cube->anglex += 360;
+  while (cube->anglex >= 360) cube->anglex -= 360;
+  cube->angley += dy;
+  while (cube->angley < 0) cube->angley += 360;
+  while (cube->angley >= 360) cube->angley -= 360;
+  cube->anglez += dz;
+  while (cube->anglez < 0) cube->anglez += 360;
+  while (cube->anglez >= 360) cube->anglez -= 360;
 }
 
 VOID _Update(VOID)
 {
-  ScanKeyboard();
-  if (keyboard_state[KEY_QUIT]) finish = TRUE;
-  if (keyboard_state[KEY_SPACE]) {
-    Cube.anglex = 0.0;
-    Cube.angley = 0.0;
-    Cube.anglez = 0.0;
-    Cube.posz = 50.0;
+  SAGE_Event * event = NULL;
+
+  debug = FALSE;
+  while ((event = SAGE_GetEvent()) != NULL) {
+    if (event->type == SEVT_RAWKEY) {
+      if (event->code == SKEY_FR_ESC) {
+        SAGE_AppliLog("Exit loop");
+        finish = TRUE;
+      }
+      if (event->code == SKEY_FR_D) {
+        debug = TRUE;
+      }
+      if (event->code == SKEY_FR_SPACE) {
+        cax = 0; cay = 0;
+        cpx = 0.0; cpy = 0.0;
+      }
+      if (event->code == SKEY_FR_UP) {
+        cpy += 0.5;
+        if (cpy > 50.0) cpy = 50.0;
+      } else if (event->code == SKEY_FR_DOWN) {
+        cpy -= 0.5;
+        if (cpy < -50.0) cpy = -50.0;
+      }
+    } else if (event->type == SEVT_MOUSEMV) {
+      cay += event->mousex;
+      cax += event->mousey;
+    }
   }
-  if (keyboard_state[KEY_LEFT]) {
-    Cube.angley += 1;
-    if (Cube.angley >= 360) Cube.angley -= 360;
-  } else if (keyboard_state[KEY_RIGHT]) {
-    Cube.angley -= 1;
-    if (Cube.angley < 0) Cube.angley += 360;
-  }
-  if (keyboard_state[KEY_UP]) {
-    Cube.anglex += 1;
-    if (Cube.anglex >= 360) Cube.anglex -= 360;
-  } else if (keyboard_state[KEY_DOWN]) {
-    Cube.anglex -= 1;
-    if (Cube.anglex < 0) Cube.anglex += 360;
-  }
-  if (keyboard_state[KEY_A]) {
-    Cube.anglez += 1;
-    if (Cube.anglez >= 360) Cube.anglez -= 360;
-  } else if (keyboard_state[KEY_Z]) {
-    Cube.anglez -= 1;
-    if (Cube.anglez < 0) Cube.anglez += 360;
-  }
-  if (keyboard_state[KEY_Q]) {
-    Cube.posz += 1;
-    if (Cube.posz > 200.0) Cube.posz = 200.0;
-  } else if (keyboard_state[KEY_W]) {
-    Cube.posz -= 1;
-    if (Cube.posz < 20.0) Cube.posz = 20.0;
+  SetViewCamAngle(cax, cay, 0);
+  RotateCube(&FrontCube, 0, 0, 1);
+}
+
+/**
+
+Camera rotation matrix
+We have cos(-x) = cos(x) and sin(-x) = -sin(x)
+
+RX :    1     0     0
+        0     Cos   -Sin
+        0     Sin   Cos
+
+RY :    Cos   0     Sin
+        0     1     0
+        -Sin   0    Cos
+
+RZ :    Cos   -Sin  0
+        Sin   Cos   0
+        0     0     1
+
+*/
+VOID SetupViewMatrix(Camera * camera)
+{
+  SAGE_Matrix rx, ry, rz, tmp;
+
+  if (debug) printf("=> SetupViewMatrix()\n");
+
+  SAGE_IdentityMatrix(&rx);
+  rx.m22 = Cos[camera->anglex];
+  rx.m23 = -Sin[camera->anglex];
+  rx.m32 = Sin[camera->anglex];
+  rx.m33 = Cos[camera->anglex];
+  
+  SAGE_IdentityMatrix(&ry);
+  ry.m11 = Cos[camera->angley];
+  ry.m13 = Sin[camera->angley];
+  ry.m31 = -Sin[camera->angley];
+  ry.m33 = Cos[camera->angley];
+
+  SAGE_IdentityMatrix(&rz);
+  rz.m11 = Cos[camera->anglez];
+  rz.m12 = -Sin[camera->anglez];
+  rz.m21 = Sin[camera->anglez];
+  rz.m22 = Cos[camera->anglez];
+
+  SAGE_MultiplyMatrix(&tmp, &rz, &ry);
+  SAGE_MultiplyMatrix(&ViewMatrix, &tmp, &rx);
+
+  if (debug) DumpMatrix(&ViewMatrix);
+}
+
+BOOL CheckVisibility(CubeObject * cube, Camera * camera)
+{
+  if (debug) printf("=> CheckVisibility()\n");
+  
+  if (debug) printf("Cube is visible\n");
+  return TRUE;
+}
+
+/**
+
+Object rotation matrix
+
+RX :    1     0     0
+        0     Cos   Sin
+        0     -Sin  Cos
+
+RY :    Cos   0     -Sin
+        0     1     0
+        Sin   0     Cos
+
+RZ :    Cos   Sin   0
+        -Sin  Cos   0
+        0     0     1
+
+*/
+VOID SetupCubeMatrix(CubeObject * cube)
+{
+  SAGE_Matrix rx, ry, rz, tmp;
+  
+  if (debug) printf("=> SetupCubeMatrix()\n");
+
+  SAGE_IdentityMatrix(&rx);
+  rx.m22 = Cos[cube->anglex];
+  rx.m23 = Sin[cube->anglex];
+  rx.m32 = -Sin[cube->anglex];
+  rx.m33 = Cos[cube->anglex];
+
+  SAGE_IdentityMatrix(&ry);
+  ry.m11 = Cos[cube->angley];
+  ry.m13 = -Sin[cube->angley];
+  ry.m31 = Sin[cube->angley];
+  ry.m33 = Cos[cube->angley];
+
+  SAGE_IdentityMatrix(&rz);
+  rz.m11 = Cos[cube->anglez];
+  rz.m12 = Sin[cube->anglez];
+  rz.m21 = -Sin[cube->anglez];
+  rz.m22 = Cos[cube->anglez];
+
+  SAGE_MultiplyMatrix(&tmp, &rx, &ry);
+  SAGE_MultiplyMatrix(&CubeMatrix, &tmp, &rz);
+
+  if (debug) DumpMatrix(&CubeMatrix);
+}
+
+VOID LocalToWorld(CubeObject * cube)
+{
+  UWORD index;
+  FLOAT x, y, z;
+  
+  if (debug) printf("=> LocalToWorld()\n");
+  for (index = 0;index < CUBE_POINTS;index++) {
+    x = cube->points[index].x;
+    y = cube->points[index].y;
+    z = cube->points[index].z;
+    cube->trans_points[index].x = x*CubeMatrix.m11 + y*CubeMatrix.m21 + z*CubeMatrix.m31 + cube->posx;
+    cube->trans_points[index].y = x*CubeMatrix.m12 + y*CubeMatrix.m22 + z*CubeMatrix.m32 + cube->posy;
+    cube->trans_points[index].z = x*CubeMatrix.m13 + y*CubeMatrix.m23 + z*CubeMatrix.m33 + cube->posz;
+    if (debug) printf(" - point %d : x %f=>%f  y %f=>%f  z %f=>%f\n", index, x, cube->trans_points[index].x, y, cube->trans_points[index].y, z, cube->trans_points[index].z);
   }
 }
 
-VOID DrawCube(VOID)
+VOID BackFaceCulling(CubeObject * cube, Camera * camera)
 {
-  FLOAT x,y,z,xa,ya,za,xb,yb,zb;
-  LONG x1,y1,x2,y2,x3,y3,x4,y4;
-  UWORD i;
+  UWORD index;
   
-  for (i=0;i < CUBE_POINTS;i++) {
-    xa = Cube.points[i].x;
-    ya = Cube.points[i].y;
-    za = Cube.points[i].z;
-    // Rotate X
-    yb = ya * Cosinus[Cube.anglex] - za * Sinus[Cube.anglex];
-    zb = ya * Sinus[Cube.anglex] + za * Cosinus[Cube.anglex];
-    // Rotate Y
-    xb = xa * Cosinus[Cube.angley] + zb * Sinus[Cube.angley];
-    z = -xa * Sinus[Cube.angley] + zb * Cosinus[Cube.angley];
-    // Rotate Z
-    x = xb * Cosinus[Cube.anglez] - yb * Sinus[Cube.anglez];
-    y = xb * Sinus[Cube.anglez] + yb * Cosinus[Cube.anglez];
-    SAGE_DebugLog(" => rx=%f, ry=%f, rz=%f", x, y, z);
-    // Perspective
-    z += Cube.posz;
-    transf[i].x = (x * 256.0) / z;
-    transf[i].y = (-y * 256.0) / z;
-    transf[i].z = z;
+  if (debug) printf("=> BackFaceCulling()\n");
+  for (index = 0;index < CUBE_FACES;index++) {
+    cube->faces[index].culled = FALSE;
   }
+}
+
+VOID WorldToCamera(CubeObject * cube, Camera * camera)
+{
+  UWORD index;
+  FLOAT x, y, z;
+  
+  if (debug) printf("=> WorldToCamera()\n");
+  for (index = 0;index < CUBE_POINTS;index++) {
+    x = cube->trans_points[index].x;
+    y = cube->trans_points[index].y;
+    z = cube->trans_points[index].z;
+    cube->trans_points[index].x = x*ViewMatrix.m11 + y*ViewMatrix.m21 + z*ViewMatrix.m31;
+    cube->trans_points[index].y = x*ViewMatrix.m12 + y*ViewMatrix.m22 + z*ViewMatrix.m32;
+    cube->trans_points[index].z = x*ViewMatrix.m13 + y*ViewMatrix.m23 + z*ViewMatrix.m33;
+    if (debug) printf(" - point %d : x %f=>%f  y %f=>%f  z %f=>%f\n", index, x, cube->trans_points[index].x, y, cube->trans_points[index].y, z, cube->trans_points[index].z);
+  }
+}
+
+VOID Projection(CubeObject * cube, Camera * camera)
+{
+  UWORD index;
+
+  if (debug) printf("=> Projection\n");
+  for (index = 0;index < CUBE_POINTS;index++) {
+    if (cube->trans_points[index].z > 0.0) {
+      ProjectedPoints[index].x = (cube->trans_points[index].x * camera->dist / cube->trans_points[index].z) + camera->centerx;
+      ProjectedPoints[index].y = (-cube->trans_points[index].y * camera->dist / cube->trans_points[index].z) + camera->centery;
+      ProjectedPoints[index].z = cube->trans_points[index].z;
+    } else {
+      ProjectedPoints[index].x = 0.0;
+      ProjectedPoints[index].y = 0.0;
+      ProjectedPoints[index].z = 0.0;
+    }
+    if (debug) printf(" - vertex %d is %f, %f, %f\n", index, ProjectedPoints[index].x, ProjectedPoints[index].y, ProjectedPoints[index].z);
+  }
+}
+
+VOID DrawWire(CubeObject * cube)
+{
+  LONG i;
+
   for (i = 0;i < CUBE_FACES;i++) {
-    x1 = (LONG) transf[Cube.faces[i].p1].x + (SCREEN_WIDTH/2);
-    y1 = (LONG) transf[Cube.faces[i].p1].y + (SCREEN_HEIGHT/2);
-    x2 = (LONG) transf[Cube.faces[i].p2].x + (SCREEN_WIDTH/2);
-    y2 = (LONG) transf[Cube.faces[i].p2].y + (SCREEN_HEIGHT/2);
-    x3 = (LONG) transf[Cube.faces[i].p3].x + (SCREEN_WIDTH/2);
-    y3 = (LONG) transf[Cube.faces[i].p3].y + (SCREEN_HEIGHT/2);
-    x4 = (LONG) transf[Cube.faces[i].p4].x + (SCREEN_WIDTH/2);
-    y4 = (LONG) transf[Cube.faces[i].p4].y + (SCREEN_HEIGHT/2);
-    if (((y1-y2)*(x2-x3)) < ((y2-y3)*(x1-x2))) {
-      SAGE_DrawClippedTriangle(x1 ,y1, x2, y2, x3, y3, Cube.faces[i].color);
-      SAGE_DrawClippedTriangle(x1 ,y1, x4, y4, x3, y3, Cube.faces[i].color);
+    if (!cube->faces[i].culled) {
+      SAGE_DrawClippedLine(
+        (LONG)(ProjectedPoints[cube->faces[i].p1].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p1].y),
+        (LONG)(ProjectedPoints[cube->faces[i].p2].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p2].y),
+        cube->faces[i].color
+      );
+      SAGE_DrawClippedLine(
+        (LONG)(ProjectedPoints[cube->faces[i].p2].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p2].y),
+        (LONG)(ProjectedPoints[cube->faces[i].p3].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p3].y),
+        cube->faces[i].color
+      );
+      SAGE_DrawClippedLine(
+        (LONG)(ProjectedPoints[cube->faces[i].p3].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p3].y),
+        (LONG)(ProjectedPoints[cube->faces[i].p4].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p4].y),
+        cube->faces[i].color
+      );
+      SAGE_DrawClippedLine(
+        (LONG)(ProjectedPoints[cube->faces[i].p4].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p4].y),
+        (LONG)(ProjectedPoints[cube->faces[i].p1].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p1].y),
+        cube->faces[i].color
+      );
     }
   }
+}
+
+VOID DrawFlat(CubeObject * cube)
+{
+  LONG i;
+
+  for (i = 0;i < CUBE_FACES;i++) {
+    if (!cube->faces[i].culled) {
+      SAGE_DrawClippedTriangle(
+        (LONG)(ProjectedPoints[cube->faces[i].p1].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p1].y),
+        (LONG)(ProjectedPoints[cube->faces[i].p2].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p2].y),
+        (LONG)(ProjectedPoints[cube->faces[i].p3].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p3].y),
+        cube->faces[i].color
+      );
+      SAGE_DrawClippedTriangle(
+        (LONG)(ProjectedPoints[cube->faces[i].p1].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p1].y),
+        (LONG)(ProjectedPoints[cube->faces[i].p4].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p4].y),
+        (LONG)(ProjectedPoints[cube->faces[i].p3].x),
+        (LONG)(ProjectedPoints[cube->faces[i].p3].y),
+        cube->faces[i].color
+      );
+    }
+  }
+}
+
+VOID DrawCube(CubeObject * cube, Camera * camera)
+{
+  if (CheckVisibility(cube, camera)) {
+    SetupCubeMatrix(cube);
+    LocalToWorld(cube);
+    BackFaceCulling(cube, camera);
+    WorldToCamera(cube, camera);
+    Projection(cube, camera);
+    if (debug) DumpCube(cube);
+    DrawWire(cube);
+  } else {
+    if (debug) printf("Cube is not visible\n");
+  }
+}
+
+VOID DrawWorld()
+{
+  SetupViewMatrix(&ViewCam);
+  DrawCube(&FrontCube, &ViewCam);
+  DrawCube(&LeftCube, &ViewCam);
+  DrawCube(&BottomCube, &ViewCam);
 }
 
 VOID _Render(VOID)
 {
   SAGE_ClearScreen();
-  DrawCube();
+  DrawWorld();
   // Draw the angles
-  sprintf(string_buffer, "AX=%d  AY=%d  AZ=%d  ZOOM=%f", Cube.anglex, Cube.angley, Cube.anglez, Cube.posz);
+  sprintf(string_buffer, "CAX=%d  CAY=%d", cax, cay);
   SAGE_PrintText(string_buffer, 10, 10);
   // Draw the fps counter
   sprintf(string_buffer, "%d fps", SAGE_GetFps());

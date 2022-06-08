@@ -574,13 +574,6 @@ BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONGBITS flags)
     SAGE_CloseScreen();
     return FALSE;
   }
-  // Allocate the 3D context if needed
-  if (SageContext.Sage3D != NULL) {
-    if (!SAGE_Allocate3DContext()) {
-      SAGE_CloseScreen();
-      return FALSE;
-    }
-  }
   // Set default clipping
   screen->clipping.left = 0;
   screen->clipping.top = 0;
@@ -1172,7 +1165,7 @@ BOOL SAGE_SetColor(UWORD index, ULONG color)
 }
 
 /**
- * Get a the screen color
+ * Get a screen color
  *
  * @param index Color index
  *
@@ -1213,7 +1206,7 @@ ULONG SAGE_RemapColor(ULONG color)
       color = (((red & 248L) | (green >> 5)) << 8) | ((green << 3) & 224L) | (blue >> 3);
       return (color << 16) | color;
     case PIXFMT_RGB16PC:
-      color = ((((green << 3) & 224) | (blue >> 3)) << 8) | (red & 248) | (green >> 5);
+      color = ((((green << 3) & 224L) | (blue >> 3)) << 8) | (red & 248L) | (green >> 5);
       return (color << 16) | color;
     case PIXFMT_BGR24:
       return (red << 16) | (green << 8) | blue;
@@ -1255,6 +1248,23 @@ BOOL SAGE_SetColorMap(ULONG * colors, UWORD start, UWORD nbcolor)
     screen->color_map[index + start] = colors[index];
   }
   return TRUE;
+}
+
+/**
+ * Get the screen colors
+ *
+ * @return Screen color map or NULL on error
+ */
+ULONG * SAGE_GetColorMap(VOID)
+{
+  SAGE_Screen * screen;
+  
+  screen = SAGE_GetScreen();
+  SAFE(if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return NULL;
+  })
+  return screen->color_map;
 }
 
 /**

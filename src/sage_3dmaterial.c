@@ -74,7 +74,7 @@ BOOL SAGE_AddMaterial(STRPTR file, STRPTR name, LONG left, LONG top, LONG size, 
 /**
  * Add multiple materials to the world
  */
-BOOL SAGE_AddMaterials(SAGE_Material * materials, LONG number)
+BOOL SAGE_AddMaterialList(SAGE_Material * materials, LONG number)
 {
   LONG idx;
   

@@ -9,7 +9,7 @@ OPT=CPU=68040 IDIR=libinclude: MATH=68882 NOICONS
 LIB=/lib/sage.lib
 
 # Files
-EXE=dragon fire_effect troll odysseus runner blood flatcube mapcube sotb mandelbrot effect engine sonic
+EXE=dragon fire_effect troll odysseus runner blood cube sotb mandelbrot effect engine sonic
 
 # Build all demos
 all: $(EXE) cleanobj
@@ -20,10 +20,8 @@ mandelbrot: mandelbrot.c $(LIB)
 fire_effect: fire_effect.c $(LIB)
   sc LINK fire_effect.c $(OPT) $(LIB)
 
-mapcube: cube/mapcube.c $(LIB)
-  sc LINK cube/mapcube.c $(OPT) $(LIB) DATA=far
-
-flatcube: cube/flatcube.c $(LIB)
+cube: cube/mapcube.c cube/flatcube.c $(LIB)
+#  sc LINK cube/mapcube.c $(OPT) $(LIB) DATA=far
   sc LINK cube/flatcube.c $(OPT) $(LIB) DATA=far
 
 dragon: dragon/dragon_crown.c dragon/dragon_crown.h $(LIB)
@@ -41,7 +39,11 @@ runner: runner/runner.c $(LIB)
 sotb: sotb/sotb_ehanced.c $(LIB)
   sc LINK sotb/sotb_ehanced.c $(OPT) $(LIB)
 
-engine: engine/engine.c $(LIB)
+engine: engine/engine.c engine/entity.c engine/skybox.c engine/camera.c engine/terrain.c $(LIB)
+  sc LINK engine/camera.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK engine/entity.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK engine/skybox.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK engine/terrain.c $(OPT) $(LIB) CODE=far DATA=fo
   sc LINK engine/engine.c $(OPT) $(LIB) CODE=far DATA=far
 
 sonic: sonic/sonic.c $(LIB)
@@ -51,17 +53,10 @@ blood: blood/blood.c blood/blood.h blood/blood_engine.c blood/blood_engine.h blo
   sc LINK blood/blood.c blood/blood_engine.c blood/blood_control.c $(OPT) $(LIB) CODE=far DATA=far
 
 # Ports of classical effects
-
-plasma: effect/plasma.c $(LIB)
+effect: effect/plasma.c effect/tunnel.c effect/rotozoom.c effect/voxel.c $(LIB)
   sc LINK effect/plasma.c $(OPT) $(LIB) CODE=far DATA=far
-
-tunnel: effect/tunnel.c $(LIB)
   sc LINK effect/tunnel.c $(OPT) $(LIB) CODE=far DATA=far
-
-rotozoom: effect/rotozoom.c $(LIB)
   sc LINK effect/rotozoom.c $(OPT) $(LIB) CODE=far DATA=far
-
-voxel: effect/voxel.c $(LIB)
   sc LINK effect/voxel.c $(OPT) $(LIB) CODE=far DATA=far
 
 # Clean files

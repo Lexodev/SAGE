@@ -19,59 +19,73 @@
 #include "sage_logger.h"
 #include "sage_memory.h"
 #include "sage_loadlwo.h"
+#include "sage_loadobj.h"
+#include "sage_screen.h"
+#include "sage_3dtexture.h"
 #include "sage_3dentity.h"
 #include "sage_3dengine.h"
 
 /** Engine data */
-extern FLOAT Cosinus[];
-extern FLOAT Sinus[];
 extern SAGE_3DWorld sage_world;
 
-/*****************************************************************************/
-//            DEBUG ONLY
-/*****************************************************************************/
+/*****************************************************************************
+ *            DEBUG ONLY
+ *****************************************************************************/
 
-VOID SAGE_DumpEntity(SAGE_Entity * entity)
+VOID SAGE_DumpEntity(SAGE_Entity * entity, UWORD mode)
 {
-  WORD index;
+  UWORD index;
+  SAGE_Vertex * vertices;
+  SAGE_Face * faces;
+  SAGE_Vector * normals;
   
-  SAGE_DebugLog("Dump entity");
+  SAGE_DebugLog("** Dump entity **");
+  if (entity == NULL) {
+    SAGE_DebugLog("entity is NULL !");
+    return;
+  }
   SAGE_DebugLog(" => ax=%d  ay=%d  az=%d", entity->anglex, entity->angley, entity->anglez);
-  SAGE_DebugLog(" => px=%f  py=%f  pz=%f", entity->posx, entity->posy, entity->posz);
-  SAGE_DebugLog(" => radius=%f", entity->radius);
-  SAGE_DebugLog(" => disabled=%d  clipped=%d", (entity->disabled ? 1 : 0), (entity->clipped ? 1 : 0));
-  SAGE_DebugLog(" => nbvertices=%d  nbfaces=%d  rendering=%d", entity->nb_vertices, entity->nb_faces, entity->rendering);
-  SAGE_DebugLog("-- Vertices");
-  for (index = 0;index < entity->nb_vertices;index++) {
-    SAGE_DebugLog(" => vertex %d : x=%f  y=%f  z=%f", index, entity->vertices[index].x, entity->vertices[index].y, entity->vertices[index].z);
-  }
-  SAGE_DebugLog("-- Transformed vertices");
-  for (index = 0;index < entity->nb_vertices;index++) {
-    SAGE_DebugLog(" => vertex %d : x=%f  y=%f  z=%f", index, entity->trans_vertices[index].x, entity->trans_vertices[index].y, entity->trans_vertices[index].z);
-  }
-  SAGE_DebugLog("-- Faces");
-  for (index = 0;index < entity->nb_faces;index++) {
-    if (entity->faces[index].is_quad) {
-      SAGE_DebugLog(" => face %d : p1=%d  p2=%d  p3=%d  p4=%d  color=%d  tex=%d  %s  clipped=%d",
-        index, entity->faces[index].p1, entity->faces[index].p2, entity->faces[index].p3, entity->faces[index].p4, entity->faces[index].color,
-        entity->faces[index].texture, (entity->faces[index].culled ? "culled" : "not culled"), entity->faces[index].clipped
-      );
-      SAGE_DebugLog("             u1,v1=%f,%f  u2,v2=%f,%f  u3,v3=%f,%f  u4,v4=%f,%f",
-        entity->faces[index].u1, entity->faces[index].v1, entity->faces[index].u2, entity->faces[index].v2,
-        entity->faces[index].u3, entity->faces[index].v3, entity->faces[index].u4, entity->faces[index].v4,
-        entity->faces[index].texture
-      );
-    } else {
-      SAGE_DebugLog(" => face %d : p1=%d  p2=%d  p3=%d  color=%d  tex=%d  %s  clipped=%d",
-        index, entity->faces[index].p1, entity->faces[index].p2, entity->faces[index].p3, entity->faces[index].color,
-        entity->faces[index].texture, (entity->faces[index].culled ? "culled" : "not culled"), entity->faces[index].clipped
-      );
-      SAGE_DebugLog("             u1,v1=%f,%f  u2,v2=%f,%f  u3,v3=%f,%f",
-        entity->faces[index].u1, entity->faces[index].v1, entity->faces[index].u2, entity->faces[index].v2,
-        entity->faces[index].u3, entity->faces[index].v3
-      );
+  SAGE_DebugLog(" => px=%f  py=%f  pz=%f  radius=%f", entity->posx, entity->posy, entity->posz, entity->radius);
+  SAGE_DebugLog(" => disabled=%d  culled=%d  clipped=%d", (entity->disabled ? 1 : 0), (entity->culled ? 1 : 0), (entity->clipped ? 1 : 0));
+  SAGE_DebugLog(" => nbvertices=%d  nbfaces=%d  lod=%d", entity->nb_vertices, entity->nb_faces, entity->lod);
+  if (mode & S3DE_DEBUG_EVERTS) {
+    SAGE_DebugLog("-- Vertices");
+    vertices = entity->vertices;
+    for (index = 0;index < entity->nb_vertices;index++) {
+      SAGE_DebugLog(" => vertex %d : x=%f  y=%f  z=%f", index, vertices[index].x, vertices[index].y, vertices[index].z);
     }
-    SAGE_DebugLog("             normal(%f, %f, %f)", entity->faces[index].normal.x, entity->faces[index].normal.y, entity->faces[index].normal.z);
+  }
+  if (mode & S3DE_DEBUG_EFACES) {
+    SAGE_DebugLog("-- Faces");
+    faces = entity->faces;
+    for (index = 0;index < entity->nb_faces;index++) {
+      if (faces[index].is_quad) {
+        SAGE_DebugLog(" => face %d : p1=%d  p2=%d  p3=%d  p4=%d  color=0x%06X  tex=%d  culled=%d  clipped=%d",
+          index, faces[index].p1, faces[index].p2, faces[index].p3, faces[index].p4, faces[index].color,
+          faces[index].texture, (faces[index].culled ? 1 : 0), faces[index].clipped
+        );
+        SAGE_DebugLog("             u1,v1=%f,%f  u2,v2=%f,%f  u3,v3=%f,%f  u4,v4=%f,%f",
+          faces[index].u1, faces[index].v1, faces[index].u2, faces[index].v2,
+          faces[index].u3, faces[index].v3, faces[index].u4, faces[index].v4
+        );
+      } else {
+        SAGE_DebugLog(" => face %d : p1=%d  p2=%d  p3=%d  color=0x%06X  tex=%d  culled=%d  clipped=%d",
+          index, faces[index].p1, faces[index].p2, faces[index].p3, faces[index].color,
+          faces[index].texture, (faces[index].culled ? 1 : 0), faces[index].clipped
+        );
+        SAGE_DebugLog("             u1,v1=%f,%f  u2,v2=%f,%f  u3,v3=%f,%f",
+          faces[index].u1, faces[index].v1, faces[index].u2, faces[index].v2,
+          faces[index].u3, faces[index].v3
+        );
+      }
+    }
+  }
+  if (mode & S3DE_DEBUG_ENORMS) {
+    SAGE_DebugLog("-- Normals");
+    normals = entity->normals;
+    for (index = 0;index < entity->nb_faces;index++) {
+      SAGE_DebugLog(" => normal %d : x=%f  y=%f  z=%f", index, normals[index].x, normals[index].y, normals[index].z);
+    }
   }
 }
 
@@ -80,23 +94,100 @@ VOID SAGE_DumpEntity(SAGE_Entity * entity)
 /**
  * Create an empty entity 
  */
-SAGE_Entity * SAGE_CreateEntity(WORD nb_vertices, WORD nb_faces)
+SAGE_Entity * SAGE_CreateEntity(UWORD nb_vertices, UWORD nb_faces)
 {
   SAGE_Entity * entity;
 
   SD(SAGE_DebugLog("Create entity (%d, %d)", nb_vertices, nb_faces));
+  if (nb_vertices >= S3DE_MAX_VERTICES) {
+    SAGE_SetError(SERR_ENTITY_SIZE);
+    return NULL;
+  }
   entity = (SAGE_Entity *)SAGE_AllocMem(sizeof(SAGE_Entity));
   if (entity != NULL) {
     entity->nb_vertices = nb_vertices;
     entity->nb_faces = nb_faces;
-    entity->rendering = S3DE_RENDER_TEXT;
-    entity->vertices = (SAGE_EntityVertex *)SAGE_AllocMem(sizeof(SAGE_EntityVertex)*nb_vertices);
-    entity->trans_vertices = (SAGE_EntityVertex *)SAGE_AllocMem(sizeof(SAGE_EntityVertex)*nb_vertices);
-    entity->faces = (SAGE_EntityFace *)SAGE_AllocMem(sizeof(SAGE_EntityFace)*nb_faces);
-    if (entity->vertices != NULL && entity->trans_vertices != NULL && entity->faces != NULL) {
+    entity->vertices = (SAGE_Vertex *)SAGE_AllocMem(sizeof(SAGE_Vertex)*nb_vertices);
+    entity->faces = (SAGE_Face *)SAGE_AllocMem(sizeof(SAGE_Face)*nb_faces);
+    entity->normals = (SAGE_Vector *)SAGE_AllocMem(sizeof(SAGE_Vector)*nb_faces);
+    if (entity->vertices != NULL && entity->faces != NULL && entity->normals != NULL) {
       return entity;
     }
     SAGE_ReleaseEntity(entity);
+  }
+  return NULL;
+}
+
+/**
+ * Initialize an entity (calc radius/normals and remap colors)
+ */
+VOID SAGE_InitEntity(SAGE_Entity * entity)
+{
+  UWORD idx;
+  ULONG color;
+
+  SD(SAGE_DebugLog("Init entity"));
+  if (entity != NULL) {
+    for (idx = 0;idx < entity->nb_faces;idx++) {
+      color = entity->faces[idx].color;
+      entity->faces[idx].color = SAGE_RemapColor(color);
+    }
+    SAGE_SetEntityRadius(entity);
+    SAGE_SetEntityNormals(entity);
+  }
+  SD(SAGE_DumpEntity(entity, S3DE_DEBUG_EALL));
+}
+
+/**
+ * Clone an entity
+ */
+SAGE_Entity * SAGE_CloneEntity(SAGE_Entity * entity)
+{
+  SAGE_Entity * new_entity;
+  UWORD idx;
+
+  SD(SAGE_DebugLog("Clone entity"));
+  new_entity = SAGE_CreateEntity(entity->nb_vertices, entity->nb_faces);
+  if (new_entity != NULL && entity != NULL) {
+    new_entity->anglex = entity->anglex;
+    new_entity->angley = entity->angley;
+    new_entity->anglez = entity->anglez;
+    new_entity->posx = entity->posx;
+    new_entity->posy = entity->posy;
+    new_entity->posz = entity->posz;
+    new_entity->radius = entity->radius;
+    new_entity->disabled = entity->disabled;
+    new_entity->nb_vertices = entity->nb_vertices;
+    new_entity->nb_faces = entity->nb_faces;
+    new_entity->lod = entity->lod;
+    // Copy vertices
+    for (idx = 0;idx < entity->nb_vertices;idx++) {
+      new_entity->vertices[idx].x = entity->vertices[idx].x;
+      new_entity->vertices[idx].y = entity->vertices[idx].y;
+      new_entity->vertices[idx].z = entity->vertices[idx].z;
+    }
+    // Copy faces & normals
+    for (idx = 0;idx < entity->nb_faces;idx++) {
+      new_entity->faces[idx].is_quad = entity->faces[idx].is_quad; 
+      new_entity->faces[idx].p1 = entity->faces[idx].p1;
+      new_entity->faces[idx].p2 = entity->faces[idx].p2;
+      new_entity->faces[idx].p3 = entity->faces[idx].p3;
+      new_entity->faces[idx].p4 = entity->faces[idx].p4;
+      new_entity->faces[idx].color = entity->faces[idx].color;
+      new_entity->faces[idx].texture = entity->faces[idx].texture;
+      new_entity->faces[idx].u1 = entity->faces[idx].u1;
+      new_entity->faces[idx].v1 = entity->faces[idx].v1;
+      new_entity->faces[idx].u2 = entity->faces[idx].u2;
+      new_entity->faces[idx].v2 = entity->faces[idx].v2;
+      new_entity->faces[idx].u3 = entity->faces[idx].u3;
+      new_entity->faces[idx].v3 = entity->faces[idx].v3;
+      new_entity->faces[idx].u4 = entity->faces[idx].u4;
+      new_entity->faces[idx].v4 = entity->faces[idx].v4;
+      new_entity->normals[idx].x = entity->normals[idx].x;
+      new_entity->normals[idx].y = entity->normals[idx].y;
+      new_entity->normals[idx].z = entity->normals[idx].z;
+    }
+    return new_entity;
   }
   return NULL;
 }
@@ -106,30 +197,30 @@ SAGE_Entity * SAGE_CreateEntity(WORD nb_vertices, WORD nb_faces)
  */
 VOID SAGE_ReleaseEntity(SAGE_Entity * entity)
 {
-  SD(SAGE_DebugLog("Release entity"));
   if (entity != NULL) {
     if (entity->vertices != NULL) {
       SAGE_FreeMem(entity->vertices);
     }
-    if (entity->trans_vertices != NULL) {
-      SAGE_FreeMem(entity->trans_vertices);
-    }
     if (entity->faces != NULL) {
       SAGE_FreeMem(entity->faces);
+    }
+    if (entity->normals != NULL) {
+      SAGE_FreeMem(entity->normals);
     }
     SAGE_FreeMem(entity);
   }
 }
 
 /**
- *  Get the type of an entity file
+ * Get the type of an entity file
  * 
- *  @param file_handle Handle on a file
+ * @param file_handle Handle on a file
  * 
- *  @return Type of entity file
+ * @return Type of entity file
  */
 UWORD SAGE_GetEntityFileType(BPTR file_handle)
 {
+  BYTE byte;
   LONG bytes_read, entity_tag;
 
   // Check for Ligthwave object
@@ -143,6 +234,18 @@ UWORD SAGE_GetEntityFileType(BPTR file_handle)
     SD(SAGE_DebugLog("This is a Ligthwave object"));
     bytes_read = Seek(file_handle, 0, OFFSET_BEGINNING);
     return S3DE_LWOB;
+  }
+  // Check for Wavefront object
+  bytes_read = Seek(file_handle, 0, OFFSET_BEGINNING);
+  bytes_read = Read(file_handle, &byte, 1);
+  if (bytes_read != 1) {
+    SAGE_SetError(SERR_READFILE);
+    return S3DE_UNDEFINED;
+  }
+  if (byte >= ' ' && byte < 'Z') {
+    SD(SAGE_DebugLog("This is a Wavefront object"));
+    bytes_read = Seek(file_handle, 0, OFFSET_BEGINNING);
+    return S3DE_WFOB;
   }
   return S3DE_UNDEFINED;
 }
@@ -163,6 +266,8 @@ SAGE_Entity * SAGE_LoadEntity(STRPTR filename)
     type = SAGE_GetEntityFileType(file_handle);
     if (type == S3DE_LWOB) {
       entity = SAGE_LoadLWO(file_handle);
+    } else if (type == S3DE_WFOB) {
+      entity = SAGE_LoadOBJ(file_handle, filename);
     } else {
       SAGE_SetError(SERR_FILEFORMAT);
     }
@@ -170,7 +275,6 @@ SAGE_Entity * SAGE_LoadEntity(STRPTR filename)
   } else {
     SAGE_SetError(SERR_OPENFILE);
   }
-  SD(SAGE_DumpEntity(entity));
   return entity;
 }
 
@@ -213,70 +317,46 @@ VOID SAGE_SetEntityNormals(SAGE_Entity * entity)
     v.y = entity->vertices[p3].y - entity->vertices[p1].y;
     v.z = entity->vertices[p3].z - entity->vertices[p1].z;
     // Calculate the normal
-    SAGE_CrossProduct(&(entity->faces[idx].normal), &u, &v);
+    SAGE_CrossProduct(&(entity->normals[idx]), &u, &v);
     // Normalize vector
-    SAGE_Normalize(&(entity->faces[idx].normal));
+    SAGE_Normalize(&(entity->normals[idx]));
   }
 }
 
 /**
  * Add an entity to the world
  */
-BOOL SAGE_AddEntity(ULONG index, SAGE_Entity * entity)
+BOOL SAGE_AddEntity(UWORD index, SAGE_Entity * entity)
 {
-  SAGE_Entity * new_entity;
-  UWORD idx;
-
   SD(SAGE_DebugLog("Add entity #%d", index));
   if (index >= S3DE_MAX_ENTITIES) {
     SAGE_SetError(SERR_ENTITY_INDEX);
     return FALSE;
   }
   // Clean the place
-  SAGE_RemoveEntity(index);
-  new_entity = SAGE_CreateEntity(entity->nb_vertices, entity->nb_faces);
-  if (new_entity != NULL) {
-    new_entity->anglex = entity->anglex;
-    new_entity->angley = entity->angley;
-    new_entity->anglez = entity->anglez;
-    new_entity->posx = entity->posx;
-    new_entity->posy = entity->posy;
-    new_entity->posz = entity->posz;
-    new_entity->disabled = entity->disabled;
-    new_entity->nb_vertices = entity->nb_vertices;
-    new_entity->nb_faces = entity->nb_faces;
-    new_entity->rendering = entity->rendering;
-    // Copy vertices
-    for (idx = 0;idx < entity->nb_vertices;idx++) {
-      new_entity->vertices[idx].x = entity->vertices[idx].x;
-      new_entity->vertices[idx].y = entity->vertices[idx].y;
-      new_entity->vertices[idx].z = entity->vertices[idx].z;
-    }
-    // Copy faces
-    for (idx = 0;idx < entity->nb_faces;idx++) {
-      memcpy(&(new_entity->faces[idx]), &(entity->faces[idx]), sizeof(SAGE_EntityFace));
-    }
-    SAGE_SetEntityRadius(new_entity);
-    SAGE_SetEntityNormals(new_entity);
-    SD(SAGE_DumpEntity(new_entity));
-    sage_world.entities[index] = new_entity;
-    return TRUE;
+  if (sage_world.entities[index] != NULL) {
+    SAGE_RemoveEntity(index);
   }
-  return FALSE;
+  sage_world.entities[index] = entity;
+  sage_world.nb_entities++;
+  return TRUE;
 }
 
 /**
  * Remove entity from the world
  */
-VOID SAGE_RemoveEntity(ULONG index)
+VOID SAGE_RemoveEntity(UWORD index)
 {
   SAGE_Entity * entity;
 
   SD(SAGE_DebugLog("Remove entity #%d", index));
   if (index < S3DE_MAX_ENTITIES) {
     entity = sage_world.entities[index];
-    SAGE_ReleaseEntity(entity);
-    sage_world.entities[index] = NULL;
+    if (entity != NULL) {
+      SAGE_ReleaseEntity(entity);
+      sage_world.entities[index] = NULL;
+      sage_world.nb_entities--;
+    }
   } else {
     SAGE_SetError(SERR_ENTITY_INDEX);
   }
@@ -287,17 +367,22 @@ VOID SAGE_RemoveEntity(ULONG index)
  */
 VOID SAGE_FlushEntities()
 {
-  ULONG index;
+  UWORD index;
+  SAGE_Entity * entity;
   
+  SD(SAGE_DebugLog("Flush entities (%d)", S3DE_MAX_ENTITIES));
   for (index = 0;index < S3DE_MAX_ENTITIES;index++) {
-    SAGE_RemoveEntity(index);
+    entity = sage_world.entities[index];
+    SAGE_ReleaseEntity(entity);
+    sage_world.entities[index] = NULL;
   }
+  sage_world.nb_entities = 0;
 }
 
 /**
- * Get an entity from her index
+ * Get an entity from his index
  */
-SAGE_Entity * SAGE_GetEntity(ULONG index)
+SAGE_Entity * SAGE_GetEntity(UWORD index)
 {
   if (index < S3DE_MAX_ENTITIES) {
     if (sage_world.entities[index] == NULL) {
@@ -310,9 +395,24 @@ SAGE_Entity * SAGE_GetEntity(ULONG index)
 }
 
 /**
+ * Keep entity angle between 0 and SMTH_ANGLE_360
+ *
+ * @param entity Entity
+ */
+VOID SAGE_ClampEntityAngle(SAGE_Entity * entity)
+{
+  while (entity->anglex < 0) entity->anglex += SMTH_ANGLE_360;
+  while (entity->anglex >= SMTH_ANGLE_360) entity->anglex-= SMTH_ANGLE_360;
+  while (entity->angley < 0) entity->angley += SMTH_ANGLE_360;
+  while (entity->angley >= SMTH_ANGLE_360) entity->angley-= SMTH_ANGLE_360;
+  while (entity->anglez < 0) entity->anglez += SMTH_ANGLE_360;
+  while (entity->anglez >= SMTH_ANGLE_360) entity->anglez-= SMTH_ANGLE_360;
+}
+
+/**
  * Set the entity angle
  */
-BOOL SAGE_SetEntityAngle(ULONG index, WORD ax, WORD ay, WORD az)
+BOOL SAGE_SetEntityAngle(UWORD index, WORD ax, WORD ay, WORD az)
 {
   SAGE_Entity * entity;
   
@@ -321,6 +421,7 @@ BOOL SAGE_SetEntityAngle(ULONG index, WORD ax, WORD ay, WORD az)
     entity->anglex = ax;
     entity->angley = ay;
     entity->anglez = az;
+    SAGE_ClampEntityAngle(entity);
     return TRUE;
   }
   return FALSE;
@@ -329,7 +430,7 @@ BOOL SAGE_SetEntityAngle(ULONG index, WORD ax, WORD ay, WORD az)
 /**
  * Rotate the entity
  */
-BOOL SAGE_RotateEntity(ULONG index, WORD dax, WORD day, WORD daz)
+BOOL SAGE_RotateEntity(UWORD index, WORD dax, WORD day, WORD daz)
 {
   SAGE_Entity * entity;
   
@@ -338,6 +439,7 @@ BOOL SAGE_RotateEntity(ULONG index, WORD dax, WORD day, WORD daz)
     entity->anglex += dax;
     entity->angley += day;
     entity->anglez += daz;
+    SAGE_ClampEntityAngle(entity);
     return TRUE;
   }
   return FALSE;
@@ -346,7 +448,7 @@ BOOL SAGE_RotateEntity(ULONG index, WORD dax, WORD day, WORD daz)
 /**
  * Set the entity position
  */
-BOOL SAGE_SetEntityPosition(ULONG index, FLOAT posx, FLOAT posy, FLOAT posz)
+BOOL SAGE_SetEntityPosition(UWORD index, FLOAT posx, FLOAT posy, FLOAT posz)
 {
   SAGE_Entity * entity;
   
@@ -363,7 +465,7 @@ BOOL SAGE_SetEntityPosition(ULONG index, FLOAT posx, FLOAT posy, FLOAT posz)
 /**
  * Move the entity
  */
-BOOL SAGE_MoveEntity(ULONG index, FLOAT dx, FLOAT dy, FLOAT dz)
+BOOL SAGE_MoveEntity(UWORD index, FLOAT dx, FLOAT dy, FLOAT dz)
 {
   SAGE_Entity * entity;
   
@@ -378,15 +480,65 @@ BOOL SAGE_MoveEntity(ULONG index, FLOAT dx, FLOAT dy, FLOAT dz)
 }
 
 /**
- * Set the entity rendering mode
+ * Hide the entity
  */
-BOOL SAGE_SetEntityRenderMode(ULONG index, UWORD mode)
+BOOL SAGE_HideEntity(UWORD index)
 {
   SAGE_Entity * entity;
   
   entity = SAGE_GetEntity(index);
   if (entity != NULL) {
-    entity->rendering = mode;
+    entity->disabled = TRUE;
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Show the entity
+ */
+BOOL SAGE_ShowEntity(UWORD index)
+{
+  SAGE_Entity * entity;
+  
+  entity = SAGE_GetEntity(index);
+  if (entity != NULL) {
+    entity->disabled = FALSE;
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Set the entity texture
+ */
+BOOL SAGE_SetEntityTexture(UWORD idx_entity, UWORD idx_mat, UWORD idx_tex, UWORD mode)
+{
+  SAGE_Entity * entity;
+  SAGE_3DTexture * texture;
+  UWORD index, size;
+
+  entity = SAGE_GetEntity(idx_entity);
+  texture = SAGE_GetTexture(idx_tex);
+  if (entity != NULL && texture != NULL) {
+    size = texture->size - 1;
+    for (index = 0;index < entity->nb_faces;index++) {
+      if (entity->faces[index].texture == idx_mat) {
+        entity->faces[index].texture = idx_tex;
+        if (mode == S3DE_TEXT_RECALC) {
+          entity->faces[index].u1 *= size;
+          entity->faces[index].v1 *= size;
+          entity->faces[index].u2 *= size;
+          entity->faces[index].v2 *= size;
+          entity->faces[index].u3 *= size;
+          entity->faces[index].v3 *= size;
+          if (entity->faces[index].is_quad) {
+            entity->faces[index].u4 *= size;
+            entity->faces[index].v4 *= size;
+          }
+        }
+      }
+    }
     return TRUE;
   }
   return FALSE;

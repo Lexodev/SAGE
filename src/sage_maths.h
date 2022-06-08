@@ -11,7 +11,12 @@
 #ifndef _SAGE_MATHS_H_
 #define _SAGE_MATHS_H_
 
+#include <math.h>
 #include <exec/types.h>
+
+#define DEGTORAD(x)           ((x)*PI/180.0)        // Degree to radian
+#define SMTH_PRECISION        4                     // Degree precision (1/precision by degree)
+#define SMTH_ANGLE_360        360*SMTH_PRECISION    // 360 degree
 
 /** SAGE vector */
 typedef struct {
@@ -37,6 +42,18 @@ typedef struct {
   FLOAT m31, m32, m33, m34;
   FLOAT m41, m42, m43, m44;
 } SAGE_Matrix4;
+
+/** Initialize trigonometry arrays */
+VOID SAGE_InitFastTrigonometry(VOID);
+
+/** Get fast Sine value */
+FLOAT SAGE_FastSine(WORD);
+
+/** Get fast Cosine value */
+FLOAT SAGE_FastCosine(WORD);
+
+/** Get fast Tangent value */
+FLOAT SAGE_FastTangent(WORD);
 
 /** Calculate vector dot product */
 FLOAT SAGE_DotProduct(SAGE_Vector *, SAGE_Vector *);

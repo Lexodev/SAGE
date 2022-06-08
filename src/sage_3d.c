@@ -40,10 +40,7 @@ extern SAGE_Context SageContext;
 BOOL SAGE_Init3DModule(VOID)
 {
   SD(SAGE_DebugLog("Init 3D module"));
-  if ((Warp3DBase = OpenLibrary("Warp3D.library", WARP3DVERSION)) == NULL) {
-    SAGE_SetError(SERR_WARP3D_LIB);
-    return FALSE;
-  }
+  Warp3DBase = OpenLibrary("Warp3D.library", WARP3DVERSION);
   if (!SAGE_Alloc3DDevice()) {
     return FALSE;
   }
@@ -135,16 +132,9 @@ BOOL SAGE_Alloc3DDevice(VOID)
   if ((device = SAGE_AllocMem(sizeof(SAGE_3DDevice))) == NULL) {
     return FALSE;
   }
-  // Show available drivers
-  SD(SAGE_Display3DDrivers());
-  device->render_mode = S3DR_W3DMODE;
-  device->driver_type = W3D_CheckDriver();
-  if (device->driver_type & W3D_DRIVER_UNAVAILABLE) {
-    SAGE_FreeMem(device);
-    SAGE_SetError(SERR_NO_3DDRIVER);
-    return FALSE;
-  }
+  device->render_system = S3DD_S3DRENDER;
   SageContext.Sage3D = device;
+  SAGE_Init3DRender();
   return TRUE;
 }
 
@@ -153,7 +143,7 @@ BOOL SAGE_Alloc3DDevice(VOID)
  *
  * @return Operation success
  */
-BOOL SAGE_Free3DDevice()
+BOOL SAGE_Free3DDevice(VOID)
 {
   SAGE_3DDevice * device;
   UWORD index;
@@ -171,6 +161,7 @@ BOOL SAGE_Free3DDevice()
       device->textures[index] = NULL;
     }
   }
+  // Release Warp3D context
   if (device->context != NULL) {
     W3D_DestroyContext(device->context);
   }
@@ -215,15 +206,57 @@ BOOL SAGE_Allocate3DContext(VOID)
     return FALSE;
   }
   SD(SAGE_InfoLog("Set context states"));
-  W3D_SetState(device->context, W3D_GOURAUD, W3D_ENABLE);
   W3D_SetState(device->context, W3D_TEXMAPPING, W3D_ENABLE);
   W3D_SetState(device->context, W3D_AUTOTEXMANAGEMENT, W3D_ENABLE);
-  W3D_SetState(device->context, W3D_PERSPECTIVE, W3D_ENABLE);
   W3D_SetState(device->context, W3D_INDIRECT, W3D_DISABLE);
   W3D_SetState(device->context, W3D_SYNCHRON, W3D_DISABLE);
   W3D_SetState(device->context, W3D_FAST, W3D_ENABLE);
   W3D_SetState(device->context, W3D_ZBUFFER, W3D_DISABLE);
+  W3D_SetState(device->context, W3D_PERSPECTIVE, W3D_DISABLE);
+  W3D_SetState(device->context, W3D_GOURAUD, W3D_DISABLE);
   W3D_SetState(device->context, W3D_FOGGING, W3D_DISABLE);
+  return TRUE;
+}
+
+/**
+ * Define the render system
+ *
+ * @param system Rendering mode
+ *
+ * @return Operation success
+ */
+BOOL SAGE_Set3DRenderSystem(UWORD system)
+{
+  SAGE_3DDevice * device;
+
+  device = SageContext.Sage3D;
+  SAFE(if (device == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
+    return FALSE;
+  })
+  if (system == S3DD_W3DRENDER) {
+    if (Warp3DBase == NULL) {
+      SAGE_SetError(SERR_WARP3D_LIB);
+      return FALSE;
+    }
+    // Show available drivers
+    SD(SAGE_Display3DDrivers());
+    device->driver_type = W3D_CheckDriver();
+    if (device->driver_type & W3D_DRIVER_UNAVAILABLE) {
+      SAGE_FreeMem(device);
+      SAGE_SetError(SERR_NO_3DDRIVER);
+      return FALSE;
+    }
+    if (!SAGE_Allocate3DContext()) {
+      return FALSE;
+    }
+  } else {
+    if (device->context != NULL) {
+      W3D_DestroyContext(device->context);
+    }
+  }
+  device->render_system = system;
+  SAGE_Init3DRender();
   return TRUE;
 }
 

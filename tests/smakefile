@@ -9,16 +9,16 @@ OPT=CPU=68040 IDIR=libinclude: MATH=68882 NOICONS
 LIB=/lib/sage.lib
 
 # Files
-COREEXE=core_logger core_error core_memory core_timer core_thread core_vampire core_config
+COREEXE=core_logger core_error core_memory core_timer core_thread core_vampire core_config core_maths
 VIDEOEXE=video_video video_screen video_dblbuf video_event video_bitmap video_layer video_sprite video_tile video_picture video_text video_draw video_line video_triangle video_zoom video_indirect
 INPUTEXE=input_input input_keyboard input_joyport input_handler
 AUDIOEXE=audio_audio audio_sound audio_music audio_mix
 INTEXE=interrupt_interrupt interrupt_handler
-3DEEXE=render3d_3ddevice render3d_3dtexture render3d_3dtriangle
+3DEEXE=render3d_3ddevice render3d_3dtexture render3d_3dtriangle render3d_3dskybox render3d_3dentity render3d_3deload  render3d_3dterrain
 NETEXE=network_network network_tcpsocket network_udpsocket network_handler
 
 # Build all tests
-build: core video input audio interrupt 3dengine network cleanobj
+build: core video input audio interrupt render3d network cleanobj
   @echo "** Build complete **"
 
 # Build core tests
@@ -44,6 +44,9 @@ core_vampire: core_vampire.c $(LIB)
 
 core_config: core_config.c $(LIB)
   sc LINK core_config.c $(OPT) $(LIB)
+
+core_maths: core_maths.c $(LIB)
+  sc LINK core_maths.c $(OPT) $(LIB)
 
 # Build video tests
 video: $(VIDEOEXE)
@@ -134,6 +137,18 @@ interrupt_handler: interrupt_handler.c $(LIB)
 
 # Build 3D render tests
 render3d: $(3DEEXE)
+
+render3d_3deload: render3d_3deload.c $(LIB)
+  sc LINK render3d_3deload.c $(OPT) $(LIB)
+
+render3d_3dentity: render3d_3dentity.c $(LIB)
+  sc LINK render3d_3dentity.c $(OPT) $(LIB)
+
+render3d_3dskybox: render3d_3dskybox.c $(LIB)
+  sc LINK render3d_3dskybox.c $(OPT) $(LIB)
+
+render3d_3dterrain: render3d_3dterrain.c $(LIB)
+  sc LINK render3d_3dterrain.c $(OPT) $(LIB)
 
 render3d_3dtriangle: render3d_3dtriangle.c $(LIB)
   sc LINK render3d_3dtriangle.c $(OPT) $(LIB)

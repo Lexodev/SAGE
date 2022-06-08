@@ -36,7 +36,7 @@ void main(void)
   SAGE_SetLogLevel(SLOG_INFO);
   // Use the AppliLog to log text in the console, this is an unmaskable level of log
   SAGE_AppliLog("--------------------------------------------------------------------------------");
-  SAGE_AppliLog("* SAGE library tutorial 6 : PRALLAX SCROLLING / %s", SAGE_GetVersion());
+  SAGE_AppliLog("* SAGE library tutorial 6 : PARALLAX SCROLLING / %s", SAGE_GetVersion());
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   // Init the SAGE system with only video module
   if (SAGE_Init(SMOD_VIDEO)) {

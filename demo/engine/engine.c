@@ -17,143 +17,34 @@
 #define SCREEN_HEIGHT         480L
 #define SCREEN_DEPTH          16L
 
+#define BG_LAYER              1
+
 #define MAIN_CAMERA           1
-
-#define ENTITY_CUBE           1
-#define ENTITY_SKYBOX         2
-#define ENTITY_PYRAMIDE       4
-#define ENTITY_DIAMAND        42
-#define ENTITY_HOUSE          10
-
-#define TEX_PIERRE            1
-#define TEX_MARBRE            2
-#define TEX_BRIQUE            3
-#define TEX_BOIS              4
-#define TEX_PAVE              5
-#define TEX_ARDOISE           6
-#define TEX_TORCHI            7
-#define TEX_CREPI             8
-
-#define TEX_SKYFRONT          32
-#define TEX_SKYRIGHT          33
-#define TEX_SKYBACK           34
-#define TEX_SKYLEFT           35
-#define TEX_SKYTOP            36
-#define TEX_SKYBOTTOM         37
+#define ENTITY_TOYOTA         1
 
 /** Demo variables */
-WORD cax = 0, cay = 0;
-FLOAT cubez = 50.0, dcubez = 1.0, pyray = 0.0, dpyray = 0.5;
-BOOL finish = FALSE, debug = FALSE;
+WORD cax = 0, cay = 0, vax = 0, vay = 0, vaz = 0;
+BOOL finish = FALSE;
 UBYTE string_buffer[256];
 
-SAGE_Material Materials[14] = {
-  { "data/materials.png", "pierre", 0, 0, STEX_SIZE128, TEX_PIERRE },
-  { "data/materials.png", "marbre", 128, 0, STEX_SIZE128, TEX_MARBRE },
-  { "data/materials.png", "brique", 256, 0, STEX_SIZE128, TEX_BRIQUE },
-  { "data/materials.png", "bois", 384, 0, STEX_SIZE128, TEX_BOIS },
-  { "data/materials.png", "pave", 0, 128, STEX_SIZE128, TEX_PAVE },
-  { "data/materials.png", "ardoise", 128, 128, STEX_SIZE128, TEX_ARDOISE },
-  { "data/materials.png", "torchi", 256, 128, STEX_SIZE128, TEX_TORCHI },
-  { "data/materials.png", "crepi", 384, 128, STEX_SIZE128, TEX_CREPI },
-  { "data/skybox.png", "front", 0, 0, STEX_SIZE128, TEX_SKYFRONT },
-  { "data/skybox.png", "right", 128, 0, STEX_SIZE128, TEX_SKYRIGHT },
-  { "data/skybox.png", "back", 256, 0, STEX_SIZE128, TEX_SKYBACK },
-  { "data/skybox.png", "left", 384, 0, STEX_SIZE128, TEX_SKYLEFT },
-  { "data/skybox.png", "top", 0, 128, STEX_SIZE128, TEX_SKYTOP },
-  { "data/skybox.png", "bottom", 128, 128, STEX_SIZE128, TEX_SKYBOTTOM }
-};
+// Controls
+#define KEY_NBR               8
+#define KEY_ROTATEPX          0
+#define KEY_ROTATENX          1
+#define KEY_ROTATEPY          2
+#define KEY_ROTATENY          3
+#define KEY_ROTATEPZ          4
+#define KEY_ROTATENZ          5
 
-SAGE_EntityVertex CubeVertices[8] = {
-  { -10.0,10.0,-10.0 },
-  { 10.0,10.0,-10.0 },
-  { 10.0,-10.0,-10.0 },
-  { -10.0,-10.0,-10.0 },
-  { -10.0,10.0,10.0 },
-  { 10.0,10.0,10.0 },
-  { 10.0,-10.0,10.0 },
-  { -10.0,-10.0,10.0 }
-};
+UBYTE keyboard_state[KEY_NBR];
 
-SAGE_EntityVertex CubeTVertices[8];
-
-SAGE_EntityFace CubeFaces[6] = {
-  { TRUE, TRUE, S3DE_NOCLIP, 0,1,2,3, 238,TEX_PIERRE, 0,0,127,0,127,127,0,127 },
-  { TRUE, TRUE, S3DE_NOCLIP, 1,5,6,2, 239,TEX_MARBRE, 0,0,127,0,127,127,0,127 },
-  { TRUE, TRUE, S3DE_NOCLIP, 5,4,7,6, 240,TEX_BRIQUE, 0,0,127,0,127,127,0,127 },
-  { TRUE, TRUE, S3DE_NOCLIP, 4,0,3,7, 241,TEX_BOIS, 0,0,127,0,127,127,0,127 },
-  { TRUE, TRUE, S3DE_NOCLIP, 4,5,1,0, 242,TEX_PAVE, 0,0,127,0,127,127,0,127 },
-  { TRUE, TRUE, S3DE_NOCLIP, 3,2,6,7, 243,TEX_ARDOISE, 0,0,127,0,127,127,0,127 }
-};
-
-SAGE_Entity Cube = {
-  0, 0, 0,
-  -30.0, 0.0, 50.0, 0.0,
-  FALSE, FALSE,
-  8, 6, S3DE_RENDER_TEXT,
-  CubeVertices,
-  CubeTVertices,
-  CubeFaces
-};
-
-SAGE_EntityVertex PyraVertices[5] = {
-  { 0.0,10.0,0.0 },
-  { -10.0,-10.0,-10.0 },
-  { 10.0,-10.0,-10.0 },
-  { 10.0,-10.0,10.0 },
-  { -10.0,-10.0,10.0 }
-};
-
-SAGE_EntityVertex PyraTVertices[5];
-
-SAGE_EntityFace PyraFaces[5] = {
-  { FALSE, TRUE, S3DE_NOCLIP, 0,2,1,0, 206,TEX_CREPI, 64,0,127,127,0,127,0,0 },
-  { FALSE, TRUE, S3DE_NOCLIP, 0,3,2,0, 207,TEX_CREPI, 64,0,127,127,0,127,0,0 },
-  { FALSE, TRUE, S3DE_NOCLIP, 0,4,3,0, 208,TEX_CREPI, 64,0,127,127,0,127,0,0 },
-  { FALSE, TRUE, S3DE_NOCLIP, 0,1,4,0, 210,TEX_CREPI, 64,0,127,127,0,127,0,0 },
-  { TRUE, TRUE, S3DE_NOCLIP, 1,2,3,4, 211,TEX_TORCHI, 0,0,127,0,127,127,0,127 }
-};
-
-SAGE_Entity Pyramide = {
-  30*4, 0, 12,
-  30.0, 0.0, 100.0, 0.0,
-  FALSE, FALSE,
-  5, 5, S3DE_RENDER_TEXT,
-  PyraVertices,
-  PyraTVertices,
-  PyraFaces
-};
-
-SAGE_EntityVertex DiamandVertices[6] = {
-  { 0.0,10.0,0.0 },
-  { -10.0,-10.0,-10.0 },
-  { 10.0,-10.0,-10.0 },
-  { 10.0,-10.0,10.0 },
-  { -10.0,-10.0,10.0 },
-  { 0.0,-20.0,0.0 }
-};
-
-SAGE_EntityVertex DiamandTVertices[6];
-
-SAGE_EntityFace DiamandFaces[8] = {
-  { FALSE, TRUE, S3DE_NOCLIP, 0,2,1,0, 20,TEX_PIERRE, 64,0,127,127,0,127,0,0 },
-  { FALSE, TRUE, S3DE_NOCLIP, 0,3,2,0, 21,TEX_PIERRE, 64,0,127,127,0,127,0,0 },
-  { FALSE, TRUE, S3DE_NOCLIP, 0,4,3,0, 22,TEX_PIERRE, 64,0,127,127,0,127,0,0 },
-  { FALSE, TRUE, S3DE_NOCLIP, 0,1,4,0, 23,TEX_PIERRE, 64,0,127,127,0,127,0,0 },
-  { FALSE, TRUE, S3DE_NOCLIP, 5,1,2,0, 24,TEX_PIERRE, 64,0,127,127,0,127,0,0 },
-  { FALSE, TRUE, S3DE_NOCLIP, 5,2,3,0, 25,TEX_PIERRE, 64,0,127,127,0,127,0,0 },
-  { FALSE, TRUE, S3DE_NOCLIP, 5,3,4,0, 26,TEX_PIERRE, 64,0,127,127,0,127,0,0 },
-  { FALSE, TRUE, S3DE_NOCLIP, 5,4,1,0, 27,TEX_PIERRE, 64,0,127,127,0,127,0,0 }
-};
-
-SAGE_Entity Diamand = {
-  20*4, 30*4, 24,
-  0.0, 0.0, 80.0, 0.0,
-  FALSE, FALSE,
-  6, 8, S3DE_RENDER_TEXT,
-  DiamandVertices,
-  DiamandTVertices,
-  DiamandFaces
+SAGE_KeyScan keys[KEY_NBR] = {
+  { SKEY_FR_KPD8, FALSE },
+  { SKEY_FR_KPD2, FALSE },
+  { SKEY_FR_KPD4, FALSE },
+  { SKEY_FR_KPD6, FALSE },
+  { SKEY_FR_KPD7, FALSE },
+  { SKEY_FR_KPD9, FALSE }
 };
 
 /*****************************************************************************/
@@ -176,18 +67,10 @@ BOOL OpenScreen(VOID)
 BOOL InitWorld(VOID)
 {
   SAGE_Entity * entity;
+  SAGE_Picture * picture;
 
   SAGE_AppliLog("Init world");
   SAGE_Init3DEngine();
-  SAGE_Set3DRenderMode(S3DR_S3DMODE);
-  SAGE_AppliLog("Add materials");
-  if (!SAGE_AddMaterials(Materials, 14)) {
-    return FALSE;
-  }
-  SAGE_AppliLog("Load materials");
-  if (!SAGE_LoadMaterials()) {
-    return FALSE;
-  }
   SAGE_AppliLog("Add camera");
   if (!SAGE_AddCamera(MAIN_CAMERA, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT)) {
     return FALSE;
@@ -195,28 +78,22 @@ BOOL InitWorld(VOID)
   SAGE_SetActiveCamera(MAIN_CAMERA);
   SAGE_SetCameraAngle(MAIN_CAMERA, 0, 0, 0);
   SAGE_SetCameraPlane(MAIN_CAMERA, (FLOAT)10.0, (FLOAT)1000.0);
-  SAGE_AppliLog("Set skybox");
-  SAGE_SetSkyboxTextures(TEX_SKYFRONT, TEX_SKYBACK, TEX_SKYLEFT, TEX_SKYRIGHT, TEX_SKYTOP, TEX_SKYBOTTOM);
-  SAGE_EnableSkybox(TRUE);
-  SAGE_AppliLog("Add cube entity");
-  if (!SAGE_AddEntity(ENTITY_CUBE, &Cube)) {
+  SAGE_AppliLog("Load entity");
+  entity = SAGE_LoadEntity("data/toyota.obj");
+  if (entity == NULL || !SAGE_AddEntity(ENTITY_TOYOTA, entity)) {
     return FALSE;
   }
-  SAGE_AppliLog("Add pyramide entity");
-  if (!SAGE_AddEntity(ENTITY_PYRAMIDE, &Pyramide)) {
+  SAGE_SetEntityPosition(ENTITY_TOYOTA, (FLOAT)0.0, (FLOAT)0.0, (FLOAT)50.0);
+  SAGE_AppliLog("Load background picture");
+  picture = SAGE_LoadPicture("data/gt1.jpg");
+  if (picture == NULL) {
     return FALSE;
   }
-  SAGE_AppliLog("Add diamond entity");
-  if (!SAGE_AddEntity(ENTITY_DIAMAND, &Diamand)) {
+  if (!SAGE_CreateLayerFromPicture(BG_LAYER, picture)) {
+    SAGE_ReleasePicture(picture);
     return FALSE;
   }
-  /*entity = SAGE_LoadEntity("data/maison.lwo");
-  if (entity == FALSE || !SAGE_AddEntity(ENTITY_HOUSE, entity)) {
-    return FALSE;
-  }
-  SAGE_SetEntityPosition(ENTITY_HOUSE, (FLOAT)10.0, (FLOAT)30.0, (FLOAT)90.0);
-  SAGE_SetEntityRenderMode(ENTITY_HOUSE, S3DE_RENDER_FLAT);
-  SAGE_ReleaseEntity(entity);*/
+  SAGE_ReleasePicture(picture);
   return TRUE;
 }
 
@@ -252,10 +129,39 @@ VOID _Restore(VOID)
   SAGE_CloseScreen();
 }
 
+VOID ScanKeyboard(VOID)
+{
+  if (SAGE_ScanKeyboard(keys, KEY_NBR)) {
+    keyboard_state[KEY_ROTATEPX] = keys[KEY_ROTATEPX].key_pressed;
+    keyboard_state[KEY_ROTATENX] = keys[KEY_ROTATENX].key_pressed;
+    keyboard_state[KEY_ROTATEPY] = keys[KEY_ROTATEPY].key_pressed;
+    keyboard_state[KEY_ROTATENY] = keys[KEY_ROTATENY].key_pressed;
+    keyboard_state[KEY_ROTATEPZ] = keys[KEY_ROTATEPZ].key_pressed;
+    keyboard_state[KEY_ROTATENZ] = keys[KEY_ROTATENZ].key_pressed;
+  }
+}
+
 VOID _Update(VOID)
 {
   SAGE_Event * event = NULL;
 
+  SAGE_EngineDebug(FALSE);
+  ScanKeyboard();
+  if (keyboard_state[KEY_ROTATEPX]) {
+    vax += S3DE_ONEDEGREE;
+  } else if (keyboard_state[KEY_ROTATENX]) {
+    vax -= S3DE_ONEDEGREE;
+  }
+  if (keyboard_state[KEY_ROTATEPY]) {
+    vay += S3DE_ONEDEGREE;
+  } else if (keyboard_state[KEY_ROTATENY]) {
+    vay -= S3DE_ONEDEGREE;
+  }
+  if (keyboard_state[KEY_ROTATEPZ]) {
+    vaz += S3DE_ONEDEGREE;
+  } else if (keyboard_state[KEY_ROTATENZ]) {
+    vaz -= S3DE_ONEDEGREE;
+  }
   while ((event = SAGE_GetEvent()) != NULL) {
     if (event->type == SEVT_RAWKEY) {
       if (event->code == SKEY_FR_ESC) {
@@ -264,10 +170,11 @@ VOID _Update(VOID)
       }
       if (event->code == SKEY_FR_D) {
         SAGE_AppliLog("Debug");
-        debug = TRUE;
+        SAGE_EngineDebug(TRUE);
       }
       if (event->code == SKEY_FR_SPACE) {
-        SAGE_SetEntityAngle(ENTITY_CUBE, 0, 0, 0);
+        cay = 0; cax = 0;
+        vax = 0; vay = 0; vaz = 0;
       }
     } else if (event->type == SEVT_MOUSEMV) {
       cay += event->mousex;
@@ -275,39 +182,42 @@ VOID _Update(VOID)
     }
   }
   SAGE_SetCameraAngle(MAIN_CAMERA, -cax, -cay, 0);
-  cubez += dcubez;
-  if (cubez < 30.0) dcubez = 1.0;
-  if (cubez > 300.0) dcubez = -1.0;
-  SAGE_MoveEntity(ENTITY_CUBE, (FLOAT)0.0, (FLOAT)0.0, dcubez);
-  SAGE_RotateEntity(ENTITY_CUBE, 1, 2, 0);
-  pyray += dpyray;
-  if (pyray < -200.0) dpyray = 0.5;
-  if (pyray > 200.0) dpyray = -0.5;
-  SAGE_MoveEntity(ENTITY_PYRAMIDE, (FLOAT)0.0, dpyray, (FLOAT)0.0);
-  SAGE_RotateEntity(ENTITY_PYRAMIDE, 2, 0, 1);
-  SAGE_RotateEntity(ENTITY_DIAMAND, 4, 4, 2);
-  //SAGE_RotateEntity(ENTITY_HOUSE, 6, 6, 6);
+  SAGE_SetEntityAngle(ENTITY_TOYOTA, vax, vay, vaz);
 }
 
 VOID _Render(VOID)
 {
-  SAGE_ClearScreen();
+  SAGE_EngineMetrics * metrics;
+
+  SAGE_BlitLayerToScreen(BG_LAYER, 0, 0);
   SAGE_RenderWorld();
-  debug = FALSE;
   // Draw the angles
-  sprintf(string_buffer, "CAMERA AX=%d  CAMERA AY=%d  ZCUBE=%f", cax, cay, cubez);
-  SAGE_PrintText(string_buffer, 10, 10);
+  sprintf(string_buffer, "CAM AX=%d  AY=%d / CAR AX=%d  AY=%d AZ=%d", cax, cay, vax, vay, vaz);
+  SAGE_PrintText(string_buffer, 10, 15);
   // Draw the fps counter
   sprintf(string_buffer, "%d fps", SAGE_GetFps());
-  SAGE_PrintText(string_buffer, 560, 10);
+  SAGE_PrintText(string_buffer, 560, 15);
+  // Draw the metrics
+  metrics = SAGE_GetEngineMetrics();
+  sprintf(
+    string_buffer,
+    "P=%d/%d  Z=%d/%d  E=%d/%d  V=%d/%d/%d  F=%d/%d  T=%d",
+    metrics->rendered_planes, metrics->total_planes,
+    metrics->rendered_zones, metrics->total_zones,
+    metrics->rendered_entities, metrics->total_entities,
+    metrics->rendered_vertices, metrics->calculated_vertices, metrics->total_vertices,
+    metrics->rendered_faces, metrics->total_faces,
+    metrics->rendered_triangles
+  );
+  SAGE_PrintText(string_buffer, 10, 470);
 }
 
 void main(void)
 {
-  //SAGE_SetLogLevel(SLOG_WARNING);
+  SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("SAGE library engine demo V1.0");
   SAGE_AppliLog("Initialize SAGE");
-  if (SAGE_Init(SMOD_VIDEO|SMOD_3D|SMOD_INTERRUPTION)) {
+  if (SAGE_Init(SMOD_VIDEO|SMOD_INPUT|SMOD_3D|SMOD_INTERRUPTION)) {
     // Init the demo data
     if (_Init()) {
 

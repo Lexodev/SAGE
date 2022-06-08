@@ -16,6 +16,7 @@
 #include "sage_memory.h"
 #include "sage_timer.h"
 #include "sage_thread.h"
+#include "sage_maths.h"
 #include "sage_vampire.h"
 #include "sage_configfile.h"
 #include "sage_video.h"

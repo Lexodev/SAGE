@@ -17,7 +17,7 @@
 #include "sage.h"
 
 /** @var Library version */
-STRPTR SAGE_Version = "$VER: SAGE V1.9 December 2021";
+STRPTR SAGE_Version = "$VER: SAGE V1.2206 June 2022";
 
 /** @var Application context */
 SAGE_Context SageContext;
@@ -38,6 +38,8 @@ BOOL SAGE_Init(LONGBITS modules)
   SD(SAGE_DebugLog("Available memory %d KB", SAGE_AvailMem()));
   // The only time where we should set the error to no error
   SAGE_SetError(SERR_NO_ERROR);
+  // Init some data
+  SAGE_InitFastTrigonometry();
   // Init the modules
   SageContext.LoadedModules = SMOD_NONE;
   SageContext.TraceDebug = FALSE;

@@ -23,6 +23,11 @@
 
 #define STEX_MAXCOLORS        256
 
+#define STEX_FREEINDEX        -1
+#define STEX_NOFREEINDEX      -1
+#define STEX_USECOLOR         -1
+
+#define STEX_FULLSIZE         0
 #define STEX_SIZE64           64
 #define STEX_SIZE128          128
 #define STEX_SIZE256          256
@@ -58,6 +63,12 @@ SAGE_3DTexture * SAGE_GetTexture(UWORD);
 
 /** Get the Warp3D texture by his index */
 W3D_Texture * SAGE_GetW3DTexture(UWORD);
+
+/** Return the first free slot in texture array */
+WORD SAGE_GetFreeTextureIndex(VOID);
+
+/** Get a texture size by his index */
+UWORD SAGE_GetTextureSize(UWORD);
 
 /** Get texture buffer by his index */
 APTR SAGE_GetTextureBuffer(UWORD);

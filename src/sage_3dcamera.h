@@ -29,6 +29,10 @@ typedef struct {
   LONG view_left, view_top, view_width, view_height;
 } SAGE_Camera;
 
+/** DEBUG */
+VOID SAGE_DumpCamera(SAGE_Camera *);
+/** DEBUG */
+
 /** Add a camera to the world */
 BOOL SAGE_AddCamera(ULONG, LONG, LONG, LONG, LONG);
 
@@ -43,6 +47,9 @@ SAGE_Camera * SAGE_GetCamera(ULONG);
 
 /** Set the active camera */
 BOOL SAGE_SetActiveCamera(ULONG);
+
+/** Get the active camera */
+SAGE_Camera * SAGE_GetActiveCamera(VOID);
 
 /** Set the camera angles */
 BOOL SAGE_SetCameraAngle(ULONG, WORD, WORD, WORD);

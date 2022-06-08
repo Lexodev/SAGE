@@ -19,6 +19,7 @@
 #include "sage_context.h"
 #include "sage_bitmap.h"
 #include "sage_screen.h"
+#include "sage_draw.h"
 #include "sage_3dtexture.h"
 #include "sage_3dtexmap.h"
 #include "sage_3drender.h"
@@ -26,16 +27,12 @@
 /** SAGE context */
 extern SAGE_Context SageContext;
 
-/** Buffer of triangles */
-SAGE_3DTriangle s3d_triangles[S3DR_MAX_TRIANGLES];
-SAGE_SortedTriangle ordered_triangles[S3DR_MAX_TRIANGLES];
+/** For debug purpose, should be removed */
+extern BOOL engine_debug;
 
-/** Number of triangles to render */
-UWORD render_triangles = 0;
-
-/*****************************************************************************/
-//            DEBUG ONLY
-/*****************************************************************************/
+/*****************************************************************************
+ *            DEBUG ONLY
+ *****************************************************************************/
 
 VOID SAGE_Dump3DTriangle(SAGE_3DTriangle * triangle)
 {
@@ -43,7 +40,17 @@ VOID SAGE_Dump3DTriangle(SAGE_3DTriangle * triangle)
   SAGE_DebugLog(" => x1=%f  y1=%f  z1=%f  u1=%f  v1=%f", triangle->x1, triangle->y1, triangle->z1, triangle->u1, triangle->v1);
   SAGE_DebugLog(" => x2=%f  y2=%f  z2=%f  u2=%f  v2=%f", triangle->x2, triangle->y2, triangle->z2, triangle->u2, triangle->v2);
   SAGE_DebugLog(" => x3=%f  y3=%f  z3=%f  u3=%f  v3=%f", triangle->x3, triangle->y3, triangle->z3, triangle->u3, triangle->v3);
-  SAGE_DebugLog(" => texture=%d", triangle->texture);
+  SAGE_DebugLog(" => texture=%d  color=0x%08X", triangle->texture, triangle->color);
+}
+
+VOID SAGE_DumpTriangleList(SAGE_SortedTriangle * tlist, UWORD nb_tri)
+{
+  UWORD index;
+  
+  SAGE_DebugLog("Dump 3D triangle list (%d)", nb_tri);
+  for (index = 0;index < nb_tri;index++) {
+    SAGE_Dump3DTriangle(tlist[index].triangle);
+  }
 }
 
 /*****************************************************************************/
@@ -53,26 +60,59 @@ VOID SAGE_Dump3DTriangle(SAGE_3DTriangle * triangle)
  */
 BOOL SAGE_Init3DRender()
 {
+  if (SageContext.Sage3D != NULL) {
+    SageContext.Sage3D->render.render_triangles = 0;
+    SageContext.Sage3D->render.render_mode = S3DR_RENDER_TEXT;
+  }
   return TRUE;
 }
 
 /**
- * Define the rendering mode
+ * Enable/disable Z buffer
  *
- * @param mode Rendering mode
+ * @param status Z buffer status
  *
- * @return Operation success
+ * @return New Z buffer status
  */
-BOOL SAGE_Set3DRenderMode(UWORD mode)
+BOOL SAGE_EnableZBuffer(BOOL status)
 {
-  SAGE_3DDevice * device;
-
-  device = SageContext.Sage3D;
-  SAFE(if (device == NULL) {
+  SAFE(if (SageContext.Sage3D == NULL) {
     SAGE_SetError(SERR_NO_3DDEVICE);
     return FALSE;
   })
-  device->render_mode = mode;
+  if (SageContext.Sage3D->render_system == S3DD_W3DRENDER) {
+    // Check if W3D system support z-buffer
+    // Set z-buffer option
+  } else if (SageContext.Sage3D->render_system == S3DD_M3DRENDER) {
+  } else {
+    // No Z-buffer support actually
+    SageContext.Sage3D->render.options &= ~S3DR_ZBUFFER;
+  }
+  return (BOOL)(SageContext.Sage3D->render.options & S3DR_ZBUFFER);
+}
+
+/**
+ * Tell if a render option is active
+ */
+BOOL SAGE_Get3DRenderOption(LONGBITS option)
+{
+  SAFE(if (SageContext.Sage3D == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
+    return FALSE;
+  })
+  return (BOOL)(SageContext.Sage3D->render.options & option);
+}
+
+/**
+ * Set the rendering mode
+ */
+BOOL SAGE_Set3DRenderMode(UWORD mode)
+{
+  SAFE(if (SageContext.Sage3D == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
+    return FALSE;
+  })
+  SageContext.Sage3D->render.render_mode = mode;
   return TRUE;
 }
 
@@ -85,11 +125,21 @@ BOOL SAGE_Set3DRenderMode(UWORD mode)
  */
 BOOL SAGE_Push3DTriangle(SAGE_3DTriangle * triangle)
 {
-  memcpy(&(s3d_triangles[render_triangles]), triangle, sizeof(SAGE_3DTriangle));
-  ordered_triangles[render_triangles].triangle = &(s3d_triangles[render_triangles]);
-  ordered_triangles[render_triangles].avgz = (triangle->z1 + triangle->z2 + triangle->z3) / 3.0;
-  render_triangles++;
-  return TRUE;
+  SAGE_Render * render;
+
+  SAFE(if (SageContext.Sage3D == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
+    return FALSE;
+  })
+  render = &(SageContext.Sage3D->render);
+  if (render->render_triangles < S3DR_MAX_TRIANGLES) {
+    memcpy(&(render->s3d_triangles[render->render_triangles]), triangle, sizeof(SAGE_3DTriangle));
+    render->ordered_triangles[render->render_triangles].triangle = &(render->s3d_triangles[render->render_triangles]);
+    render->ordered_triangles[render->render_triangles].avgz = (triangle->z1 + triangle->z2 + triangle->z3) / 3.0;
+    render->render_triangles++;
+    return TRUE;
+  }
+  return FALSE;
 }
 
 /**
@@ -136,96 +186,100 @@ VOID SAGE_QuicksortTriangles(SAGE_SortedTriangle * triangles, LONG low, LONG hig
 /**
  * Sort the triangles in the rendering queue
  */
-VOID SAGE_Sort3DTriangles()
+BOOL SAGE_Sort3DTriangles()
 {
-  SAGE_QuicksortTriangles(ordered_triangles, 0, render_triangles-1);
-}
+  SAGE_Render * render;
 
-/**
- * Render all triangles in the queue
- *
- * @return Operation success
- */
-BOOL SAGE_Render3DTriangles()
-{
-  SAGE_Screen * screen;
-  SAGE_3DDevice * device;
-  SAGE_3DTriangle * triangle;
-  LONG index;
-  W3D_Scissor scissor;
-  W3D_Triangle w3d_triangle;
-  S3D_Triangle s3d_triangle;
-
-  SAFE(if (SageContext.SageVideo == NULL) {
-    SAGE_SetError(SERR_NO_VIDEODEVICE);
-    return FALSE;
-  })
-  screen = SageContext.SageVideo->screen;
-  SAFE(if (screen == NULL) {
-    SAGE_SetError(SERR_NO_SCREEN);
-    return FALSE;
-  })
-  device = SageContext.Sage3D;
-  SAFE(if (device == NULL) {
+  SED(SAGE_DebugLog("SAGE_Sort3DTriangles()");)
+  SAFE(if (SageContext.Sage3D == NULL) {
     SAGE_SetError(SERR_NO_3DDEVICE);
     return FALSE;
   })
-  if (device->render_mode == S3DR_W3DMODE) {
-    // Set the W3D scissor
-    scissor.left = screen->clipping.left;
-    scissor.top = screen->clipping.top;
-    scissor.width = screen->clipping.right - screen->clipping.left;
-    scissor.height = screen->clipping.bottom - screen->clipping.top;
-    // Set the drawing region
-    W3D_SetDrawRegion(device->context, SAGE_GetSystemBackBitmap(), 0, &scissor);
-    // Lock the hardware
-    if (W3D_LockHardware(device->context) == W3D_SUCCESS) {
-      // Render triangles
-      for (index = 0;index < render_triangles;index++) {
-        triangle = ordered_triangles[index].triangle;
-        w3d_triangle.v1.x = triangle->x1;
-        w3d_triangle.v1.y = triangle->y1;
-        w3d_triangle.v1.z = triangle->z1;
-        w3d_triangle.v1.w = 1.0 / triangle->z1;
-        w3d_triangle.v1.u = triangle->u1;
-        w3d_triangle.v1.v = triangle->v1;
-        w3d_triangle.v1.color.a = 0.0;
-        w3d_triangle.v1.color.r = 1.0;
-        w3d_triangle.v1.color.g = 1.0;
-        w3d_triangle.v1.color.b = 1.0;
-        w3d_triangle.v2.x = triangle->x2;
-        w3d_triangle.v2.y = triangle->y2;
-        w3d_triangle.v2.z = triangle->z2;
-        w3d_triangle.v2.w = 1.0 / triangle->z2;
-        w3d_triangle.v2.u = triangle->u2;
-        w3d_triangle.v2.v = triangle->v2;
-        w3d_triangle.v2.color.a = 0.0;
-        w3d_triangle.v2.color.r = 1.0;
-        w3d_triangle.v2.color.g = 1.0;
-        w3d_triangle.v2.color.b = 1.0;
-        w3d_triangle.v3.x = triangle->x3;
-        w3d_triangle.v3.y = triangle->y3;
-        w3d_triangle.v3.z = triangle->z3;
-        w3d_triangle.v3.w = 1.0 / triangle->z3;
-        w3d_triangle.v3.u = triangle->u3;
-        w3d_triangle.v3.v = triangle->v3;
-        w3d_triangle.v3.color.a = 0.0;
-        w3d_triangle.v3.color.r = 1.0;
-        w3d_triangle.v3.color.g = 1.0;
-        w3d_triangle.v3.color.b = 1.0;
-        w3d_triangle.tex = SAGE_GetW3DTexture(triangle->texture);
-        W3D_DrawTriangle(device->context, &w3d_triangle);
-      }
-      W3D_UnLockHardware(device->context);
+  render = &(SageContext.Sage3D->render);
+  SAGE_QuicksortTriangles(render->ordered_triangles, 0, render->render_triangles-1);
+  return TRUE;
+}
+
+/**
+ * Render triangles in wireframe mode
+ */
+VOID SAGE_RenderWired3DTriangles(SAGE_SortedTriangle * triangles, UWORD nb_triangles)
+{
+  SAGE_3DTriangle * triangle;
+  UWORD index;
+
+  SED(SAGE_DebugLog("** SAGE_RenderWiredTriangles(nb_triangles %d)", nb_triangles);)
+  for (index = 0;index < nb_triangles;index++) {
+    triangle = triangles[index].triangle;
+    SAGE_DrawClippedLine(
+      (LONG)(triangle->x1),
+      (LONG)(triangle->y1),
+      (LONG)(triangle->x2),
+      (LONG)(triangle->y2),
+      triangle->color
+    );
+    SAGE_DrawClippedLine(
+      (LONG)(triangle->x2),
+      (LONG)(triangle->y2),
+      (LONG)(triangle->x3),
+      (LONG)(triangle->y3),
+      triangle->color
+    );
+    SAGE_DrawClippedLine(
+      (LONG)(triangle->x3),
+      (LONG)(triangle->y3),
+      (LONG)(triangle->x1),
+      (LONG)(triangle->y1),
+      triangle->color
+    );
+  }
+}
+
+/**
+ * Render triangles in flat mode
+ */
+VOID SAGE_RenderFlatted3DTriangles(SAGE_SortedTriangle * triangles, UWORD nb_triangles)
+{
+  SAGE_3DTriangle * triangle;
+  UWORD index;
+
+  SED(SAGE_DebugLog("** SAGE_RenderFlattedTriangles(nb_triangles %d)", nb_triangles);)
+  for (index = 0;index < nb_triangles;index++) {
+    triangle = triangles[index].triangle;
+    SAGE_DrawClippedTriangle(
+      (LONG)(triangle->x1),
+      (LONG)(triangle->y1),
+      (LONG)(triangle->x2),
+      (LONG)(triangle->y2),
+      (LONG)(triangle->x3),
+      (LONG)(triangle->y3),
+      triangle->color
+    );
+  }
+}
+
+/**
+ * Render triangles in textured mode
+ */
+VOID SAGE_RenderTextured3DTriangles(SAGE_Screen * screen, SAGE_SortedTriangle * triangles, UWORD nb_triangles)
+{
+  SAGE_3DTriangle * triangle;
+  S3D_Triangle s3d_triangle;
+  UWORD index;
+  
+  for (index = 0;index < nb_triangles;index++) {
+    triangle = triangles[index].triangle;
+    if (triangle->texture == STEX_USECOLOR) {
+      SAGE_DrawClippedTriangle(
+        (LONG)(triangle->x1),
+        (LONG)(triangle->y1),
+        (LONG)(triangle->x2),
+        (LONG)(triangle->y2),
+        (LONG)(triangle->x3),
+        (LONG)(triangle->y3),
+        triangle->color
+      );
     } else {
-      SAGE_SetError(SERR_LOCKHARDWARE);
-      render_triangles = 0;
-      return FALSE;
-    }
-  } else {
-    // Render triangles
-    for (index = 0;index < render_triangles;index++) {
-      triangle = ordered_triangles[index].triangle;
       s3d_triangle.x1 = triangle->x1;
       s3d_triangle.y1 = triangle->y1;
       s3d_triangle.z1 = triangle->z1;
@@ -241,10 +295,124 @@ BOOL SAGE_Render3DTriangles()
       s3d_triangle.z3 = triangle->z3;
       s3d_triangle.u3 = triangle->u3;
       s3d_triangle.v3 = triangle->v3;
+      s3d_triangle.color = triangle->color;
       s3d_triangle.tex = SAGE_GetTexture(triangle->texture);
       SAGE_DrawTexturedTriangle(&s3d_triangle, screen->back_bitmap, &(screen->clipping));
     }
   }
-  render_triangles = 0;
+}
+
+/**
+ * Render triangles with Warp3D
+ */
+VOID SAGE_DrawWarp3DTriangles(SAGE_Screen * screen, W3D_Context * context, SAGE_SortedTriangle * triangles, UWORD nb_triangles)
+{
+  SAGE_3DTriangle * triangle;
+  W3D_Scissor scissor;
+  W3D_Triangle w3d_triangle;
+  UWORD index;
+
+  // Set the W3D scissor
+  scissor.left = screen->clipping.left;
+  scissor.top = screen->clipping.top;
+  scissor.width = screen->clipping.right - screen->clipping.left;
+  scissor.height = screen->clipping.bottom - screen->clipping.top;
+  // Set the drawing region
+  W3D_SetDrawRegion(context, SAGE_GetSystemBackBitmap(), 0, &scissor);
+  // Lock the hardware
+  if (W3D_LockHardware(context) == W3D_SUCCESS) {
+    // Render triangles
+    for (index = 0;index < nb_triangles;index++) {
+      triangle = triangles[index].triangle;
+      w3d_triangle.v1.x = triangle->x1;
+      w3d_triangle.v1.y = triangle->y1;
+      w3d_triangle.v1.z = triangle->z1;
+      w3d_triangle.v1.w = 1.0 / triangle->z1;
+      w3d_triangle.v1.u = triangle->u1;
+      w3d_triangle.v1.v = triangle->v1;
+      w3d_triangle.v1.color.a = 0.0;
+      w3d_triangle.v1.color.r = 1.0;
+      w3d_triangle.v1.color.g = 1.0;
+      w3d_triangle.v1.color.b = 1.0;
+      w3d_triangle.v2.x = triangle->x2;
+      w3d_triangle.v2.y = triangle->y2;
+      w3d_triangle.v2.z = triangle->z2;
+      w3d_triangle.v2.w = 1.0 / triangle->z2;
+      w3d_triangle.v2.u = triangle->u2;
+      w3d_triangle.v2.v = triangle->v2;
+      w3d_triangle.v2.color.a = 0.0;
+      w3d_triangle.v2.color.r = 1.0;
+      w3d_triangle.v2.color.g = 1.0;
+      w3d_triangle.v2.color.b = 1.0;
+      w3d_triangle.v3.x = triangle->x3;
+      w3d_triangle.v3.y = triangle->y3;
+      w3d_triangle.v3.z = triangle->z3;
+      w3d_triangle.v3.w = 1.0 / triangle->z3;
+      w3d_triangle.v3.u = triangle->u3;
+      w3d_triangle.v3.v = triangle->v3;
+      w3d_triangle.v3.color.a = 0.0;
+      w3d_triangle.v3.color.r = 1.0;
+      w3d_triangle.v3.color.g = 1.0;
+      w3d_triangle.v3.color.b = 1.0;
+      if (triangle->texture == STEX_USECOLOR) {
+        w3d_triangle.tex = NULL;
+        W3D_SetState(context, W3D_TEXMAPPING, W3D_DISABLE);
+      } else {
+        w3d_triangle.tex = SAGE_GetW3DTexture(triangle->texture);
+        W3D_SetState(context, W3D_TEXMAPPING, W3D_ENABLE);
+      }
+      W3D_DrawTriangle(context, &w3d_triangle);
+    }
+    W3D_UnLockHardware(context);
+  } else {
+    SAGE_SetError(SERR_LOCKHARDWARE);
+  }
+}
+
+/**
+ * Render all triangles in the queue
+ *
+ * @return Operation success
+ */
+BOOL SAGE_Render3DTriangles()
+{
+  SAGE_Screen * screen;
+  SAGE_3DDevice * device;
+
+  SAFE(if (SageContext.SageVideo == NULL) {
+    SAGE_SetError(SERR_NO_VIDEODEVICE);
+    return FALSE;
+  })
+  screen = SageContext.SageVideo->screen;
+  SAFE(if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return FALSE;
+  })
+  device = SageContext.Sage3D;
+  SAFE(if (device == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
+    return FALSE;
+  })
+  // Sort triangles list if z-buffer is not active
+  if (!SAGE_Get3DRenderOption(S3DR_ZBUFFER)) {
+    //SED(SAGE_DebugLog("** Before sorting triangles");)
+    //SED(SAGE_DumpTriangleList(device->render.ordered_triangles, device->render.render_triangles);)
+    SAGE_Sort3DTriangles();
+    SED(SAGE_DebugLog("*** After sorting triangles ***");)
+    SED(SAGE_DumpTriangleList(device->render.ordered_triangles, device->render.render_triangles);)
+  }
+  if (device->render.render_mode == S3DR_RENDER_WIRE) {
+    SAGE_RenderWired3DTriangles(device->render.ordered_triangles, device->render.render_triangles);
+  } else if (device->render.render_mode == S3DR_RENDER_FLAT) {
+    SAGE_RenderFlatted3DTriangles(device->render.ordered_triangles, device->render.render_triangles);
+  } else {
+    if (device->render_system == S3DD_W3DRENDER) {
+      SAGE_DrawWarp3DTriangles(screen, device->context, device->render.ordered_triangles, device->render.render_triangles);
+    } else if (device->render_system == S3DD_M3DRENDER) {
+    } else {
+      SAGE_RenderTextured3DTriangles(screen, device->render.ordered_triangles, device->render.render_triangles);
+    }
+  }
+  device->render.render_triangles = 0;
   return TRUE;
 }

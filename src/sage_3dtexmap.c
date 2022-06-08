@@ -16,6 +16,8 @@
 #include "sage_3dtexture.h"
 #include "sage_3dtexmap.h"
 
+#define SAGE_MAPPER_ASM       1
+
 /** Mapper data */
 LONG s3dm_deltas[8], s3dm_coords[9];
 
@@ -31,7 +33,7 @@ VOID SAGE_DumpS3DTriangle(S3D_Triangle * triangle)
   SAGE_DebugLog(" => x3=%d  y3=%d  z3=%d  u3=%d  v3=%d", triangle->x3, triangle->y3, triangle->z3, triangle->u3, triangle->v3);
 }
 
-VOID SAGE_DebugArrays()
+VOID SAGE_DebugArrays(VOID)
 {
   SAGE_TraceLog("-- Deltas");
   SAGE_TraceLog(" => dxdyl=%d  dudyl=%d  dvdyl=%d", s3dm_deltas[DELTA_DXDYL], s3dm_deltas[DELTA_DUDYL], s3dm_deltas[DELTA_DVDYL]);
@@ -60,7 +62,7 @@ VOID SAGE_TextureMapper8Bits(LONG nblines, UBYTE * texture, ULONG texture_width,
   LONG ui, vi, xs, xe, du, dv;
   LONG screen_pixel, texture_pixel;
   
-  SD(SAGE_TraceLog("SAGE_TextureMapper8Bits %d lines", nblines));
+  //SD(SAGE_TraceLog("SAGE_TextureMapper8Bits %d lines", nblines));
 
   while (nblines--) {
 
@@ -282,6 +284,7 @@ VOID SAGE_DrawFlatTop(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
 
   // Go for mapping
   SD(SAGE_DebugArrays());
+#if SAGE_MAPPER_ASM == 1
   if (bitmap->depth == SBMP_DEPTH8) {
     SAGE_FastMap8BitsTexture(
         dy+1,
@@ -303,6 +306,27 @@ VOID SAGE_DrawFlatTop(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
         s3dm_coords
     );
   }
+#else
+  if (bitmap->depth == SBMP_DEPTH8) {
+    SAGE_TextureMapper8Bits(
+        dy+1,
+        (UBYTE *) triangle->tex->bitmap->bitmap_buffer,
+        triangle->tex->bitmap->width,
+        (UBYTE *) bitmap->bitmap_buffer,
+        bitmap->width
+    );
+  } else if (bitmap->depth == SBMP_DEPTH16) {
+    SAGE_TextureMapper16Bits(
+        dy+1,
+        (UWORD *) triangle->tex->bitmap->bitmap_buffer,
+        triangle->tex->bitmap->width,
+        (UWORD *) bitmap->bitmap_buffer,
+        bitmap->width
+    );
+  }
+#endif
+  SD(SAGE_DebugArrays());
+
 }
 
 /**
@@ -369,6 +393,7 @@ VOID SAGE_DrawFlatBottom(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Cli
 
   // Go for mapping
   SD(SAGE_DebugArrays());
+#if SAGE_MAPPER_ASM == 1
   if (bitmap->depth == SBMP_DEPTH8) {
     SAGE_FastMap8BitsTexture(
         dy+1,
@@ -390,6 +415,26 @@ VOID SAGE_DrawFlatBottom(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Cli
         s3dm_coords
     );
   }
+#else
+  if (bitmap->depth == SBMP_DEPTH8) {
+    SAGE_TextureMapper8Bits(
+        dy,
+        (UBYTE *) triangle->tex->bitmap->bitmap_buffer,
+        triangle->tex->bitmap->width,
+        (UBYTE *) bitmap->bitmap_buffer,
+        bitmap->width
+    );
+  } else if (bitmap->depth == SBMP_DEPTH16) {
+    SAGE_TextureMapper16Bits(
+        dy,
+        (UWORD *) triangle->tex->bitmap->bitmap_buffer,
+        triangle->tex->bitmap->width,
+        (UWORD *) bitmap->bitmap_buffer,
+        bitmap->width
+    );
+  }
+#endif
+
 }
 
 /**
@@ -488,6 +533,7 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
     }
     // Go for mapping
     SD(SAGE_DebugArrays());
+#if SAGE_MAPPER_ASM == 1
     if (bitmap->depth == SBMP_DEPTH8) {
       SAGE_FastMap8BitsTexture(
           dy3,
@@ -509,6 +555,25 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
           s3dm_coords
       );
     }
+#else
+    if (bitmap->depth == SBMP_DEPTH8) {
+      SAGE_TextureMapper8Bits(
+          dy3,
+          (UBYTE *) triangle->tex->bitmap->bitmap_buffer,
+          triangle->tex->bitmap->width,
+          (UBYTE *) bitmap->bitmap_buffer,
+          bitmap->width
+      );
+    } else if (bitmap->depth == SBMP_DEPTH16) {
+      SAGE_TextureMapper16Bits(
+          dy3,
+          (UWORD *) triangle->tex->bitmap->bitmap_buffer,
+          triangle->tex->bitmap->width,
+          (UWORD *) bitmap->bitmap_buffer,
+          bitmap->width
+      );
+    }
+#endif
   } else {
     // y1 top clipping
     if (triangle->y1 < clipping->top) {
@@ -536,6 +601,7 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
       dy1 -= (triangle->y2 - clipping->bottom);
       // Go for mapping
       SD(SAGE_DebugArrays());
+#if SAGE_MAPPER_ASM == 1
       if (bitmap->depth == SBMP_DEPTH8) {
         SAGE_FastMap8BitsTexture(
             dy1,
@@ -557,9 +623,29 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
             s3dm_coords
         );
       }
+#else
+      if (bitmap->depth == SBMP_DEPTH8) {
+        SAGE_TextureMapper8Bits(
+            dy1,
+            (UBYTE *) triangle->tex->bitmap->bitmap_buffer,
+            triangle->tex->bitmap->width,
+            (UBYTE *) bitmap->bitmap_buffer,
+            bitmap->width
+        );
+      } else if (bitmap->depth == SBMP_DEPTH16) {
+        SAGE_TextureMapper16Bits(
+            dy1,
+            (UWORD *) triangle->tex->bitmap->bitmap_buffer,
+            triangle->tex->bitmap->width,
+            (UWORD *) bitmap->bitmap_buffer,
+            bitmap->width
+        );
+      }
+#endif
     } else {
       // Go for mapping
       SD(SAGE_DebugArrays());
+#if SAGE_MAPPER_ASM == 1
       if (bitmap->depth == SBMP_DEPTH8) {
         SAGE_FastMap8BitsTexture(
             dy1,
@@ -581,6 +667,25 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
             s3dm_coords
         );
       }
+#else
+      if (bitmap->depth == SBMP_DEPTH8) {
+        SAGE_TextureMapper8Bits(
+            dy1,
+            (UBYTE *) triangle->tex->bitmap->bitmap_buffer,
+            triangle->tex->bitmap->width,
+            (UBYTE *) bitmap->bitmap_buffer,
+            bitmap->width
+        );
+      } else if (bitmap->depth == SBMP_DEPTH16) {
+        SAGE_TextureMapper16Bits(
+            dy1,
+            (UWORD *) triangle->tex->bitmap->bitmap_buffer,
+            triangle->tex->bitmap->width,
+            (UWORD *) bitmap->bitmap_buffer,
+            bitmap->width
+        );
+      }
+#endif
       dy3 = triangle->y3 - triangle->y2;
       if (dy3 <= 0) {
         return;
@@ -603,6 +708,7 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
       }
       // Go for mapping
       SD(SAGE_DebugArrays());
+#if SAGE_MAPPER_ASM == 1
       if (bitmap->depth == SBMP_DEPTH8) {
         SAGE_FastMap8BitsTexture(
             dy3,
@@ -624,6 +730,25 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
             s3dm_coords
         );
       }
+#else
+      if (bitmap->depth == SBMP_DEPTH8) {
+        SAGE_TextureMapper8Bits(
+            dy3,
+            (UBYTE *) triangle->tex->bitmap->bitmap_buffer,
+            triangle->tex->bitmap->width,
+            (UBYTE *) bitmap->bitmap_buffer,
+            bitmap->width
+        );
+      } else if (bitmap->depth == SBMP_DEPTH16) {
+        SAGE_TextureMapper16Bits(
+            dy3,
+            (UWORD *) triangle->tex->bitmap->bitmap_buffer,
+            triangle->tex->bitmap->width,
+            (UWORD *) bitmap->bitmap_buffer,
+            bitmap->width
+        );
+      }
+#endif
     }
   }
 }

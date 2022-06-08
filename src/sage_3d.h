@@ -18,16 +18,21 @@
 #include "sage_3drender.h"
 #include "sage_3dengine.h"
 
+#define S3DD_S3DRENDER        1
+#define S3DD_W3DRENDER        2
+#define S3DD_M3DRENDER        3
+
 /** SAGE 3D device structure */
 typedef struct {
-  /** Render mode */
-  UWORD render_mode;
   /** Warp3D last error */
   ULONG warp3d_error;
   /** Warp3D driver type */
   ULONG driver_type;
   /** Warp3D context */
   W3D_Context * context;
+  /** Renderer */
+  UWORD render_system;
+  SAGE_Render render;
   /** Textures */
   SAGE_3DTexture * textures[STEX_MAX_TEXTURES];
 } SAGE_3DDevice;
@@ -44,8 +49,8 @@ BOOL SAGE_Alloc3DDevice(VOID);
 /** Release 3D device */
 BOOL SAGE_Free3DDevice(VOID);
 
-/** Allocate the context for 3D rendering */
-BOOL SAGE_Allocate3DContext(VOID);
+/** Define the render system */
+BOOL SAGE_Set3DRenderSystem(UWORD);
 
 /** Get current 3D context */
 W3D_Context * SAGE_Get3DContext(VOID);

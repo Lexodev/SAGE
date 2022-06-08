@@ -28,7 +28,7 @@ VOID SAGE_ReleaseMaterial(SAGE_Material *);
 BOOL SAGE_AddMaterial(STRPTR, STRPTR, LONG, LONG, LONG, LONG);
 
 /** Add multiple materials to the world */
-BOOL SAGE_AddMaterials(SAGE_Material *, LONG);
+BOOL SAGE_AddMaterialList(SAGE_Material *, LONG);
 
 /** Load all materials */
 BOOL SAGE_LoadMaterials(VOID);

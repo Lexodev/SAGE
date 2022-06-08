@@ -133,6 +133,7 @@
 #define BEAST_RUN             1
 #define BEAST_DOWN            2
 #define BEAST_JUMP            3
+#define BEAST_TURN            4
 
 // Transparent color
 #define TRANSPCOLOR           0xF81F
@@ -591,19 +592,25 @@ VOID CheckKeyboard(VOID)
     pause = !pause;
   } else {
     beast_status = BEAST_STAY;
-    if (keyboard_state[KEY_SPACE]) {
+    if (keyboard_state[KEY_LEFT]) {
+      if (beast_direction == BEAST_RIGHTDIR && beast_status != BEAST_TURN) {
+        beast_status = BEAST_TURN;
+      } else {
+        beast_status = BEAST_RUN;
+      }
+      beast_direction = BEAST_LEFTDIR;
+    } else if (keyboard_state[KEY_RIGHT]) {
+      if (beast_direction == BEAST_LEFTDIR && beast_status != BEAST_TURN) {
+        beast_status = BEAST_TURN;
+      } else {
+        beast_status = BEAST_RUN;
+      }
+      beast_direction = BEAST_RIGHTDIR;
+    }
+    if (keyboard_state[KEY_UP]) {
       beast_status = BEAST_JUMP;
-    } else {
-      if (keyboard_state[KEY_LEFT]) {
-        beast_direction = BEAST_LEFTDIR;
-        beast_status = BEAST_RUN;
-      } else if (keyboard_state[KEY_RIGHT]) {
-        beast_direction = BEAST_RIGHTDIR;
-        beast_status = BEAST_RUN;
-      }
-      if (keyboard_state[KEY_DOWN]) {
-        beast_status = BEAST_DOWN;
-      }
+    } else if (keyboard_state[KEY_DOWN]) {
+      beast_status = BEAST_DOWN;
     }
   }
 }
@@ -709,7 +716,7 @@ VOID _Render(VOID)
  */
 void main(void)
 {
-  //SAGE_SetLogLevel(SLOG_WARNING);
+  SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("** SAGE library SOTB ehanced demo V1.0 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_AUDIO|SMOD_INPUT|SMOD_INTERRUPTION)) {

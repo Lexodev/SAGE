@@ -160,7 +160,7 @@ _SAGE_FastMap8BitsTexture:
   swap    d3
   ext.l   d3
   add.l   d3,d4                         ; + ui >> FIXP16_SHIFT
-  move.b  0(a0,d4),(a4)+
+  move.b  0(a0,d4.l),(a4)+
 ; Interpolate u & v
   add.l   DELTA_DU(a2),d5
   add.l   DELTA_DV(a2),d6
@@ -301,7 +301,7 @@ _SAGE_FastMap16BitsTexture:
   ext.l   d3
   add.l   d3,d3                         ; 16bits
   add.l   d3,d4                         ; + ui >> FIXP16_SHIFT
-  move.w  0(a0,d4),(a4)+
+  move.w  0(a0,d4.l),(a4)+
 ; Interpolate u & v
   add.l   DELTA_DU(a2),d5
   add.l   DELTA_DV(a2),d6

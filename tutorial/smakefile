@@ -9,7 +9,7 @@ OPT=CPU=68040 IDIR=libinclude: MATH=68882 NOICONS
 LIB=/lib/sage.lib
 
 # Files
-TUTOG1EXE=tuto1_screen tuto2_event tuto3_picture8 tuto4_picture16 tuto5_scrolling tuto6_parallax
+TUTOG1EXE=tuto1_screen tuto2_event tuto3_picture8 tuto4_picture16 tuto5_scrolling
 
 # Build all tutorials
 all: $(TUTOG1EXE) cleanobj

@@ -1,7 +1,7 @@
 ***************************************
-** SAGE library V1.9
+** SAGE library V1.2206
 ** Features
-** January 2022
+** June 2022
 *****************************************
 
 - Integrated error management system
@@ -26,3 +26,5 @@
 - Integrated low level input support for keyboard and joyport
 - Integrated interruption server that support 8 user interrupt functions
 - Network support for UDP and TCP, server and client, blocking and non-blocking socket
+- Support 3D primitive with texture mapping
+- Simple and efficient 3D engine with skybox, entities and terrain management

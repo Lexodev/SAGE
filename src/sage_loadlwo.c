@@ -18,6 +18,7 @@
 #include "sage_error.h"
 #include "sage_logger.h"
 #include "sage_memory.h"
+#include "sage_screen.h"
 #include "sage_loadlwo.h"
 
 #include <proto/dos.h>
@@ -219,7 +220,7 @@ BOOL SAGE_LoadSurface(BPTR fd, LONG chunk_size, SAGE_LightwaveObject * object)
 /**
  * Load a Lightwave object
  * 
- * @param file_handle Music file handle
+ * @param file_handle Object file handle
  * 
  * @return SAGE entity structure
  */
@@ -291,13 +292,11 @@ SAGE_Entity * SAGE_LoadLWO(BPTR file_handle)
     SD(SAGE_DumpLWOB(object));
     entity = SAGE_CreateEntity(object->nb_points, object->nb_polygons);
     if (entity != NULL) {
-      entity->nb_vertices = object->nb_points;
       for (idx = 0;idx < object->nb_points;idx++) {
         entity->vertices[idx].x = object->points[idx].x;
         entity->vertices[idx].y = object->points[idx].y;
         entity->vertices[idx].z = object->points[idx].z;
       }
-      entity->nb_faces = object->nb_polygons;
       for (idx = 0;idx < object->nb_polygons;idx++) {
         entity->faces[idx].p1 = object->polygons[idx].p1;
         entity->faces[idx].p2 = object->polygons[idx].p2;
@@ -306,7 +305,7 @@ SAGE_Entity * SAGE_LoadLWO(BPTR file_handle)
           entity->faces[idx].is_quad = TRUE;
           entity->faces[idx].p4 = object->polygons[idx].p4;
         }
-        entity->faces[idx].color = object->polygons[idx].surface;
+        entity->faces[idx].color = SAGE_RemapColor(object->polygons[idx].surface);
         entity->faces[idx].texture = object->polygons[idx].surface;
       }
     }

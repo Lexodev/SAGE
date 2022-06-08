@@ -8,8 +8,60 @@
  * @version 1.0 January 2022
  */
 
-#include <math.h>
 #include "sage_maths.h"
+
+/** Trigonometry precalcul */
+FLOAT Sine[360*SMTH_PRECISION];
+FLOAT Cosine[360*SMTH_PRECISION];
+FLOAT Tangent[360*SMTH_PRECISION];
+
+/**
+ * Initialize trigonometry arrays
+ */
+VOID SAGE_InitFastTrigonometry(VOID)
+{
+  FLOAT angle, step;
+  LONG idx;
+
+  angle = 0.0;
+  step = 1.0 / (FLOAT) SMTH_PRECISION;
+  for (idx = 0;idx < (360*SMTH_PRECISION);idx++) {
+    Sine[idx] = sin(DEGTORAD(angle));
+    Cosine[idx] = cos(DEGTORAD(angle));
+    Tangent[idx] = tan(DEGTORAD(angle));
+    angle += step;
+  }
+}
+
+/**
+ * Get fast Sine value
+ */
+FLOAT SAGE_FastSine(WORD angle)
+{
+  while (angle < 0) angle += SMTH_ANGLE_360;
+  while (angle >= SMTH_ANGLE_360) angle-= SMTH_ANGLE_360;
+  return Sine[angle];
+}
+
+/**
+ * Get fast Cosine value
+ */
+FLOAT SAGE_FastCosine(WORD angle)
+{
+  while (angle < 0) angle += SMTH_ANGLE_360;
+  while (angle >= SMTH_ANGLE_360) angle-= SMTH_ANGLE_360;
+  return Cosine[angle];
+}
+
+/**
+ * Get fast Tangent value
+ */
+FLOAT SAGE_FastTangent(WORD angle)
+{
+  while (angle < 0) angle += SMTH_ANGLE_360;
+  while (angle >= SMTH_ANGLE_360) angle-= SMTH_ANGLE_360;
+  return Tangent[angle];
+}
 
 /**
  * Calculate vector dot product
@@ -27,8 +79,8 @@ VOID SAGE_CrossProduct(SAGE_Vector * res, SAGE_Vector * u, SAGE_Vector * v)
 {
   // x = yu*zv - zu*yv
   res->x = u->y*v->z - u->z*v->y;
-  // y = - xu*vz + zu*xv
-  res->y = -(u->x*v->z - u->z*v->x);
+  // y = zu*xv - xu*vz
+  res->y = u->z*v->x - u->x*v->z;
   // z = xu*vy - yu*xv
   res->z = u->x*v->y - u->y*v->x;
 }
@@ -41,9 +93,11 @@ VOID SAGE_Normalize(SAGE_Vector * vec)
   FLOAT vlen;
 
   vlen = sqrt((vec->x*vec->x) + (vec->y*vec->y) + (vec->z*vec->z));
-  vec->x /= vlen;
-  vec->y /= vlen;
-  vec->z /= vlen;
+  if (vlen != 0.0) {
+    vec->x /= vlen;
+    vec->y /= vlen;
+    vec->z /= vlen;
+  }
 }
 
 /**

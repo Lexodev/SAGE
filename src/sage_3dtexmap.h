@@ -45,6 +45,7 @@ typedef struct {
   LONG x1, y1, z1, u1, v1;
   LONG x2, y2, z2, u2, v2;
   LONG x3, y3, z3, u3, v3;
+  ULONG color;
   SAGE_3DTexture * tex;
 } S3D_Triangle;
 
