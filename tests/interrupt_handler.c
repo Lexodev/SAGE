@@ -72,11 +72,7 @@ void main(void)
         SAGE_DisplayError();
       }
       SAGE_RemoveInterruptionHandler(HANDLER_INDEX);
-    } else {
-      SAGE_DisplayError();
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_Exit();
   printf("End of test\n");

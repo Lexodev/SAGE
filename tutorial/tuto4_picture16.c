@@ -72,12 +72,7 @@ void main(void)
       SAGE_ShowMouse();
       // And close the screen
       SAGE_CloseScreen();
-    } else {
-      // Display the last error
-      SAGE_DisplayError();
     }
-  } else {
-    SAGE_DisplayError();
   }
   // Release all resources
   SAGE_Exit();

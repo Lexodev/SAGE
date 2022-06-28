@@ -1,0 +1,64 @@
+# Material file for dino.obj
+
+newmtl VRAM_page_#10
+	Ns 0
+	d 1
+	illum 2
+	Kd 1.0 1.0 1.0
+	Ks 0.0 0.0 0.0
+	Ka 0.0 0.0 0.0
+	map_Kd DINO[0]_p00.png
+
+newmtl VRAM_page_#12
+	Ns 0
+	d 1
+	illum 2
+	Kd 1.0 1.0 1.0
+	Ks 0.0 0.0 0.0
+	Ka 0.0 0.0 0.0
+	map_Kd DINO[1]_p00.png
+
+newmtl VRAM_page_#14
+	Ns 0
+	d 1
+	illum 2
+	Kd 1.0 1.0 1.0
+	Ks 0.0 0.0 0.0
+	Ka 0.0 0.0 0.0
+	map_Kd DINO[2]_p00.png
+
+newmtl VRAM_page_#26
+	Ns 0
+	d 1
+	illum 2
+	Kd 1.0 1.0 1.0
+	Ks 0.0 0.0 0.0
+	Ka 0.0 0.0 0.0
+	map_Kd DINO[3]_p00.png
+
+newmtl VRAM_page_#28
+	Ns 0
+	d 1
+	illum 2
+	Kd 1.0 1.0 1.0
+	Ks 0.0 0.0 0.0
+	Ka 0.0 0.0 0.0
+	map_Kd DINO[4]_p00.png
+
+newmtl VRAM_page_#30
+	Ns 0
+	d 1
+	illum 2
+	Kd 1.0 1.0 1.0
+	Ks 0.0 0.0 0.0
+	Ka 0.0 0.0 0.0
+	map_Kd DINO[5]_p00.png
+
+newmtl Untextured_faces
+	Ns 0
+	d 1
+	illum 2
+	Kd -1.0 -1.0 -1.0
+	Ks 0.0 0.0 0.0
+	Ka 0.0 0.0 0.0
+

@@ -5,8 +5,8 @@
 #----------------------------------------------------------
 
 # Build options
-OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far DEFINE=_SAGE_DEBUG_MODE_=1 DEFINE=_SAGE_SAFE_MODE_=1 nostackcheck
-#OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far DEFINE=_SAGE_SAFE_MODE_=1 nostackcheck
+OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far DEFINE=_SAGE_DEBUG_MODE_=1 DEFINE=_SAGE_SAFE_MODE_=1
+#OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far DEFINE=_SAGE_SAFE_MODE_=1
 #OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far nostackcheck
 SAGELIB=/lib/sage.lib
 
@@ -17,7 +17,7 @@ INPUTOBJ=sage_input.o sage_keyboard.o sage_joyport.o
 AUDIOOBJ=sage_audio.o sage_loadwave.o sage_load8svx.o sage_sound.o sage_loadtracker.o sage_loadaiff.o sage_music.o
 INTOBJ=sage_interrupt.o
 S3DOBJ=sage_3d.o sage_3dtexture.o sage_3drender.o sage_3dtexmap.o
-S3EOBJ= sage_3dengine.o sage_3dentity.o sage_3dcamera.o sage_3dmaterial.o sage_3dskybox.o sage_3dterrain.o sage_loadlwo.o sage_loadobj.o
+S3EOBJ=sage_3dengine.o sage_3dentity.o sage_3dcamera.o sage_3dmaterial.o sage_3dskybox.o sage_3dterrain.o sage_loadlwo.o sage_loadobj.o
 NETOBJ=sage_network.o
 ASMOBJ=sage_blitter.o sage_ammxblit.o sage_vblint.o sage_fastdraw.o sage_itserver.o sage_fastmap.o
 

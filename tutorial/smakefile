@@ -9,7 +9,7 @@ OPT=CPU=68040 IDIR=libinclude: MATH=68882 NOICONS
 LIB=/lib/sage.lib
 
 # Files
-TUTOG1EXE=tuto1_screen tuto2_event tuto3_picture8 tuto4_picture16 tuto5_scrolling
+TUTOG1EXE=tuto1_screen tuto2_event tuto3_picture8 tuto4_picture16 tuto5_scrolling tuto6_parallax
 
 # Build all tutorials
 all: $(TUTOG1EXE) cleanobj
@@ -30,6 +30,15 @@ tuto5_scrolling: tuto5_scrolling.c $(LIB)
   sc LINK tuto5_scrolling.c $(OPT) $(LIB)
 
 tuto6_parallax: tuto6_parallax.c $(LIB)
+  sc LINK tuto6_parallax.c $(OPT) $(LIB)
+
+# Force compile
+force: clean
+  sc LINK tuto1_screen.c $(OPT) $(LIB)
+  sc LINK tuto2_event.c $(OPT) $(LIB)
+  sc LINK tuto3_picture8.c $(OPT) $(LIB)
+  sc LINK tuto4_picture16.c $(OPT) $(LIB)
+  sc LINK tuto5_scrolling.c $(OPT) $(LIB)
   sc LINK tuto6_parallax.c $(OPT) $(LIB)
 
 # Clean files

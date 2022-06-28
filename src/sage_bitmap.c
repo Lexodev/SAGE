@@ -276,30 +276,32 @@ VOID SAGE_ReleaseBitmap(SAGE_Bitmap * bitmap)
 /**
  * Remap the transparency color into bitmap pixel format
  *
- * @param color     Transparency color in CLUT8, RGB16, RGB24 or ARGB format
+ * @param color     Transparency color in ARGB format or CLUT
  * @param pixformat The bitmap pixel format
  *
  * @return Remapped color
  */
 ULONG SAGE_RemapTransparencyColor(ULONG color, ULONG pixformat)
 {
-  ULONG b1, b2, b3, b4;
+  ULONG alpha, red, green, blue;
 
-  b1 = (color >> 24) & 255;
-  b2 = (color >> 16) & 255;
-  b3 = (color >> 8) & 255;
-  b4 = color & 255;
+  alpha = (color >> 24) & 255L;
+  red = (color >> 16) & 255L;
+  green = (color >> 8) & 255L;
+  blue = color & 255L;
   switch (pixformat) {
     case PIXFMT_CLUT:
-      return (b4 << 24) | (b4 << 16) | (b4 << 8) | b4;
+      return (blue << 24) | (blue << 16) | (blue << 8) | blue;
     case PIXFMT_RGB16:
-      return (b3 << 24) | (b4 << 16) | (b3 << 8) | b4;
+      color = (((red & 248L) | (green >> 5)) << 8) | ((green << 3) & 224L) | (blue >> 3);
+      return (color << 16) | color;
     case PIXFMT_RGB16PC:
-      return (b4 << 24) | (b3 << 16) | (b4 << 8) | b3;
+      color = ((((green << 3) & 224L) | (blue >> 3)) << 8) | (red & 248L) | (green >> 5);
+      return (color << 16) | color;
     case PIXFMT_BGR24:
-      return (b4 << 16) | (b3 << 8) | b2;
+      return (red << 16) | (green << 8) | blue;
     case PIXFMT_RGBA32:
-      return (b2 << 24) | (b3 << 16) | (b4 << 8) | b1;
+      return (red << 24) | (green << 16) | (blue << 8) | alpha;
     default:
       return color;
   }
@@ -309,7 +311,7 @@ ULONG SAGE_RemapTransparencyColor(ULONG color, ULONG pixformat)
  * Define the bitmap transparency color
  *
  * @param bitmap SAGE bitmap pointer
- * @param color  Transparent color
+ * @param color  Transparent color in ARGB format
  *
  * @return Operation success
  */
@@ -328,6 +330,7 @@ BOOL SAGE_SetBitmapTransparency(SAGE_Bitmap * bitmap, ULONG color)
     bitmap->properties |= SBMP_FASTCOPY;        // Activate fast 16bits cookie cut AMMX operation
     SD(SAGE_DebugLog("Activate fast 16bits cookie cut AMMX operation"));
   }
+  SD(SAGE_DumpBitmap(bitmap);)
   return TRUE;
 }
 
@@ -1529,7 +1532,7 @@ VOID SAGE_DumpBitmap(SAGE_Bitmap * bitmap)
   SAGE_DebugLog(" Width                 %d", bitmap->width);
   SAGE_DebugLog(" Height                %d", bitmap->height);
   SAGE_DebugLog(" Depth                 %d", bitmap->depth);
-  SAGE_DebugLog(" Transparency          %d", bitmap->transparency);
+  SAGE_DebugLog(" Transparency          0x%08X", bitmap->transparency);
   SAGE_DebugLog(" Pixel format          %s (%d)", SAGE_GetPixelFormatName(bitmap->pixformat), bitmap->pixformat);
   SAGE_DebugLog(" Buffer                0x%X", bitmap->bitmap_buffer);
 }

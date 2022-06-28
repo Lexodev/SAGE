@@ -22,5 +22,6 @@ void main(void)
   } else {
     printf("Initialization failed\n");
   }
+  SAGE_Exit();
   printf("End of test\n");
 }

@@ -102,11 +102,7 @@ void main(void)
       }
       printf("Closing screen\n");
       SAGE_CloseScreen();
-    } else {
-      SAGE_DisplayError();
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_Exit();
   printf("End of test\n");

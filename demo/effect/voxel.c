@@ -191,16 +191,10 @@ void main(void)
       SAGE_ShowMouse();
       SAGE_AppliLog("Closing screen");
       SAGE_CloseScreen();
-    } else {
-      SAGE_DisplayError();
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_AppliLog("Closing SAGE");
-  if (!SAGE_Exit()) {
-    SAGE_DisplayError();
-  }
+  SAGE_Exit();
   SAGE_AppliLog("End of demo");
 }
 

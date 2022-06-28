@@ -113,8 +113,6 @@ void main(void)
       printf("Pos x=%d and y=%d\n", x_pos, y_pos);
       SAGE_Pause(50);
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_Exit();
   printf("End of test\n");

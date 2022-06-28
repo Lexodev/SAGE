@@ -98,11 +98,14 @@ BOOL SAGE_Init(LONGBITS modules)
  * 
  * @return Operation success
  */
-BOOL SAGE_Exit(VOID)
+VOID SAGE_Exit(VOID)
 {
   UWORD index;
   
   SAGE_InfoLog("SAGE Exit");
+  if (SAGE_GetErrorCode() != SERR_NO_ERROR) {
+    SAGE_DisplayError();
+  }
   for (index = 0;index < STHD_MAX_THREAD;index++) {
     if (SageContext.Threads[index] != NULL) {
       SAGE_RemoveThread(SageContext.Threads[index]);
@@ -131,7 +134,6 @@ BOOL SAGE_Exit(VOID)
   SD(SAGE_DumpMemory());
   SAGE_ReleaseMem();  // Free all remaining memory
   SAGE_DebugLog("Available memory %d KB", SAGE_AvailMem());
-  return TRUE;
 }
 
 /**

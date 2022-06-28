@@ -9,20 +9,10 @@ OPT=CPU=68040 IDIR=libinclude: MATH=68882 NOICONS
 LIB=/lib/sage.lib
 
 # Files
-EXE=dragon fire_effect troll odysseus runner blood cube sotb mandelbrot effect engine sonic
+EXE=dragon troll odysseus runner blood sotb cube engine effect
 
 # Build all demos
-all: $(EXE) cleanobj
-
-mandelbrot: mandelbrot.c $(LIB)
-  sc LINK mandelbrot.c $(OPT) $(LIB)
-
-fire_effect: fire_effect.c $(LIB)
-  sc LINK fire_effect.c $(OPT) $(LIB)
-
-cube: cube/mapcube.c cube/flatcube.c $(LIB)
-#  sc LINK cube/mapcube.c $(OPT) $(LIB) DATA=far
-  sc LINK cube/flatcube.c $(OPT) $(LIB) DATA=far
+all: $(EXE) clean
 
 dragon: dragon/dragon_crown.c dragon/dragon_crown.h $(LIB)
   sc LINK dragon/dragon_crown.c $(OPT) $(LIB)
@@ -36,21 +26,25 @@ odysseus: odysseus/odysseus.c $(LIB)
 runner: runner/runner.c $(LIB)
   sc LINK runner/runner.c $(OPT) $(LIB) DATA=far
 
+blood: blood/blood.c blood/blood.h blood/blood_engine.c blood/blood_engine.h blood/blood_control.c blood/blood_control.h $(LIB)
+  sc LINK blood/blood.c blood/blood_engine.c blood/blood_control.c $(OPT) $(LIB) CODE=far DATA=far
+
 sotb: sotb/sotb_ehanced.c $(LIB)
   sc LINK sotb/sotb_ehanced.c $(OPT) $(LIB)
 
-engine: engine/engine.c engine/entity.c engine/skybox.c engine/camera.c engine/terrain.c $(LIB)
+cube: cube/mapcube.c cube/flatcube.c cube/speed.c $(LIB)
+  sc LINK cube/mapcube.c $(OPT) $(LIB) DATA=far
+  sc LINK cube/flatcube.c $(OPT) $(LIB) DATA=far
+  sc LINK cube/speed.c $(OPT) $(LIB) DATA=far
+
+engine: engine/entity.c engine/skybox.c engine/camera.c engine/terrain.c engine/dino.c engine/gtcar.c engine/gt2car.c $(LIB)
   sc LINK engine/camera.c $(OPT) $(LIB) CODE=far DATA=far
   sc LINK engine/entity.c $(OPT) $(LIB) CODE=far DATA=far
   sc LINK engine/skybox.c $(OPT) $(LIB) CODE=far DATA=far
-  sc LINK engine/terrain.c $(OPT) $(LIB) CODE=far DATA=fo
-  sc LINK engine/engine.c $(OPT) $(LIB) CODE=far DATA=far
-
-sonic: sonic/sonic.c $(LIB)
-  sc LINK sonic/sonic.c $(OPT) $(LIB)
-
-blood: blood/blood.c blood/blood.h blood/blood_engine.c blood/blood_engine.h blood/blood_control.c blood/blood_control.h $(LIB)
-  sc LINK blood/blood.c blood/blood_engine.c blood/blood_control.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK engine/terrain.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK engine/gtcar.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK engine/gt2car.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK engine/dino.c $(OPT) $(LIB) CODE=far DATA=far
 
 # Ports of classical effects
 effect: effect/plasma.c effect/tunnel.c effect/rotozoom.c effect/voxel.c $(LIB)
@@ -58,14 +52,48 @@ effect: effect/plasma.c effect/tunnel.c effect/rotozoom.c effect/voxel.c $(LIB)
   sc LINK effect/tunnel.c $(OPT) $(LIB) CODE=far DATA=far
   sc LINK effect/rotozoom.c $(OPT) $(LIB) CODE=far DATA=far
   sc LINK effect/voxel.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK effect/mandelbrot.c $(OPT) $(LIB)
+  sc LINK effect/fire_effect.c $(OPT) $(LIB)
+
+# Force all builds
+force : cleanall
+  sc LINK dragon/dragon_crown.c $(OPT) $(LIB)
+  sc LINK troll/troll_run.c $(OPT) $(LIB)
+  sc LINK odysseus/odysseus.c $(OPT) $(LIB)
+  sc LINK runner/runner.c $(OPT) $(LIB) DATA=far
+  sc LINK blood/blood.c blood/blood_engine.c blood/blood_control.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK sotb/sotb_ehanced.c $(OPT) $(LIB)
+  sc LINK cube/mapcube.c $(OPT) $(LIB) DATA=far
+  sc LINK cube/flatcube.c $(OPT) $(LIB) DATA=far
+  sc LINK engine/camera.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK engine/entity.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK engine/skybox.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK engine/terrain.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK engine/gtcar.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK engine/dino.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK effect/plasma.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK effect/tunnel.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK effect/rotozoom.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK effect/voxel.c $(OPT) $(LIB) CODE=far DATA=far
+  sc LINK effect/mandelbrot.c $(OPT) $(LIB)
+  sc LINK effect/fire_effect.c $(OPT) $(LIB)
 
 # Clean files
-clean: cleanobj cleandragon cleanrunner cleanblood cleansotb cleantroll cleanodysseus cleaneffect cleancube cleanengine
-  @echo "** Clean complete **"
+cleanall: clean cleanexe
 
-cleanobj:
-  -@delete \#?.o
-  -@delete \#?.lnk
+cleanexe :
+  -@delete dragon/dragon_crown
+  -@delete runner/runner
+  -@delete blood/blood
+  -@delete sotb/sotb_ehanced
+  -@delete troll/troll_run
+  -@delete odysseus/odysseus
+  -@delete cube/mapcube cube/flatcube
+  -@delete engine/camera engine/entity engine/skybox engine/terrain engine/gtcar engine/dino engine/gt2car
+  -@delete effect/plasma effect/tunnel effect/rotozoom effect/voxel effect/mandelbrot effect/fire_effect
+
+clean: cleandragon cleanrunner cleanblood cleansotb cleantroll cleanodysseus cleaneffect cleancube cleanengine
+  @echo "** Clean complete **"
 
 cleandragon:
   -@delete dragon/\#?.o

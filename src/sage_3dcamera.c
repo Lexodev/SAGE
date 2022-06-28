@@ -34,7 +34,7 @@ VOID SAGE_DumpCamera(SAGE_Camera * camera)
     SAGE_DebugLog("camera is NULL !");
     return;
   }
-  SAGE_DebugLog(" => ax=%d  ay=%d  az=%d  fov=%f", camera->anglex, camera->angley, camera->anglez, camera->fov);
+  SAGE_DebugLog(" => ax=%d  ay=%d  az=%d  fov=%d", camera->anglex, camera->angley, camera->anglez, camera->fov);
   SAGE_DebugLog(" => px=%f  py=%f  pz=%f", camera->posx, camera->posy, camera->posz);
   SAGE_DebugLog(" => near_plane=%f  far_plane=%f", camera->near_plane, camera->far_plane);
   SAGE_DebugLog(" => view_dist=%f  centerx=%f  centery=%f", camera->view_dist, camera->centerx, camera->centery);

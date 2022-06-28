@@ -52,8 +52,6 @@ void main(void)
       }
       SAGE_Pause(50);
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_Exit();
   printf("End of test\n");

@@ -350,3 +350,22 @@ BOOL SAGE_FlushTextures()
   }
   return TRUE;
 }
+
+/**
+ * Define the texture transparency color
+ *
+ * @param index Texture index
+ * @param color Transparent color
+ *
+ * @return Operation success
+ */
+BOOL SAGE_SetTextureTransparency(UWORD index, ULONG color)
+{
+  SAGE_3DTexture * texture;
+
+  texture = SAGE_GetTexture(index);
+  if (texture == NULL) {
+    return FALSE;
+  }
+  return SAGE_SetBitmapTransparency(texture->bitmap, color);
+}

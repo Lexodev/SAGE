@@ -204,15 +204,10 @@ void main(void)
         SAGE_ReleasePicture(texture);
       }
       SAGE_Release3DEngine();
-      SAGE_DisplayError();
 
       SAGE_ShowMouse();
       SAGE_CloseScreen();
-    } else {
-      SAGE_DisplayError();
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_Exit();
   SAGE_AppliLog("End of test");

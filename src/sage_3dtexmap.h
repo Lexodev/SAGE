@@ -40,6 +40,7 @@
 #define CRD_LINE              6
 #define CRD_LCLIP             7
 #define CRD_RCLIP             8
+#define CRD_TCOLOR            9
 
 typedef struct {
   LONG x1, y1, z1, u1, v1;
@@ -71,8 +72,51 @@ extern BOOL ASM SAGE_FastMap16BitsTexture(
   REG(a3, LONG * coords)
 );
 
-/** DEBUG !!! */
+/** External function for 8bits color mapping */
+extern BOOL ASM SAGE_FastMap8BitsColor(
+  REG(d0, LONG lines),
+  REG(d1, ULONG color),
+  REG(a1, UBYTE * bitmap),
+  REG(d2, ULONG bitmapwidth),
+  REG(a2, LONG * deltas),
+  REG(a3, LONG * coords)
+);
+
+/** External function for 16bits color mapping */
+extern BOOL ASM SAGE_FastMap16BitsColor(
+  REG(d0, LONG lines),
+  REG(d1, ULONG color),
+  REG(a1, UWORD * bitmap),
+  REG(d2, ULONG bitmapwidth),
+  REG(a2, LONG * deltas),
+  REG(a3, LONG * coords)
+);
+
+/** External function for 8bits transparent texture mapping */
+extern BOOL ASM SAGE_FastMap8BitsTransparent(
+  REG(d0, LONG lines),
+  REG(a0, UBYTE * texture),
+  REG(d1, ULONG textwidth),
+  REG(a1, UBYTE * bitmap),
+  REG(d2, ULONG bitmapwidth),
+  REG(a2, LONG * deltas),
+  REG(a3, LONG * coords)
+);
+
+/** External function for 16bits transparent texture mapping */
+extern BOOL ASM SAGE_FastMap16BitsTransparent(
+  REG(d0, LONG lines),
+  REG(a0, UWORD * texture),
+  REG(d1, ULONG textwidth),
+  REG(a1, UWORD * bitmap),
+  REG(d2, ULONG bitmapwidth),
+  REG(a2, LONG * deltas),
+  REG(a3, LONG * coords)
+);
+
+/** DEBUG */
 VOID SAGE_DumpS3DTriangle(S3D_Triangle *);
+/** DEBUG */
 
 /** Draw a textured triangle */
 BOOL SAGE_DrawTexturedTriangle(S3D_Triangle *, SAGE_Bitmap *, SAGE_Clipping *);

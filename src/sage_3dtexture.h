@@ -85,4 +85,7 @@ BOOL SAGE_RemoveTexture(UWORD);
 /** Remove all textures from card memory */
 BOOL SAGE_FlushTextures(VOID);
 
+/** Define the texture transparency color */
+BOOL SAGE_SetTextureTransparency(UWORD, ULONG);
+
 #endif

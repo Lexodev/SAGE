@@ -59,7 +59,7 @@
 // Sprites
 #define SPR_BANK              0
 #define NB_SPRITES            22
-#define TRANSP_COLOR          0xF81F
+#define TRANSP_COLOR          0xFF00FF
 
 #define SPR_CARWIDTH          160
 #define SPR_CARPOSX           SCREEN_WIDTH/2
@@ -1040,12 +1040,8 @@ void main(void)
       // Restore the game
       _Restore();
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_AppliLog("Closing SAGE");
-  if (!SAGE_Exit()) {
-    SAGE_DisplayError();
-  }
+  SAGE_Exit();
   SAGE_AppliLog("End of demo");
 }

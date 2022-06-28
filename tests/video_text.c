@@ -84,8 +84,6 @@ void checkprint(void)
     SAGE_ShowMouse();
     printf("Closing screen\n");
     SAGE_CloseScreen();
-  } else {
-    SAGE_DisplayError();
   }
 }
 
@@ -96,8 +94,6 @@ void main(void)
   printf("--------------------------------------------------------------------------------\n");
   if (SAGE_Init(SMOD_VIDEO)) {
     checkprint();
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_Exit();
   printf("End of test\n");

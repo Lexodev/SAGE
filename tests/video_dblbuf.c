@@ -62,8 +62,6 @@ void checkdblbuf(void)
     SAGE_ShowMouse();
     printf("Closing screen\n");
     SAGE_CloseScreen();
-  } else {
-    SAGE_DisplayError();
   }
 }
 
@@ -89,8 +87,6 @@ void checkvbl(void)
       printf("VBL is about 50Hz\n");
     }
     SAGE_CloseScreen();
-  } else {
-    SAGE_DisplayError();
   }
 }
 
@@ -102,8 +98,6 @@ void main(void)
   if (SAGE_Init(SMOD_VIDEO)) {
     checkdblbuf();
     //checkvbl();
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_Exit();
   printf("End of test\n");

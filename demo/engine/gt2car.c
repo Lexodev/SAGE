@@ -2,7 +2,7 @@
  * engine.c
  * 
  * SAGE (Simple Amiga Game Engine) project
- * Demo of 3D engine
+ * Demo of 3D engine, Gran Turismo 2 car
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
  * @version 1.0 January 2022
@@ -20,7 +20,7 @@
 #define BG_LAYER              1
 
 #define MAIN_CAMERA           1
-#define ENTITY_TOYOTA         1
+#define ENTITY_MAZDA          1
 
 /** Demo variables */
 WORD cax = 0, cay = 0, vax = 0, vay = 0, vaz = 0;
@@ -79,13 +79,13 @@ BOOL InitWorld(VOID)
   SAGE_SetCameraAngle(MAIN_CAMERA, 0, 0, 0);
   SAGE_SetCameraPlane(MAIN_CAMERA, (FLOAT)10.0, (FLOAT)1000.0);
   SAGE_AppliLog("Load entity");
-  entity = SAGE_LoadEntity("data/toyota.obj");
-  if (entity == NULL || !SAGE_AddEntity(ENTITY_TOYOTA, entity)) {
+  entity = SAGE_LoadEntity("data/mazda/mazda.obj");
+  if (entity == NULL || !SAGE_AddEntity(ENTITY_MAZDA, entity)) {
     return FALSE;
   }
-  SAGE_SetEntityPosition(ENTITY_TOYOTA, (FLOAT)0.0, (FLOAT)0.0, (FLOAT)50.0);
+  SAGE_SetEntityPosition(ENTITY_MAZDA, (FLOAT)0.0, (FLOAT)0.0, (FLOAT)300.0);
   SAGE_AppliLog("Load background picture");
-  picture = SAGE_LoadPicture("data/gt1.jpg");
+  picture = SAGE_LoadPicture("data/gt2.jpg");
   if (picture == NULL) {
     return FALSE;
   }
@@ -176,13 +176,22 @@ VOID _Update(VOID)
         cay = 0; cax = 0;
         vax = 0; vay = 0; vaz = 0;
       }
-    } else if (event->type == SEVT_MOUSEMV) {
+      if (event->code == SKEY_FR_W) {
+        SAGE_Set3DRenderMode(S3DR_RENDER_WIRE);
+      }
+      if (event->code == SKEY_FR_F) {
+        SAGE_Set3DRenderMode(S3DR_RENDER_FLAT);
+      }
+      if (event->code == SKEY_FR_T) {
+        SAGE_Set3DRenderMode(S3DR_RENDER_TEXT);
+      }
+       } else if (event->type == SEVT_MOUSEMV) {
       cay += event->mousex;
       cax += event->mousey;
     }
   }
-  SAGE_SetCameraAngle(MAIN_CAMERA, -cax, -cay, 0);
-  SAGE_SetEntityAngle(ENTITY_TOYOTA, vax, vay, vaz);
+  SAGE_SetCameraAngle(MAIN_CAMERA, cax, cay, 0);
+  SAGE_SetEntityAngle(ENTITY_MAZDA, vax, vay, vaz);
 }
 
 VOID _Render(VOID)
@@ -192,7 +201,7 @@ VOID _Render(VOID)
   SAGE_BlitLayerToScreen(BG_LAYER, 0, 0);
   SAGE_RenderWorld();
   // Draw the angles
-  sprintf(string_buffer, "CAM AX=%d  AY=%d / CAR AX=%d  AY=%d AZ=%d", cax, cay, vax, vay, vaz);
+  sprintf(string_buffer, "CAM AX=%d  AY=%d / CAR AX=%d  AY=%d  AZ=%d", cax, cay, vax, vay, vaz);
   SAGE_PrintText(string_buffer, 10, 15);
   // Draw the fps counter
   sprintf(string_buffer, "%d fps", SAGE_GetFps());
@@ -214,8 +223,8 @@ VOID _Render(VOID)
 
 void main(void)
 {
-  SAGE_SetLogLevel(SLOG_WARNING);
-  SAGE_AppliLog("SAGE library engine demo V1.0");
+  //SAGE_SetLogLevel(SLOG_WARNING);
+  SAGE_AppliLog("SAGE library engine GT car demo V1.0");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_INPUT|SMOD_3D|SMOD_INTERRUPTION)) {
     // Init the demo data
@@ -238,12 +247,8 @@ void main(void)
       // Restore the demo
       _Restore();
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_AppliLog("Closing SAGE");
-  if (!SAGE_Exit()) {
-    SAGE_DisplayError();
-  }
+  SAGE_Exit();
   SAGE_AppliLog("End of demo");
 }

@@ -41,6 +41,8 @@ typedef struct {
   UBYTE file[256];
   ULONG color;
   WORD texture;
+  BOOL transparent;
+  ULONG tcolor;
 } SAGE_OBJMaterial;
 
 typedef struct {

@@ -218,12 +218,8 @@ void main(void)
       }
       _Restore();
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_AppliLog("Closing SAGE");
-  if (!SAGE_Exit()) {
-    SAGE_DisplayError();
-  }
+  SAGE_Exit();
   SAGE_AppliLog("End of demo");
 }

@@ -136,7 +136,7 @@
 #define BEAST_TURN            4
 
 // Transparent color
-#define TRANSPCOLOR           0xF81F
+#define TRANSPCOLOR           0xFF00FF
 
 #define SOTB_MUSIC            0
 
@@ -747,12 +747,8 @@ void main(void)
       // Restore the demo
       _Restore();
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_AppliLog("Closing SAGE");
-  if (!SAGE_Exit()) {
-    SAGE_DisplayError();
-  }
+  SAGE_Exit();
   SAGE_AppliLog("End of demo");
 }

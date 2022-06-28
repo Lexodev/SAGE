@@ -24,6 +24,8 @@ typedef struct {
   BOOL visible;               // Vertex is on a visible face
   FLOAT wx, wy, wz;           // World coordinates
   FLOAT cx, cy, cz;           // Camera coordinates
+  FLOAT px, py, pz;           // Projected coordinates
+  FLOAT iz;                   // Z inverse (for z-buffer)
 } SAGE_TransformedVertex;
 
 /** Face definiton */

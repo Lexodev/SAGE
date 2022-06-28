@@ -51,7 +51,7 @@
 BOOL SAGE_Init(LONGBITS);
 
 /** Close et clean SAGE library */
-BOOL SAGE_Exit(VOID);
+VOID SAGE_Exit(VOID);
 
 /** Tell if a module has been loaded */
 BOOL SAGE_LoadedModule(LONG);

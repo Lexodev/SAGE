@@ -414,10 +414,12 @@ void main(int argc, char ** argv)
     } else {
       SAGE_AppliLog("AMMX not detected");
     }
-    SAGE_Set3DRenderMode(S3DR_S3DMODE);
+    SAGE_Set3DRenderSystem(S3DD_S3DRENDER);
     if (argc > 2) {
       if (strcmp(argv[2], "W3D") == 0) {
-        SAGE_Set3DRenderMode(S3DR_W3DMODE);
+        SAGE_Set3DRenderSystem(S3DD_W3DRENDER);
+      } else if (strcmp(argv[2], "M3D") == 0) {
+        SAGE_Set3DRenderSystem(S3DD_M3DRENDER);
       }
     }
     if (argc > 1) {
@@ -454,12 +456,8 @@ void main(int argc, char ** argv)
       // Restore the demo
       _Restore();
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_AppliLog("Closing SAGE");
-  if (!SAGE_Exit()) {
-    SAGE_DisplayError();
-  }
+  SAGE_Exit();
   SAGE_AppliLog("End of demo");
 }

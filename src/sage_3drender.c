@@ -211,6 +211,12 @@ VOID SAGE_RenderWired3DTriangles(SAGE_SortedTriangle * triangles, UWORD nb_trian
   SED(SAGE_DebugLog("** SAGE_RenderWiredTriangles(nb_triangles %d)", nb_triangles);)
   for (index = 0;index < nb_triangles;index++) {
     triangle = triangles[index].triangle;
+    SED(
+      SAGE_DebugLog(
+        " => triangle %d : %f,%f -> %f,%f -> %f,%f - 0x%08X", index,
+        triangle->x1, triangle->y1, triangle->x2, triangle->y2, triangle->x3, triangle->y3, triangle->color
+      );
+    )
     SAGE_DrawClippedLine(
       (LONG)(triangle->x1),
       (LONG)(triangle->y1),
@@ -246,6 +252,12 @@ VOID SAGE_RenderFlatted3DTriangles(SAGE_SortedTriangle * triangles, UWORD nb_tri
   SED(SAGE_DebugLog("** SAGE_RenderFlattedTriangles(nb_triangles %d)", nb_triangles);)
   for (index = 0;index < nb_triangles;index++) {
     triangle = triangles[index].triangle;
+    SED(
+      SAGE_DebugLog(
+        " => triangle %d : %f,%f -> %f,%f -> %f,%f", index,
+        triangle->x1, triangle->y1, triangle->x2, triangle->y2, triangle->x3, triangle->y3
+      );
+    )
     SAGE_DrawClippedTriangle(
       (LONG)(triangle->x1),
       (LONG)(triangle->y1),
@@ -267,45 +279,44 @@ VOID SAGE_RenderTextured3DTriangles(SAGE_Screen * screen, SAGE_SortedTriangle * 
   S3D_Triangle s3d_triangle;
   UWORD index;
   
+  SED(SAGE_DebugLog("** SAGE_RenderTextured3DTriangles(nb_triangles %d)", nb_triangles);)
   for (index = 0;index < nb_triangles;index++) {
     triangle = triangles[index].triangle;
-    if (triangle->texture == STEX_USECOLOR) {
-      SAGE_DrawClippedTriangle(
-        (LONG)(triangle->x1),
-        (LONG)(triangle->y1),
-        (LONG)(triangle->x2),
-        (LONG)(triangle->y2),
-        (LONG)(triangle->x3),
-        (LONG)(triangle->y3),
-        triangle->color
+    SED(
+      SAGE_DebugLog(
+        " => triangle %d : %f,%f -> %f,%f -> %f,%f", index,
+        triangle->x1, triangle->y1, triangle->x2, triangle->y2, triangle->x3, triangle->y3
       );
+    )
+    s3d_triangle.x1 = triangle->x1;
+    s3d_triangle.y1 = triangle->y1;
+    s3d_triangle.z1 = triangle->z1;
+    s3d_triangle.u1 = triangle->u1;
+    s3d_triangle.v1 = triangle->v1;
+    s3d_triangle.x2 = triangle->x2;
+    s3d_triangle.y2 = triangle->y2;
+    s3d_triangle.z2 = triangle->z2;
+    s3d_triangle.u2 = triangle->u2;
+    s3d_triangle.v2 = triangle->v2;
+    s3d_triangle.x3 = triangle->x3;
+    s3d_triangle.y3 = triangle->y3;
+    s3d_triangle.z3 = triangle->z3;
+    s3d_triangle.u3 = triangle->u3;
+    s3d_triangle.v3 = triangle->v3;
+    s3d_triangle.color = triangle->color;
+    if (triangle->texture == STEX_USECOLOR) {
+      s3d_triangle.tex = NULL;
     } else {
-      s3d_triangle.x1 = triangle->x1;
-      s3d_triangle.y1 = triangle->y1;
-      s3d_triangle.z1 = triangle->z1;
-      s3d_triangle.u1 = triangle->u1;
-      s3d_triangle.v1 = triangle->v1;
-      s3d_triangle.x2 = triangle->x2;
-      s3d_triangle.y2 = triangle->y2;
-      s3d_triangle.z2 = triangle->z2;
-      s3d_triangle.u2 = triangle->u2;
-      s3d_triangle.v2 = triangle->v2;
-      s3d_triangle.x3 = triangle->x3;
-      s3d_triangle.y3 = triangle->y3;
-      s3d_triangle.z3 = triangle->z3;
-      s3d_triangle.u3 = triangle->u3;
-      s3d_triangle.v3 = triangle->v3;
-      s3d_triangle.color = triangle->color;
       s3d_triangle.tex = SAGE_GetTexture(triangle->texture);
-      SAGE_DrawTexturedTriangle(&s3d_triangle, screen->back_bitmap, &(screen->clipping));
     }
+    SAGE_DrawTexturedTriangle(&s3d_triangle, screen->back_bitmap, &(screen->clipping));
   }
 }
 
 /**
  * Render triangles with Warp3D
  */
-VOID SAGE_DrawWarp3DTriangles(SAGE_Screen * screen, W3D_Context * context, SAGE_SortedTriangle * triangles, UWORD nb_triangles)
+VOID SAGE_RenderWarp3DTriangles(SAGE_Screen * screen, W3D_Context * context, SAGE_SortedTriangle * triangles, UWORD nb_triangles)
 {
   SAGE_3DTriangle * triangle;
   W3D_Scissor scissor;
@@ -407,7 +418,7 @@ BOOL SAGE_Render3DTriangles()
     SAGE_RenderFlatted3DTriangles(device->render.ordered_triangles, device->render.render_triangles);
   } else {
     if (device->render_system == S3DD_W3DRENDER) {
-      SAGE_DrawWarp3DTriangles(screen, device->context, device->render.ordered_triangles, device->render.render_triangles);
+      SAGE_RenderWarp3DTriangles(screen, device->context, device->render.ordered_triangles, device->render.render_triangles);
     } else if (device->render_system == S3DD_M3DRENDER) {
     } else {
       SAGE_RenderTextured3DTriangles(screen, device->render.ordered_triangles, device->render.render_triangles);

@@ -72,7 +72,24 @@ VOID SAGE_DumpOBJ(SAGE_WavefrontObject * object)
   }
   SAGE_DebugLog("- Object materials %d (%s)", object->nb_materials, object->matlib);
   for (idx = 0;idx < object->nb_materials;idx++) {
-    SAGE_DebugLog(" => material %d : name=%s, file=%s, color=0x%06X", idx, object->materials[idx].name, object->materials[idx].file, object->materials[idx].color);
+    SAGE_DebugLog(
+      " => material %d : name=%s, file=%s, color=0x%06X, trans=%d, tcolor=0x%06X", idx,
+      object->materials[idx].name, object->materials[idx].file, object->materials[idx].color,
+      (object->materials[idx].transparent ? 1 : 0), object->materials[idx].tcolor
+    );
+  }
+}
+
+/**
+ * Dump tokens
+ */
+VOID SAGE_DumpTokens(VOID)
+{
+  WORD idx;
+  
+  SAGE_DebugLog("** Dump tokens **");
+  for (idx = 0;idx < obj_nb_tokens;idx++) {
+    SAGE_DebugLog(" => token %d : %s", idx, obj_line_token[idx]);
   }
 }
 
@@ -170,6 +187,7 @@ WORD SAGE_OBJTokenizeLine(STRPTR line)
       }
     }
   }
+  //SD(SAGE_DumpTokens();)
   return obj_nb_tokens;
 }
 
@@ -181,7 +199,7 @@ BOOL SAGE_AnalyzeOBJMatFile(BPTR fd, SAGE_WavefrontObject * object)
   STRPTR error;
   WORD tokens;
 
-  SAGE_DebugLog("* SAGE_AnalyzeOBJMatFile");
+  SD(SAGE_DebugLog("* SAGE_AnalyzeOBJMatFile");)
   while ((error = FGets(fd, obj_line_buffer, 1024)) != 0) {
     tokens = SAGE_OBJTokenizeLine(obj_line_buffer);
     if (tokens > 0) {
@@ -206,7 +224,7 @@ BOOL SAGE_AnalyzeOBJFile(BPTR fd, SAGE_WavefrontObject * object)
   STRPTR error;
   WORD tokens;
   
-  SAGE_DebugLog("* SAGE_AnalyzeOBJFile");
+  SD(SAGE_DebugLog("* SAGE_AnalyzeOBJFile");)
   while ((error = FGets(fd, obj_line_buffer, 1024)) != 0) {
     tokens = SAGE_OBJTokenizeLine(obj_line_buffer);
     if (tokens > 0) {
@@ -348,7 +366,7 @@ BOOL SAGE_ParseMaterialFile(BPTR fd, SAGE_WavefrontObject * object)
   LONG red, green, blue;
   STRPTR error;
 
-  SAGE_DebugLog("* SAGE_ParseMaterialFile");
+  SD(SAGE_DebugLog("* SAGE_ParseMaterialFile");)
   idx_material = -1;
   while ((error = FGets(fd, obj_line_buffer, 1024)) != 0) {
     tokens = SAGE_OBJTokenizeLine(obj_line_buffer);
@@ -359,6 +377,15 @@ BOOL SAGE_ParseMaterialFile(BPTR fd, SAGE_WavefrontObject * object)
         strcpy(object->materials[idx_material].file, "");
         object->materials[idx_material].color = 0;
         object->materials[idx_material].texture = -1;
+      } else if (strcmp(obj_line_token[0], "Tr") == 0 && tokens > 1) {
+        if (atof(obj_line_token[1]) == 1.0F) {
+          object->materials[idx_material].transparent = TRUE;
+        }
+      } else if (strcmp(obj_line_token[0], "Tf") == 0 && tokens > 3) {
+        red = (LONG)(atof(obj_line_token[1]) * 255.0);
+        green = (LONG)(atof(obj_line_token[2]) * 255.0);
+        blue = (LONG)(atof(obj_line_token[3]) * 255.0);
+        object->materials[idx_material].tcolor = (red << 16) + (green << 8) + blue;
       } else if (strcmp(obj_line_token[0], "Kd") == 0 && tokens > 3) {
         red = (LONG)(atof(obj_line_token[1]) * 255.0);
         green = (LONG)(atof(obj_line_token[2]) * 255.0);
@@ -386,7 +413,7 @@ BOOL SAGE_ParseWavefrontFile(BPTR fd, SAGE_WavefrontObject * object)
   WORD idx_vertex, idx_texture, idx_normal, idx_face, tokens, active_material;
   STRPTR error;
 
-  SAGE_DebugLog("* SAGE_ParseWavefrontFile");
+  SD(SAGE_DebugLog("* SAGE_ParseWavefrontFile");)
   if (object->nb_materials > 0) {
     material_fd = Open(object->matlib, MODE_OLDFILE);
     if (material_fd != 0) {
@@ -405,7 +432,7 @@ BOOL SAGE_ParseWavefrontFile(BPTR fd, SAGE_WavefrontObject * object)
   idx_normal = 0;
   idx_face = 0;
   active_material = S3DE_OBJNOMATERIAL;
-  SAGE_DebugLog("* SAGE_ParseWavefrontFile 2");
+  SD(SAGE_DebugLog("* SAGE_ParseWavefrontFile 2");)
   while ((error = FGets(fd, obj_line_buffer, 1024)) != 0) {
     tokens = SAGE_OBJTokenizeLine(obj_line_buffer);
     if (tokens > 0) {
@@ -446,8 +473,10 @@ BOOL SAGE_LoadOBJMaterial(SAGE_WavefrontObject * object)
   SAGE_Picture * picture;
   WORD idx_material, idx_texture;
 
+  SD(SAGE_DebugLog("* SAGE_LoadOBJMaterial");)
   for (idx_material = 0;idx_material < object->nb_materials;idx_material++) {
     if (strlen(object->materials[idx_material].file) > 0) {
+      SD(SAGE_DebugLog(" => mat %d : loading %s", idx_material, object->materials[idx_material].file);)
       idx_texture = SAGE_GetFreeTextureIndex();
       if (idx_texture == STEX_NOFREEINDEX) {
         SAGE_SetError(SERR_TEX_INDEX);
@@ -459,6 +488,10 @@ BOOL SAGE_LoadOBJMaterial(SAGE_WavefrontObject * object)
       if (!SAGE_CreateTextureFromPicture(idx_texture, 0, 0, STEX_FULLSIZE, picture)) {
         SAGE_ReleasePicture(picture);
         return FALSE;
+      }
+      // Set texture transparency
+      if (object->materials[idx_material].transparent) {
+        SAGE_SetTextureTransparency(idx_texture, object->materials[idx_material].tcolor);
       }
       // Add texture to card
       if (!SAGE_AddTexture(idx_texture)) {

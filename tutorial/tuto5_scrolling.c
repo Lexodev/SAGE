@@ -80,11 +80,7 @@ void main(void)
               y_offset = 0;
             }
           }
-        } else {
-          SAGE_DisplayError();
         }
-      } else {
-        SAGE_DisplayError();
       }
       // Release the layer
       SAGE_ReleaseLayer(SCROLL_LAYER);
@@ -92,12 +88,7 @@ void main(void)
       SAGE_ShowMouse();
       // And close the screen
       SAGE_CloseScreen();
-    } else {
-      // Display the last error
-      SAGE_DisplayError();
     }
-  } else {
-    SAGE_DisplayError();
   }
   // Release all resources
   SAGE_Exit();

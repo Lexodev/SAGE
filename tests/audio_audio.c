@@ -14,14 +14,14 @@
 
 void main(void)
 {
-  printf("--------------------------------------------------------------------------------\n");
-  printf("* SAGE library AUDIO test (AUDIO) / %s\n", SAGE_GetVersion());
-  printf("--------------------------------------------------------------------------------\n");
+  SAGE_AppliLog("--------------------------------------------------------------------------------");
+  SAGE_AppliLog("* SAGE library AUDIO test (AUDIO) / %s", SAGE_GetVersion());
+  SAGE_AppliLog("--------------------------------------------------------------------------------");
   if (SAGE_Init(SMOD_AUDIO)) {
-    printf("Initialization successfull\n");
+    SAGE_AppliLog("Initialization successfull");
   } else {
-    printf("Initialization failed\n");
+    SAGE_AppliLog("Initialization failed");
   }
   SAGE_Exit();
-  printf("End of test\n");
+  SAGE_AppliLog("End of test");
 }

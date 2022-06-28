@@ -100,12 +100,8 @@ void main(int argc, char **argv)
       }
       printf("Closing screen\n");
       SAGE_CloseScreen();
-    } else {
-      SAGE_DisplayError();
     }
     SAGE_ReleasePicture(picture);
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_Exit();
   printf("End of test\n");

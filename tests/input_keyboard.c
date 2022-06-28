@@ -76,8 +76,6 @@ void main(void)
       }
       Delay(20);
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_Exit();
   printf("End of test\n");

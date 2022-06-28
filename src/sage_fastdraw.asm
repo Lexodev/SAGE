@@ -1183,6 +1183,10 @@ _SAGE_DrawFlatQuad16Bits:
 .RightCoord:
   move.l  (a2)+,d4                      ; right coord
   blt.s   .SkipRow                      ; outside of clip area
+  cmp.l   d3,d4                         ; sometimes d4 is lower than d3
+  bge.s   .NoSwap
+  exg     d3,d4                         ; set in good order
+.NoSwap:
   sub.l   d3,d4                         ; pixels to draw
   add.l   d3,d3                         ; 2 bytes per pixel
   add.l   d3,a3                         ; start address
@@ -1237,6 +1241,10 @@ _SAGE_DrawFlatQuad32Bits:
 .RightCoord:
   move.l  (a2)+,d4                      ; right coord
   blt.s   .SkipRow                      ; outside of clip area
+  cmp.l   d3,d4                         ; sometimes d4 is lower than d3
+  bge.s   .NoSwap
+  exg     d3,d4                         ; set in good order
+.NoSwap:
   sub.l   d3,d4                         ; pixels to draw
   lsl.l   #2,d3                         ; 4 bytes per pixel
   add.l   d3,a3                         ; start address

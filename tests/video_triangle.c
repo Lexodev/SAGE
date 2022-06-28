@@ -14,7 +14,7 @@
 
 #define SCREEN_WIDTH          640L
 #define SCREEN_HEIGHT         480L
-#define SCREEN_DEPTH          8L
+#define SCREEN_DEPTH          16L
 
 ULONG palette[16] = {
    0x000000,0xffffff,0xff0000,0x00ff00,
@@ -39,8 +39,8 @@ void draw_clipregion(void)
 void test_triangle8(void)
 {
   // Random triangle
-  //SAGE_DrawTriangle(359,163,269,129,359,245,1);
-  SAGE_DrawClippedTriangle(359,163,269,129,359,245,1);
+  SAGE_DrawTriangle(71,12,77,43,75,34,1);
+  //SAGE_DrawClippedTriangle(359,163,269,129,359,245,1);
   // Flat top triangle
   //SAGE_DrawTriangle(10, 10, 50, 10, 60, 80, 2);
   //SAGE_DrawClippedTriangle(10, 110, 50, 110, 60, 180, 2);
@@ -57,54 +57,60 @@ void test_triangle8(void)
   //SAGE_DrawClippedTriangle(120, 30, 690, 220, 70, 150, 5);
 }
 
+void test_triangle16(void)
+{
+  FLOAT x1, y1, x2, y2, x3, y3;
+  
+  x1=68.082603;  y1=-4.786925;
+  x2=69.843834;  y2=3.634514;
+  x3=73.654457;  y3=26.325291;
+  SAGE_DrawClippedTriangle(
+    (LONG)x1,(LONG)y1,
+    (LONG)x2,(LONG)y2,
+    (LONG)x3,(LONG)y3,
+    0xFFFFFFFF
+  );
+}
+
 void main(void)
 {
   SAGE_Event * event = NULL;
   BOOL finish = FALSE;
 
-  printf("--------------------------------------------------------------------------------\n");
-  printf("* SAGE library VIDEO test (TRIANGLE) / %s\n", SAGE_GetVersion());
-  printf("--------------------------------------------------------------------------------\n");
+  SAGE_AppliLog("--------------------------------------------------------------------------------");
+  SAGE_AppliLog("* SAGE library VIDEO test (TRIANGLE) / %s", SAGE_GetVersion());
+  SAGE_AppliLog("--------------------------------------------------------------------------------");
   if (SAGE_Init(SMOD_VIDEO)) {
-    printf("Opening screen\n");
+    SAGE_AppliLog("Opening screen");
     if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES)) {
+      SAGE_HideMouse();
       SAGE_SetColorMap(palette, 0, 16);
       SAGE_RefreshColors(0, 16);
-      SAGE_SetScreenClip(10, 10, 620, 460);
-        test_triangle8();
+//      SAGE_SetScreenClip(10, 10, 620, 460);
+        test_triangle16();
       while (!finish) {
         while ((event = SAGE_GetEvent()) != NULL) {
-          printf(
-            "Event polled type %d, code %d, mouse %d,%d\n",
-            event->type,
-            event->code,
-            event->mousex,
-            event->mousey
-          );
           if (event->type == SEVT_RAWKEY) {
             switch (event->code) {
               case SKEY_FR_ESC:
-                printf("Exit loop\n");
+                SAGE_AppliLog("Exit loop");
                 finish = TRUE;
                 break;
             }
           }
         }
-        draw_clipregion();
+//        SAGE_ClearScreen();
+//        test_triangle16();
         if (!SAGE_RefreshScreen()) {
-          printf("Error RefreshScreen !\n");
           SAGE_DisplayError();
           finish = TRUE;
         }
       }
-      printf("Closing screen\n");
+      SAGE_AppliLog("Closing screen");
+      SAGE_ShowMouse();
       SAGE_CloseScreen();
-    } else {
-      SAGE_DisplayError();
     }
-  } else {
-    SAGE_DisplayError();
   }
   SAGE_Exit();
-  printf("End of test\n");
+  SAGE_AppliLog("End of test");
 }

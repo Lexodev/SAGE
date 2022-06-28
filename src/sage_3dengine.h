@@ -77,7 +77,6 @@ typedef struct {
   UWORD nb_entities;
   SAGE_Entity * entities[S3DE_MAX_ENTITIES];
   SAGE_TransformedVertex * transformed_vertices;
-  SAGE_Vertex * projected_vertices;
   SAGE_EngineMetrics metrics;
 } SAGE_3DWorld;
 
