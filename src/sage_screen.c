@@ -57,7 +57,7 @@ ULONG SAGE_GetBestdisplayID(LONG width, LONG height, LONG depth)
 {
   ULONG display_id;
 
-  SD(SAGE_InfoLog("Getting best display ID (%dx%dx%d)", width, height, depth));
+  SD(SAGE_InfoLog("Getting best display ID (%dx%dx%d)", width, height, depth))
   display_id = BestCModeIDTags(
     CYBRBIDTG_NominalWidth, width,
     CYBRBIDTG_NominalHeight, height,
@@ -65,9 +65,9 @@ ULONG SAGE_GetBestdisplayID(LONG width, LONG height, LONG depth)
     TAG_DONE
   );
   if (display_id != INVALID_ID) {
-    SD(SAGE_DebugLog("Found a suitable screenmode with ID 0x%X", display_id));
+    SD(SAGE_DebugLog("Found a suitable screenmode with ID 0x%X", display_id))
     if (!IsCyberModeID(display_id)) {
-      SD(SAGE_DebugLog("This is not a CyberGfx mode !"));
+      SD(SAGE_DebugLog("This is not a CyberGfx mode !"))
       display_id = INVALID_ID;
     SD(} else {
       SAGE_DebugLog("This is a CyberGfx mode ID");
@@ -96,7 +96,7 @@ struct Screen * SAGE_OpenSystemScreen(ULONG display_id, LONG width, LONG height,
 {
   struct Screen * system_screen;
 
-  SD(SAGE_DebugLog("Opening system screen"));
+  SD(SAGE_DebugLog("Opening system screen"))
   system_screen = OpenScreenTags(
     NULL,
     SA_Title, "SAGE Screen",
@@ -125,7 +125,7 @@ struct Window * SAGE_OpenSystemWindow(struct Screen * custom_screen, LONG width,
 {
   struct Window * system_window;
 
-  SD(SAGE_DebugLog("Opening system window"));
+  SD(SAGE_DebugLog("Opening system window"))
   system_window = OpenWindowTags(
     NULL,
     WA_Title, NULL,
@@ -149,7 +149,7 @@ struct Window * SAGE_OpenSystemWindow(struct Screen * custom_screen, LONG width,
  */
 VOID SAGE_ReleaseScreenBuffer(struct Screen * custom_screen, SAGE_ScreenBuffer * scr_buf)
 {
-  SD(SAGE_DebugLog("Release screen buffer"));
+  SD(SAGE_DebugLog("Release screen buffer"))
   if (scr_buf->safe_port) {
     while (GetMsg(scr_buf->safe_port) != NULL);
     DeleteMsgPort(scr_buf->safe_port);
@@ -191,7 +191,7 @@ VOID SAGE_ReleaseScreenBuffer(struct Screen * custom_screen, SAGE_ScreenBuffer *
  */
 BOOL SAGE_SetupScreenBuffer(struct Screen * custom_screen, SAGE_ScreenBuffer * scr_buf, BOOL triple)
 {
-  SD(SAGE_DebugLog("Setup screen buffer (%s)", (triple ? "Triple":"Double")));
+  SD(SAGE_DebugLog("Setup screen buffer (%s)", (triple ? "Triple":"Double")))
   scr_buf->safe_display = TRUE;
   scr_buf->safe_change = TRUE;
   scr_buf->safe_port = NULL;
@@ -208,10 +208,10 @@ BOOL SAGE_SetupScreenBuffer(struct Screen * custom_screen, SAGE_ScreenBuffer * s
     scr_buf->wait_buffer = NULL;
   }
   if (scr_buf->front_buffer != NULL && scr_buf->back_buffer != NULL) {
-    SD(SAGE_DebugLog("<SAGE_SetupScreenBuffer> Front screenbuffer bitmap"));
-    SD(SAGE_DumpSystemBitmap(scr_buf->front_buffer->sb_BitMap));
-    SD(SAGE_DebugLog("<SAGE_SetupScreenBuffer> Back screenbuffer bitmap"));
-    SD(SAGE_DumpSystemBitmap(scr_buf->back_buffer->sb_BitMap));
+    SD(SAGE_DebugLog("<SAGE_SetupScreenBuffer> Front screenbuffer bitmap"))
+    SD(SAGE_DumpSystemBitmap(scr_buf->front_buffer->sb_BitMap))
+    SD(SAGE_DebugLog("<SAGE_SetupScreenBuffer> Back screenbuffer bitmap"))
+    SD(SAGE_DumpSystemBitmap(scr_buf->back_buffer->sb_BitMap))
     SD(if (triple) {
       SAGE_DebugLog("<SAGE_SetupScreenBuffer> Wait screenbuffer bitmap");
       SAGE_DumpSystemBitmap(scr_buf->wait_buffer->sb_BitMap);
@@ -272,7 +272,7 @@ BOOL SAGE_SetupIndirectFrameBuffer(SAGE_Screen * screen)
 {
   UBYTE * bitmap_adr;
 
-  SD(SAGE_DebugLog("Setup screen indirect frame buffers"));
+  SD(SAGE_DebugLog("Setup screen indirect frame buffers"))
   screen->indirect_bitmap = AllocBitMap(screen->width, screen->height, screen->depth, BMF_CLEAR|BMF_MINPLANES|BMF_SPECIALFMT, NULL);
   if (screen->indirect_bitmap == NULL) {
     return FALSE;
@@ -281,33 +281,33 @@ BOOL SAGE_SetupIndirectFrameBuffer(SAGE_Screen * screen)
   if (bitmap_adr == 0) {
     return FALSE;
   }
-  SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Indirect bitmap adr 0x%X", bitmap_adr));
-  SD(SAGE_DumpSystemBitmap(screen->indirect_bitmap));
-  if ((screen->front_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->pixformat, bitmap_adr)) == NULL) {
+  SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Indirect bitmap adr 0x%X", bitmap_adr))
+  SD(SAGE_DumpSystemBitmap(screen->indirect_bitmap))
+  if ((screen->front_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, 0, screen->pixformat, bitmap_adr)) == NULL) {
     return FALSE;
   }
   if (!SAGE_AllocateFastDrawBuffers(screen->front_bitmap)) {
     return FALSE;
   }
-  SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Front bitmap"));
-  SD(SAGE_DumpBitmap(screen->front_bitmap));
-  if ((screen->back_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->pixformat, bitmap_adr)) == NULL) {
+  SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Front bitmap"))
+  SD(SAGE_DumpBitmap(screen->front_bitmap))
+  if ((screen->back_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, 0, screen->pixformat, bitmap_adr)) == NULL) {
     return FALSE;
   }
   if (!SAGE_AllocateFastDrawBuffers(screen->back_bitmap)) {
     return FALSE;
   }
-  SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Back bitmap"));
-  SD(SAGE_DumpBitmap(screen->back_bitmap));
+  SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Back bitmap"))
+  SD(SAGE_DumpBitmap(screen->back_bitmap))
   if (screen->flags & SSCR_TRIPLEBUF) {
-    if ((screen->wait_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->pixformat, bitmap_adr)) == NULL) {
+    if ((screen->wait_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, 0, screen->pixformat, bitmap_adr)) == NULL) {
       return FALSE;
     }
     if (!SAGE_AllocateFastDrawBuffers(screen->wait_bitmap)) {
       return FALSE;
     }
-    SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Wait bitmap"));
-    SD(SAGE_DumpBitmap(screen->wait_bitmap));
+    SD(SAGE_DebugLog("<SAGE_SetupIndirectFrameBuffer> Wait bitmap"))
+    SD(SAGE_DumpBitmap(screen->wait_bitmap))
   }
   screen->screen_buffer.work_rastport.BitMap = screen->indirect_bitmap;
   return TRUE;
@@ -331,21 +331,21 @@ BOOL SAGE_SetupFrameBuffer(SAGE_Screen * screen)
   if ((bitmap_adr = SAGE_GetScreenBitMapAddress()) == NULL) {
     return FALSE;
   }
-  if ((screen->front_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->pixformat, bitmap_adr)) == NULL) {
+  if ((screen->front_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->bpr, screen->pixformat, bitmap_adr)) == NULL) {
     return FALSE;
   }
   if (!SAGE_AllocateFastDrawBuffers(screen->front_bitmap)) {
     return FALSE;
   }
-  SD(SAGE_DebugLog("<SAGE_SetupFrameBuffer> First screen bitmap adr 0x%X", bitmap_adr));
-  SD(SAGE_DumpSystemBitmap(screen->system_screen->RastPort.BitMap));
-  SD(SAGE_DumpBitmap(screen->front_bitmap));
+  SD(SAGE_DebugLog("<SAGE_SetupFrameBuffer> First screen bitmap adr 0x%X", bitmap_adr))
+  SD(SAGE_DumpSystemBitmap(screen->system_screen->RastPort.BitMap))
+  SD(SAGE_DumpBitmap(screen->front_bitmap))
   SAGE_ClearBitmap(screen->front_bitmap, 0, 0, screen->width, screen->height);
   /**
    *  /!\ WARNING /!\ : switch screen is needed here because we have to get
    *                    the physical bitmap address from the screen.rastport structure only
    */
-  SD(SAGE_DebugLog("<SAGE_SetupFrameBuffer> Switch the screen buffers"));
+  SD(SAGE_DebugLog("<SAGE_SetupFrameBuffer> Switch the screen buffers"))
   SAGE_RefreshScreen();
   // To be sure our screen is installed
   WaitTOF();
@@ -353,34 +353,34 @@ BOOL SAGE_SetupFrameBuffer(SAGE_Screen * screen)
   if ((bitmap_adr = SAGE_GetScreenBitMapAddress()) == NULL) {
     return FALSE;
   }
-  if ((screen->front_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->pixformat, bitmap_adr)) == NULL) {
+  if ((screen->front_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->bpr, screen->pixformat, bitmap_adr)) == NULL) {
     return FALSE;
   }
   if (!SAGE_AllocateFastDrawBuffers(screen->front_bitmap)) {
     return FALSE;
   }
-  SD(SAGE_DebugLog("<SAGE_SetupFrameBuffer> Second screen bitmap adr 0x%X", bitmap_adr));
-  SD(SAGE_DumpSystemBitmap(screen->system_screen->RastPort.BitMap));
-  SD(SAGE_DumpBitmap(screen->front_bitmap));
+  SD(SAGE_DebugLog("<SAGE_SetupFrameBuffer> Second screen bitmap adr 0x%X", bitmap_adr))
+  SD(SAGE_DumpSystemBitmap(screen->system_screen->RastPort.BitMap))
+  SD(SAGE_DumpBitmap(screen->front_bitmap))
   SAGE_ClearBitmap(screen->front_bitmap, 0, 0, screen->width, screen->height);
   // Triple buffer activated
   if (screen->flags & SSCR_TRIPLEBUF) {
-    SD(SAGE_DebugLog("<SAGE_SetupFrameBuffer> Switch the screen buffers"));
+    SD(SAGE_DebugLog("<SAGE_SetupFrameBuffer> Switch the screen buffers"))
     SAGE_RefreshScreen();
     WaitTOF();
     WaitTOF();
     if ((bitmap_adr = SAGE_GetScreenBitMapAddress()) == NULL) {
       return FALSE;
     }
-    if ((screen->front_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->pixformat, bitmap_adr)) == NULL) {
+    if ((screen->front_bitmap = SAGE_AllocBitmap(screen->width, screen->height, screen->depth, screen->bpr, screen->pixformat, bitmap_adr)) == NULL) {
       return FALSE;
     }
     if (!SAGE_AllocateFastDrawBuffers(screen->front_bitmap)) {
       return FALSE;
     }
-    SD(SAGE_DebugLog("<SAGE_SetupFrameBuffer> Third screen bitmap adr 0x%X", bitmap_adr));
-    SD(SAGE_DumpSystemBitmap(screen->system_screen->RastPort.BitMap));
-    SD(SAGE_DumpBitmap(screen->front_bitmap));
+    SD(SAGE_DebugLog("<SAGE_SetupFrameBuffer> Third screen bitmap adr 0x%X", bitmap_adr))
+    SD(SAGE_DumpSystemBitmap(screen->system_screen->RastPort.BitMap))
+    SD(SAGE_DumpBitmap(screen->front_bitmap))
     SAGE_ClearBitmap(screen->front_bitmap, 0, 0, screen->width, screen->height);
   }
   return TRUE;
@@ -558,7 +558,7 @@ BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONGBITS flags)
     return FALSE;
   }
   // Allocate bitmap buffer
-  if (screen->flags&SSCR_INDIRECT) {
+  if (screen->flags & SSCR_INDIRECT) {
     if (!SAGE_SetupIndirectFrameBuffer(screen)) {
       SAGE_CloseScreen();
       return FALSE;
@@ -908,7 +908,8 @@ BOOL SAGE_RefreshScreen()
   screen->frame_rate.frame_count++;
   // Wait for the VBL if synchro is active, else use the max fps limit
   if (screen->vertical_synchro) {
-    WaitTOF();
+    //WaitTOF();
+    SAGE_WaitVbl();
   } else if (screen->timer != NULL) {
     screen->frame_time = SAGE_ElapsedTime(screen->timer);
     if (screen->frame_time < screen->max_fps) {
@@ -916,25 +917,6 @@ BOOL SAGE_RefreshScreen()
       SAGE_ElapsedTime(screen->timer);
     }
   }
-  return TRUE;
-}
-
-/**
- * Wait for the screen vertical blank
- * and increment the frame counter
- * 
- * @return Operation success
- */
-BOOL SAGE_WaitVBlank()
-{
-  SAGE_Screen * screen;
-  
-  screen = SAGE_GetScreen();
-  SAFE(if (screen == NULL) {
-    SAGE_SetError(SERR_NO_SCREEN);
-    return FALSE;
-  })
-  WaitTOF();
   return TRUE;
 }
 

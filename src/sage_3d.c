@@ -129,6 +129,10 @@ BOOL SAGE_Alloc3DDevice(VOID)
   SAGE_3DDevice * device;
 
   SD(SAGE_InfoLog("Allocate 3D device"));
+  if (SageContext.SageVideo == NULL) {
+    SAGE_SetError(SERR_NO_VIDEODEVICE);
+    return FALSE;
+  }
   if ((device = SAGE_AllocMem(sizeof(SAGE_3DDevice))) == NULL) {
     return FALSE;
   }
@@ -165,6 +169,9 @@ BOOL SAGE_Free3DDevice(VOID)
   if (device->context != NULL) {
     W3D_DestroyContext(device->context);
   }
+  // Release Z buffer
+  SAGE_ReleaseZBuffer();
+  // Free device
   SAGE_FreeMem(device);
   SageContext.Sage3D = NULL;
   return TRUE;
@@ -250,10 +257,18 @@ BOOL SAGE_Set3DRenderSystem(UWORD system)
     if (!SAGE_Allocate3DContext()) {
       return FALSE;
     }
+    SD(SAGE_InfoLog("Warp3D rendering activated"));
+  } else if (system == S3DD_M3DRENDER) {
+    if (!SageContext.SageVideo->SAGAReady) {
+      SAGE_SetError(SERR_NO_MAGGIE);
+      return FALSE;
+    }
+    SD(SAGE_InfoLog("Maggie rendering activated"));
   } else {
     if (device->context != NULL) {
       W3D_DestroyContext(device->context);
     }
+    SD(SAGE_InfoLog("Sage rendering activated"));
   }
   device->render_system = system;
   SAGE_Init3DRender();

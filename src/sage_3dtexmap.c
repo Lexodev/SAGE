@@ -15,11 +15,19 @@
 #include "sage_bitmap.h"
 #include "sage_3dtexture.h"
 #include "sage_3dtexmap.h"
+#include "sage_context.h"
 
-#define SAGE_MAPPER_ASM       1
+#include <proto/graphics.h>
+
+#define SAGE_MAPPER_ASM       0
+
+#define FIXEDTOFLOAT(x)       ((FLOAT)(x/65536)+(FLOAT)((x&0xffff)*(1.0/65536)))
+
+/** SAGE context */
+extern SAGE_Context SageContext;
 
 /** Mapper data */
-LONG s3dm_deltas[8], s3dm_coords[10];
+LONG s3dm_deltas[11], s3dm_coords[12];
 
 /*****************************************************************************/
 //            DEBUG ONLY
@@ -36,10 +44,11 @@ VOID SAGE_DumpS3DTriangle(S3D_Triangle * triangle)
 VOID SAGE_DebugArrays(VOID)
 {
   SAGE_DebugLog("-- Deltas");
-  SAGE_DebugLog(" => dxdyl=%d  dudyl=%d  dvdyl=%d", s3dm_deltas[DELTA_DXDYL], s3dm_deltas[DELTA_DUDYL], s3dm_deltas[DELTA_DVDYL]);
-  SAGE_DebugLog(" => dxdyr=%d  dudyr=%d  dvdyr=%d", s3dm_deltas[DELTA_DXDYR], s3dm_deltas[DELTA_DUDYR], s3dm_deltas[DELTA_DVDYR]);
+  SAGE_DebugLog(" => dxdyl=%d  dzdyl=%d  dudyl=%d  dvdyl=%d", s3dm_deltas[DELTA_DXDYL], s3dm_deltas[DELTA_DZDYL], s3dm_deltas[DELTA_DUDYL], s3dm_deltas[DELTA_DVDYL]);
+  SAGE_DebugLog(" => dxdyr=%d  dzdyr=%d  dudyr=%d  dvdyr=%d", s3dm_deltas[DELTA_DXDYR], s3dm_deltas[DELTA_DZDYR], s3dm_deltas[DELTA_DUDYR], s3dm_deltas[DELTA_DVDYR]);
   SAGE_DebugLog("-- Coords");
   SAGE_DebugLog(" => xl=%d  xr=%d", s3dm_coords[CRD_XL], s3dm_coords[CRD_XR]);
+  SAGE_DebugLog(" => zl=%d  zr=%d", s3dm_coords[CRD_ZL], s3dm_coords[CRD_ZR]);
   SAGE_DebugLog(" => ul=%d  ur=%d", s3dm_coords[CRD_UL], s3dm_coords[CRD_UR]);
   SAGE_DebugLog(" => vl=%d  vr=%d", s3dm_coords[CRD_VL], s3dm_coords[CRD_VR]);
   SAGE_DebugLog(" => screen=%d", s3dm_coords[CRD_LINE]);
@@ -58,13 +67,15 @@ VOID SAGE_DebugArrays(VOID)
  */
 VOID SAGE_TextureMapper8Bits(LONG nblines, UBYTE * texture, ULONG texture_width, UBYTE * screen_buffer, ULONG screen_width)
 {
-  LONG dx;
-  LONG ui, vi, xs, xe, du, dv;
+  LONG dx, du, dv, dz;
+  LONG ui, vi, xs, xe, zi;
   LONG screen_pixel, texture_pixel;
   
   SD(SAGE_TraceLog("SAGE_TextureMapper8Bits %d lines", nblines));
   while (nblines--) {
     SD(SAGE_TraceLog("-- Line %d", nblines));
+    SD(SAGE_TraceLog(" => xl=0x%X  xr=0x%X  zl=0x%X  zr=0x%X", s3dm_coords[CRD_XL], s3dm_coords[CRD_XR], s3dm_coords[CRD_ZL], s3dm_coords[CRD_ZR]));
+    SD(SAGE_TraceLog(" => ul=0x%X  ur=0x%X  vl=0x%X  vr=0x%X", s3dm_coords[CRD_UL], s3dm_coords[CRD_UR], s3dm_coords[CRD_VL], s3dm_coords[CRD_VR]));
     // Calcul edge coords
     xs = (s3dm_coords[CRD_XL] + FIXP16_ROUND_UP) >> FIXP16_SHIFT;
     xe = (s3dm_coords[CRD_XR] + FIXP16_ROUND_UP) >> FIXP16_SHIFT;
@@ -73,27 +84,35 @@ VOID SAGE_TextureMapper8Bits(LONG nblines, UBYTE * texture, ULONG texture_width,
       // Calcul texture interpolation
       du = s3dm_coords[CRD_UR] - s3dm_coords[CRD_UL];
       dv = s3dm_coords[CRD_VR] - s3dm_coords[CRD_VL];
+      dz = s3dm_coords[CRD_ZR] - s3dm_coords[CRD_ZL];
       dx = xe - xs;
+      // DX could be 0 in some situations
       if (dx > 0) {
         du /= dx;
         dv /= dx;
+        dz /= dx;
       }
-      SD(SAGE_TraceLog(" => du=%d  dv=%d", du, dv));
+      SD(SAGE_TraceLog(" => du=0x%X  dv=0x%X  dz=0x%X", du, dv, dz));
       // Calcul texture coords
       ui = s3dm_coords[CRD_UL] + FIXP16_ROUND_UP;
       vi = s3dm_coords[CRD_VL] + FIXP16_ROUND_UP;
+      // Calcul Z value
+      zi = s3dm_coords[CRD_ZL] + FIXP16_ROUND_UP;
       // Horizontal clipping
       if (xs < s3dm_coords[CRD_LCLIP]) {
+        SD(SAGE_TraceLog(" => left clipping"));
         dx = s3dm_coords[CRD_LCLIP] - xs;
         ui += dx * du;
         vi += dx * dv;
+        zi += dx * dz;
         xs = s3dm_coords[CRD_LCLIP];
         dx = xe - xs;
       }
       if (xe >= s3dm_coords[CRD_RCLIP]) {
+        SD(SAGE_TraceLog(" => right clipping"));
         dx = (s3dm_coords[CRD_RCLIP] - 1) - xs;
       }
-      SD(SAGE_TraceLog(" => ui=%d  vi=%d", ui, vi));
+      SD(SAGE_TraceLog(" => xs=%d  ui=0x%X  vi=0x%X  zi=0x%X", xs, ui, vi, zi));
       // Pixel offset
       screen_pixel = s3dm_coords[CRD_LINE] + xs;
       SD(SAGE_TraceLog(" => pixel=%d", screen_pixel));
@@ -113,14 +132,17 @@ VOID SAGE_TextureMapper8Bits(LONG nblines, UBYTE * texture, ULONG texture_width,
           // Interpolate u & v
           ui += du;
           vi += dv;
+          zi += dz;
         }
       }
     }
     // Interpolate next points
     s3dm_coords[CRD_XL] += s3dm_deltas[DELTA_DXDYL];
+    s3dm_coords[CRD_ZL] += s3dm_deltas[DELTA_DZDYL];
     s3dm_coords[CRD_UL] += s3dm_deltas[DELTA_DUDYL];
     s3dm_coords[CRD_VL] += s3dm_deltas[DELTA_DVDYL];
     s3dm_coords[CRD_XR] += s3dm_deltas[DELTA_DXDYR];
+    s3dm_coords[CRD_ZR] += s3dm_deltas[DELTA_DZDYR];
     s3dm_coords[CRD_UR] += s3dm_deltas[DELTA_DUDYR];
     s3dm_coords[CRD_VR] += s3dm_deltas[DELTA_DVDYR];
     // Next line address
@@ -136,15 +158,17 @@ VOID SAGE_TextureMapper8Bits(LONG nblines, UBYTE * texture, ULONG texture_width,
  * @param screen_buffer Screen buffer address
  * @param screen_width  Screen width in pixels
  */
-VOID SAGE_TextureMapper16Bits(LONG nblines, UWORD * texture, ULONG texture_width, UWORD * screen_buffer, ULONG screen_width)
+VOID SAGE_TextureMapper16Bits(LONG nblines, UWORD * texture, ULONG texture_width, UWORD * screen_buffer, ULONG screen_width, UWORD * z_buffer)
 {
-  LONG dx;
-  LONG ui, vi, xs, xe, du, dv;
+  LONG dx, du, dv, dz;
+  LONG ui, vi, xs, xe, zi;
   LONG screen_pixel, texture_pixel;
 
   SD(SAGE_TraceLog("SAGE_TextureMapper16Bits %d lines", nblines));
   while (nblines--) {
     SD(SAGE_TraceLog("-- Line %d", nblines));
+    SD(SAGE_TraceLog(" => xl=0x%X  xr=0x%X  zl=0x%X  zr=0x%X", s3dm_coords[CRD_XL], s3dm_coords[CRD_XR], s3dm_coords[CRD_ZL], s3dm_coords[CRD_ZR]));
+    SD(SAGE_TraceLog(" => ul=0x%X  ur=0x%X  vl=0x%X  vr=0x%X", s3dm_coords[CRD_UL], s3dm_coords[CRD_UR], s3dm_coords[CRD_VL], s3dm_coords[CRD_VR]));
     // Calcul edge coords
     xs = (s3dm_coords[CRD_XL] + FIXP16_ROUND_UP) >> FIXP16_SHIFT;
     xe = (s3dm_coords[CRD_XR] + FIXP16_ROUND_UP) >> FIXP16_SHIFT;
@@ -153,28 +177,35 @@ VOID SAGE_TextureMapper16Bits(LONG nblines, UWORD * texture, ULONG texture_width
       // Calcul texture interpolation
       du = s3dm_coords[CRD_UR] - s3dm_coords[CRD_UL];
       dv = s3dm_coords[CRD_VR] - s3dm_coords[CRD_VL];
+      dz = s3dm_coords[CRD_ZR] - s3dm_coords[CRD_ZL];
       dx = xe - xs;
       // DX could be 0 in some situations
       if (dx > 0) {
         du /= dx;
         dv /= dx;
+        dz /= dx;
       }
-      SD(SAGE_TraceLog(" => du=%d  dv=%d", du, dv));
+      SD(SAGE_TraceLog(" => du=0x%X  dv=0x%X  dz=0x%X", du, dv, dz));
       // Calcul texture coords
       ui = s3dm_coords[CRD_UL] + FIXP16_ROUND_UP;
       vi = s3dm_coords[CRD_VL] + FIXP16_ROUND_UP;
+      // Calcul Z value
+      zi = s3dm_coords[CRD_ZL] + FIXP16_ROUND_UP;
       // Horizontal clipping
       if (xs < s3dm_coords[CRD_LCLIP]) {
+        SD(SAGE_TraceLog(" => left clipping"));
         dx = s3dm_coords[CRD_LCLIP] - xs;
         ui += dx * du;
         vi += dx * dv;
+        zi += dx * dz;
         xs = s3dm_coords[CRD_LCLIP];
         dx = xe - xs;
       }
       if (xe >= s3dm_coords[CRD_RCLIP]) {
+        SD(SAGE_TraceLog(" => right clipping"));
         dx = (s3dm_coords[CRD_RCLIP] - 1) - xs;
       }
-      SD(SAGE_TraceLog(" => ui=%d  vi=%d", ui, vi));
+      SD(SAGE_TraceLog(" => xs=%d  ui=0x%X  vi=0x%X  zi=0x%X", xs, ui, vi, zi));
       // Pixel offset
       screen_pixel = s3dm_coords[CRD_LINE] + xs;
       SD(SAGE_TraceLog(" => pixel=%d", screen_pixel));
@@ -187,21 +218,41 @@ VOID SAGE_TextureMapper16Bits(LONG nblines, UWORD * texture, ULONG texture_width
           screen_buffer[screen_pixel++] = (UWORD)texture_width;
         }
       } else {
-        while (dx--) {
-          // Write the texel
-          texture_pixel = (ui >> FIXP16_SHIFT) + ((vi >> FIXP16_SHIFT) * texture_width);
-          screen_buffer[screen_pixel++] = texture[texture_pixel];
-          // Interpolate u & v
-          ui += du;
-          vi += dv;
+        if (z_buffer != NULL) {
+          SD(SAGE_TraceLog(" => zbuffer=0x%X", z_buffer[screen_pixel]));
+          while (dx--) {
+            // Compare with zbuffer
+            if (z_buffer[screen_pixel] > (UWORD)(zi >> FIXP16_SHIFT)) {
+              z_buffer[screen_pixel] = (UWORD)(zi >> FIXP16_SHIFT);
+              // Write the texel
+              texture_pixel = (ui >> FIXP16_SHIFT) + ((vi >> FIXP16_SHIFT) * texture_width);
+              screen_buffer[screen_pixel] = texture[texture_pixel];
+            }
+            screen_pixel++;
+            // Interpolate u & v
+            ui += du;
+            vi += dv;
+            zi += dz;
+          }
+        } else {
+          while (dx--) {
+            // Write the texel
+            texture_pixel = (ui >> FIXP16_SHIFT) + ((vi >> FIXP16_SHIFT) * texture_width);
+            screen_buffer[screen_pixel++] = texture[texture_pixel];
+            // Interpolate u & v
+            ui += du;
+            vi += dv;
+          }
         }
       }
     }
     // Interpolate next points
     s3dm_coords[CRD_XL] += s3dm_deltas[DELTA_DXDYL];
+    s3dm_coords[CRD_ZL] += s3dm_deltas[DELTA_DZDYL];
     s3dm_coords[CRD_UL] += s3dm_deltas[DELTA_DUDYL];
     s3dm_coords[CRD_VL] += s3dm_deltas[DELTA_DVDYL];
     s3dm_coords[CRD_XR] += s3dm_deltas[DELTA_DXDYR];
+    s3dm_coords[CRD_ZR] += s3dm_deltas[DELTA_DZDYR];
     s3dm_coords[CRD_UR] += s3dm_deltas[DELTA_DUDYR];
     s3dm_coords[CRD_VR] += s3dm_deltas[DELTA_DVDYR];
     // Next line address
@@ -220,9 +271,9 @@ VOID SAGE_DrawFlatTop(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
   LONG dy;
 
   SD(SAGE_TraceLog("-- SAGE_DrawFlatTop"));
-  SD(SAGE_TraceLog(" => x1=%d y1=%d", triangle->x1, triangle->y1));
-  SD(SAGE_TraceLog(" => x2=%d y2=%d", triangle->x2, triangle->y2));
-  SD(SAGE_TraceLog(" => x3=%d y3=%d", triangle->x3, triangle->y3));
+  SD(SAGE_TraceLog(" => x1=%d y1=%d z1=%d", triangle->x1, triangle->y1, triangle->z1));
+  SD(SAGE_TraceLog(" => x2=%d y2=%d z2=%d", triangle->x2, triangle->y2, triangle->z2));
+  SD(SAGE_TraceLog(" => x3=%d y3=%d z3=%d", triangle->x3, triangle->y3, triangle->z3));
   // Delta height
   dy = triangle->y3 - triangle->y1;
   if (dy <= 0) {
@@ -232,10 +283,12 @@ VOID SAGE_DrawFlatTop(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
   if (triangle->tex == NULL) {
     // Left side delta
     s3dm_deltas[DELTA_DXDYL] = ((triangle->x3 - triangle->x1) << FIXP16_SHIFT) / dy;
+    s3dm_deltas[DELTA_DZDYL] = ((triangle->z3 - triangle->z1) << FIXP16_SHIFT) / dy;
     s3dm_deltas[DELTA_DUDYL] = 0;
     s3dm_deltas[DELTA_DVDYL] = 0;
     // Right side delta
     s3dm_deltas[DELTA_DXDYR] = ((triangle->x3 - triangle->x2) << FIXP16_SHIFT) / dy;
+    s3dm_deltas[DELTA_DZDYR] = ((triangle->z3 - triangle->z2) << FIXP16_SHIFT) / dy;
     s3dm_deltas[DELTA_DUDYR] = 0;
     s3dm_deltas[DELTA_DVDYR] = 0;
     // Start coords & clipping
@@ -243,12 +296,16 @@ VOID SAGE_DrawFlatTop(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
       dy = clipping->top - triangle->y1;
       s3dm_coords[CRD_XL] = s3dm_deltas[DELTA_DXDYL] * dy + (triangle->x1 << FIXP16_SHIFT);
       s3dm_coords[CRD_XR] = s3dm_deltas[DELTA_DXDYR] * dy + (triangle->x2 << FIXP16_SHIFT);
+      s3dm_coords[CRD_ZL] = s3dm_deltas[DELTA_DZDYL] * dy + (triangle->z1 << FIXP16_SHIFT);
+      s3dm_coords[CRD_ZR] = s3dm_deltas[DELTA_DZDYR] * dy + (triangle->z2 << FIXP16_SHIFT);
       // Screen start address
       s3dm_coords[CRD_LINE] = clipping->top * bitmap->width;
       dy = triangle->y3 - clipping->top;
     } else {
       s3dm_coords[CRD_XL] = triangle->x1 << FIXP16_SHIFT;
       s3dm_coords[CRD_XR] = triangle->x2 << FIXP16_SHIFT;
+      s3dm_coords[CRD_ZL] = triangle->z1 << FIXP16_SHIFT;
+      s3dm_coords[CRD_ZR] = triangle->z2 << FIXP16_SHIFT;
       // Screen start address
       s3dm_coords[CRD_LINE] = triangle->y1 * bitmap->width;
     }
@@ -259,10 +316,12 @@ VOID SAGE_DrawFlatTop(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
   } else {
     // Left side delta
     s3dm_deltas[DELTA_DXDYL] = ((triangle->x3 - triangle->x1) << FIXP16_SHIFT) / dy;
+    s3dm_deltas[DELTA_DZDYL] = ((triangle->z3 - triangle->z1) << FIXP16_SHIFT) / dy;
     s3dm_deltas[DELTA_DUDYL] = ((triangle->u3 - triangle->u1) << FIXP16_SHIFT) / dy;
     s3dm_deltas[DELTA_DVDYL] = ((triangle->v3 - triangle->v1) << FIXP16_SHIFT) / dy;
     // Right side delta
     s3dm_deltas[DELTA_DXDYR] = ((triangle->x3 - triangle->x2) << FIXP16_SHIFT) / dy;
+    s3dm_deltas[DELTA_DZDYR] = ((triangle->z3 - triangle->z2) << FIXP16_SHIFT) / dy;
     s3dm_deltas[DELTA_DUDYR] = ((triangle->u3 - triangle->u2) << FIXP16_SHIFT) / dy;
     s3dm_deltas[DELTA_DVDYR] = ((triangle->v3 - triangle->v2) << FIXP16_SHIFT) / dy;
     // Start coords & clipping
@@ -270,6 +329,8 @@ VOID SAGE_DrawFlatTop(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
       dy = clipping->top - triangle->y1;
       s3dm_coords[CRD_XL] = s3dm_deltas[DELTA_DXDYL] * dy + (triangle->x1 << FIXP16_SHIFT);
       s3dm_coords[CRD_XR] = s3dm_deltas[DELTA_DXDYR] * dy + (triangle->x2 << FIXP16_SHIFT);
+      s3dm_coords[CRD_ZL] = s3dm_deltas[DELTA_DZDYL] * dy + (triangle->z1 << FIXP16_SHIFT);
+      s3dm_coords[CRD_ZR] = s3dm_deltas[DELTA_DZDYR] * dy + (triangle->z2 << FIXP16_SHIFT);
       s3dm_coords[CRD_UL] = s3dm_deltas[DELTA_DUDYL] * dy + (triangle->u1 << FIXP16_SHIFT);
       s3dm_coords[CRD_VL] = s3dm_deltas[DELTA_DVDYL] * dy + (triangle->v1 << FIXP16_SHIFT);
       s3dm_coords[CRD_UR] = s3dm_deltas[DELTA_DUDYR] * dy + (triangle->u2 << FIXP16_SHIFT);
@@ -280,6 +341,8 @@ VOID SAGE_DrawFlatTop(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
     } else {
       s3dm_coords[CRD_XL] = triangle->x1 << FIXP16_SHIFT;
       s3dm_coords[CRD_XR] = triangle->x2 << FIXP16_SHIFT;
+      s3dm_coords[CRD_ZL] = triangle->z1 << FIXP16_SHIFT;
+      s3dm_coords[CRD_ZR] = triangle->z2 << FIXP16_SHIFT;
       s3dm_coords[CRD_UL] = triangle->u1 << FIXP16_SHIFT;
       s3dm_coords[CRD_VL] = triangle->v1 << FIXP16_SHIFT;
       s3dm_coords[CRD_UR] = triangle->u2 << FIXP16_SHIFT;
@@ -380,7 +443,8 @@ VOID SAGE_DrawFlatTop(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
         (triangle->tex != NULL ? (UWORD *) triangle->tex->bitmap->bitmap_buffer : NULL),
         (triangle->tex != NULL ? triangle->tex->bitmap->width : triangle->color),
         (UWORD *) bitmap->bitmap_buffer,
-        bitmap->width
+        bitmap->width,
+        (UWORD *) SageContext.Sage3D->render.zbuffer.buffer
     );
   }
 #endif
@@ -397,9 +461,9 @@ VOID SAGE_DrawFlatBottom(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Cli
   LONG dy;
 
   SD(SAGE_TraceLog("-- SAGE_DrawFlatBottom"));
-  SD(SAGE_TraceLog(" => x1=%d y1=%d", triangle->x1, triangle->y1));
-  SD(SAGE_TraceLog(" => x2=%d y2=%d", triangle->x2, triangle->y2));
-  SD(SAGE_TraceLog(" => x3=%d y3=%d", triangle->x3, triangle->y3));
+  SD(SAGE_TraceLog(" => x1=%d y1=%d z1=%d", triangle->x1, triangle->y1, triangle->z1));
+  SD(SAGE_TraceLog(" => x2=%d y2=%d z2=%d", triangle->x2, triangle->y2, triangle->z2));
+  SD(SAGE_TraceLog(" => x3=%d y3=%d z3=%d", triangle->x3, triangle->y3, triangle->z3));
   // Delta height
   dy = triangle->y2 - triangle->y1;
   if (dy <= 0) {
@@ -409,10 +473,12 @@ VOID SAGE_DrawFlatBottom(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Cli
   if (triangle->tex == NULL) {
     // Left side delta
     s3dm_deltas[DELTA_DXDYL] = ((triangle->x2 - triangle->x1) << FIXP16_SHIFT) / dy;
+    s3dm_deltas[DELTA_DZDYL] = ((triangle->z2 - triangle->z1) << FIXP16_SHIFT) / dy;
     s3dm_deltas[DELTA_DUDYL] = 0;
     s3dm_deltas[DELTA_DVDYL] = 0;
     // Right side delta
     s3dm_deltas[DELTA_DXDYR] = ((triangle->x3 - triangle->x1) << FIXP16_SHIFT) / dy;
+    s3dm_deltas[DELTA_DZDYR] = ((triangle->z3 - triangle->z1) << FIXP16_SHIFT) / dy;
     s3dm_deltas[DELTA_DUDYR] = 0;
     s3dm_deltas[DELTA_DVDYR] = 0;
     // Start coords & clipping
@@ -420,12 +486,16 @@ VOID SAGE_DrawFlatBottom(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Cli
       dy = clipping->top - triangle->y1;
       s3dm_coords[CRD_XL] = s3dm_deltas[DELTA_DXDYL] * dy + (triangle->x1 << FIXP16_SHIFT);
       s3dm_coords[CRD_XR] = s3dm_deltas[DELTA_DXDYR] * dy + (triangle->x1 << FIXP16_SHIFT);
+      s3dm_coords[CRD_ZL] = s3dm_deltas[DELTA_DZDYL] * dy + (triangle->z1 << FIXP16_SHIFT);
+      s3dm_coords[CRD_ZR] = s3dm_deltas[DELTA_DZDYR] * dy + (triangle->z1 << FIXP16_SHIFT);
       // Screen start address
       s3dm_coords[CRD_LINE] = clipping->top * bitmap->width;
       dy = triangle->y3 - clipping->top;
     } else {
       s3dm_coords[CRD_XL] = triangle->x1 << FIXP16_SHIFT;
       s3dm_coords[CRD_XR] = triangle->x1 << FIXP16_SHIFT;
+      s3dm_coords[CRD_ZL] = triangle->z1 << FIXP16_SHIFT;
+      s3dm_coords[CRD_ZR] = triangle->z1 << FIXP16_SHIFT;
       // Screen start address
       s3dm_coords[CRD_LINE] = triangle->y1 * bitmap->width;
     }
@@ -436,10 +506,12 @@ VOID SAGE_DrawFlatBottom(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Cli
   } else {
     // Left side delta
     s3dm_deltas[DELTA_DXDYL] = ((triangle->x2 - triangle->x1) << FIXP16_SHIFT) / dy;
+    s3dm_deltas[DELTA_DZDYL] = ((triangle->z2 - triangle->z1) << FIXP16_SHIFT) / dy;
     s3dm_deltas[DELTA_DUDYL] = ((triangle->u2 - triangle->u1) << FIXP16_SHIFT) / dy;
     s3dm_deltas[DELTA_DVDYL] = ((triangle->v2 - triangle->v1) << FIXP16_SHIFT) / dy;
     // Right side delta
     s3dm_deltas[DELTA_DXDYR] = ((triangle->x3 - triangle->x1) << FIXP16_SHIFT) / dy;
+    s3dm_deltas[DELTA_DZDYR] = ((triangle->z3 - triangle->z1) << FIXP16_SHIFT) / dy;
     s3dm_deltas[DELTA_DUDYR] = ((triangle->u3 - triangle->u1) << FIXP16_SHIFT) / dy;
     s3dm_deltas[DELTA_DVDYR] = ((triangle->v3 - triangle->v1) << FIXP16_SHIFT) / dy;
     // Start coords & clipping
@@ -447,6 +519,8 @@ VOID SAGE_DrawFlatBottom(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Cli
       dy = clipping->top - triangle->y1;
       s3dm_coords[CRD_XL] = s3dm_deltas[DELTA_DXDYL] * dy + (triangle->x1 << FIXP16_SHIFT);
       s3dm_coords[CRD_XR] = s3dm_deltas[DELTA_DXDYR] * dy + (triangle->x1 << FIXP16_SHIFT);
+      s3dm_coords[CRD_ZL] = s3dm_deltas[DELTA_DZDYL] * dy + (triangle->z1 << FIXP16_SHIFT);
+      s3dm_coords[CRD_ZR] = s3dm_deltas[DELTA_DZDYR] * dy + (triangle->z1 << FIXP16_SHIFT);
       s3dm_coords[CRD_UL] = s3dm_deltas[DELTA_DUDYL] * dy + (triangle->u1 << FIXP16_SHIFT);
       s3dm_coords[CRD_VL] = s3dm_deltas[DELTA_DVDYL] * dy + (triangle->v1 << FIXP16_SHIFT);
       s3dm_coords[CRD_UR] = s3dm_deltas[DELTA_DUDYR] * dy + (triangle->u1 << FIXP16_SHIFT);
@@ -457,6 +531,8 @@ VOID SAGE_DrawFlatBottom(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Cli
     } else {
       s3dm_coords[CRD_XL] = triangle->x1 << FIXP16_SHIFT;
       s3dm_coords[CRD_XR] = triangle->x1 << FIXP16_SHIFT;
+      s3dm_coords[CRD_ZL] = triangle->z1 << FIXP16_SHIFT;
+      s3dm_coords[CRD_ZR] = triangle->z1 << FIXP16_SHIFT;
       s3dm_coords[CRD_UL] = triangle->u1 << FIXP16_SHIFT;
       s3dm_coords[CRD_VL] = triangle->v1 << FIXP16_SHIFT;
       s3dm_coords[CRD_UR] = triangle->u1 << FIXP16_SHIFT;
@@ -557,7 +633,8 @@ VOID SAGE_DrawFlatBottom(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Cli
         (triangle->tex != NULL ? (UWORD *) triangle->tex->bitmap->bitmap_buffer : NULL),
         (triangle->tex != NULL ? triangle->tex->bitmap->width : triangle->color),
         (UWORD *) bitmap->bitmap_buffer,
-        bitmap->width
+        bitmap->width,
+        (UWORD *) SageContext.Sage3D->render.zbuffer.buffer
     );
   }
 #endif
@@ -575,9 +652,9 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
   LONG dy1, dy2, dy3, dxdy1, dxdy2, slope;
 
   SD(SAGE_TraceLog("-- SAGE_DrawGeneric"));
-  SD(SAGE_TraceLog(" => x1=%d y1=%d", triangle->x1, triangle->y1));
-  SD(SAGE_TraceLog(" => x2=%d y2=%d", triangle->x2, triangle->y2));
-  SD(SAGE_TraceLog(" => x3=%d y3=%d", triangle->x3, triangle->y3));
+  SD(SAGE_TraceLog(" => x1=%d y1=%d z1=%d", triangle->x1, triangle->y1, triangle->z1));
+  SD(SAGE_TraceLog(" => x2=%d y2=%d z2=%d", triangle->x2, triangle->y2, triangle->z2));
+  SD(SAGE_TraceLog(" => x3=%d y3=%d z3=%d", triangle->x3, triangle->y3, triangle->z3));
   // Delta height
   dy1 = triangle->y2 - triangle->y1;
   dy2 = triangle->y3 - triangle->y1;
@@ -593,16 +670,22 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
     if (dxdy1 > dxdy2) {
       // Left side delta
       s3dm_deltas[DELTA_DXDYL] = dxdy2;
+      s3dm_deltas[DELTA_DZDYL] = ((triangle->z3 - triangle->z1) << FIXP16_SHIFT) / dy2;
       // Right side delta
       s3dm_deltas[DELTA_DXDYR] = dxdy1;
+      s3dm_deltas[DELTA_DZDYR] = ((triangle->z2 - triangle->z1) << FIXP16_SHIFT) / dy1;
       // Slope, left long
+      SD(SAGE_TraceLog(" => left long slope"));
       slope = 0;
     } else {
       // Left side delta
       s3dm_deltas[DELTA_DXDYL] = dxdy1;
+      s3dm_deltas[DELTA_DZDYL] = ((triangle->z2 - triangle->z1) << FIXP16_SHIFT) / dy1;
       // Right side delta
       s3dm_deltas[DELTA_DXDYR] = dxdy2;
+      s3dm_deltas[DELTA_DZDYL] = ((triangle->z3 - triangle->z1) << FIXP16_SHIFT) / dy2;
       // Slope, right long
+      SD(SAGE_TraceLog(" => right long slope"));
       slope = 1;
     }
     s3dm_deltas[DELTA_DUDYL] = 0;
@@ -616,12 +699,15 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
       // Right side delta
       s3dm_deltas[DELTA_DXDYR] = dxdy1;
       // Left side texture delta
+      s3dm_deltas[DELTA_DZDYL] = ((triangle->z3 - triangle->z1) << FIXP16_SHIFT) / dy2;
       s3dm_deltas[DELTA_DUDYL] = ((triangle->u3 - triangle->u1) << FIXP16_SHIFT) / dy2;
       s3dm_deltas[DELTA_DVDYL] = ((triangle->v3 - triangle->v1) << FIXP16_SHIFT) / dy2;
       // Right side texture delta
+      s3dm_deltas[DELTA_DZDYR] = ((triangle->z2 - triangle->z1) << FIXP16_SHIFT) / dy1;
       s3dm_deltas[DELTA_DUDYR] = ((triangle->u2 - triangle->u1) << FIXP16_SHIFT) / dy1;
       s3dm_deltas[DELTA_DVDYR] = ((triangle->v2 - triangle->v1) << FIXP16_SHIFT) / dy1;
       // Slope, left long
+      SD(SAGE_TraceLog(" => left long slope"));
       slope = 0;
     } else {
       // Left side delta
@@ -629,12 +715,15 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
       // Right side delta
       s3dm_deltas[DELTA_DXDYR] = dxdy2;
       // Left side texture delta
+      s3dm_deltas[DELTA_DZDYL] = ((triangle->z2 - triangle->z1) << FIXP16_SHIFT) / dy1;
       s3dm_deltas[DELTA_DUDYL] = ((triangle->u2 - triangle->u1) << FIXP16_SHIFT) / dy1;
       s3dm_deltas[DELTA_DVDYL] = ((triangle->v2 - triangle->v1) << FIXP16_SHIFT) / dy1;
       // Right side texture delta
+      s3dm_deltas[DELTA_DZDYR] = ((triangle->z3 - triangle->z1) << FIXP16_SHIFT) / dy2;
       s3dm_deltas[DELTA_DUDYR] = ((triangle->u3 - triangle->u1) << FIXP16_SHIFT) / dy2;
       s3dm_deltas[DELTA_DVDYR] = ((triangle->v3 - triangle->v1) << FIXP16_SHIFT) / dy2;
       // Slope, right long
+      SD(SAGE_TraceLog(" => right long slope"));
       slope = 1;
     }
   }
@@ -652,12 +741,18 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
     if (triangle->tex == NULL) {
       if (slope == 1) {
         s3dm_deltas[DELTA_DXDYL] = ((triangle->x3 - triangle->x2) << FIXP16_SHIFT) / dy3;
+        s3dm_deltas[DELTA_DZDYL] = ((triangle->z3 - triangle->z2) << FIXP16_SHIFT) / dy3;
         s3dm_coords[CRD_XL] = s3dm_deltas[DELTA_DXDYL] * dy2 + (triangle->x2 << FIXP16_SHIFT);
         s3dm_coords[CRD_XR] = s3dm_deltas[DELTA_DXDYR] * dy1 + (triangle->x1 << FIXP16_SHIFT);
+        s3dm_coords[CRD_ZL] = s3dm_deltas[DELTA_DZDYL] * dy2 + (triangle->z2 << FIXP16_SHIFT);
+        s3dm_coords[CRD_ZR] = s3dm_deltas[DELTA_DZDYR] * dy1 + (triangle->z1 << FIXP16_SHIFT);
       } else {
         s3dm_deltas[DELTA_DXDYR] = ((triangle->x3 - triangle->x2) << FIXP16_SHIFT) / dy3;
+        s3dm_deltas[DELTA_DZDYR] = ((triangle->z3 - triangle->z2) << FIXP16_SHIFT) / dy3;
         s3dm_coords[CRD_XL] = s3dm_deltas[DELTA_DXDYL] * dy1 + (triangle->x1 << FIXP16_SHIFT);
         s3dm_coords[CRD_XR] = s3dm_deltas[DELTA_DXDYR] * dy2 + (triangle->x2 << FIXP16_SHIFT);
+        s3dm_coords[CRD_ZL] = s3dm_deltas[DELTA_DZDYL] * dy1 + (triangle->z1 << FIXP16_SHIFT);
+        s3dm_coords[CRD_ZR] = s3dm_deltas[DELTA_DZDYR] * dy2 + (triangle->z2 << FIXP16_SHIFT);
       }
       s3dm_coords[CRD_UL] = 0;
       s3dm_coords[CRD_VL] = 0;
@@ -666,20 +761,26 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
     } else {
       if (slope == 1) {
         s3dm_deltas[DELTA_DXDYL] = ((triangle->x3 - triangle->x2) << FIXP16_SHIFT) / dy3;
+        s3dm_deltas[DELTA_DZDYL] = ((triangle->z3 - triangle->z2) << FIXP16_SHIFT) / dy3;
         s3dm_deltas[DELTA_DUDYL] = ((triangle->u3 - triangle->u2) << FIXP16_SHIFT) / dy3;
         s3dm_deltas[DELTA_DVDYL] = ((triangle->v3 - triangle->v2) << FIXP16_SHIFT) / dy3;
         s3dm_coords[CRD_XL] = s3dm_deltas[DELTA_DXDYL] * dy2 + (triangle->x2 << FIXP16_SHIFT);
         s3dm_coords[CRD_XR] = s3dm_deltas[DELTA_DXDYR] * dy1 + (triangle->x1 << FIXP16_SHIFT);
+        s3dm_coords[CRD_ZL] = s3dm_deltas[DELTA_DZDYL] * dy2 + (triangle->z2 << FIXP16_SHIFT);
+        s3dm_coords[CRD_ZR] = s3dm_deltas[DELTA_DZDYR] * dy1 + (triangle->z1 << FIXP16_SHIFT);
         s3dm_coords[CRD_UL] = s3dm_deltas[DELTA_DUDYL] * dy2 + (triangle->u2 << FIXP16_SHIFT);
         s3dm_coords[CRD_VL] = s3dm_deltas[DELTA_DVDYL] * dy2 + (triangle->v2 << FIXP16_SHIFT);
         s3dm_coords[CRD_UR] = s3dm_deltas[DELTA_DUDYR] * dy1 + (triangle->u1 << FIXP16_SHIFT);
         s3dm_coords[CRD_VR] = s3dm_deltas[DELTA_DVDYR] * dy1 + (triangle->v1 << FIXP16_SHIFT);
       } else {
         s3dm_deltas[DELTA_DXDYR] = ((triangle->x3 - triangle->x2) << FIXP16_SHIFT) / dy3;
+        s3dm_deltas[DELTA_DZDYR] = ((triangle->z3 - triangle->z2) << FIXP16_SHIFT) / dy3;
         s3dm_deltas[DELTA_DUDYR] = ((triangle->u3 - triangle->u2) << FIXP16_SHIFT) / dy3;
         s3dm_deltas[DELTA_DVDYR] = ((triangle->v3 - triangle->v2) << FIXP16_SHIFT) / dy3;
         s3dm_coords[CRD_XL] = s3dm_deltas[DELTA_DXDYL] * dy1 + (triangle->x1 << FIXP16_SHIFT);
         s3dm_coords[CRD_XR] = s3dm_deltas[DELTA_DXDYR] * dy2 + (triangle->x2 << FIXP16_SHIFT);
+        s3dm_coords[CRD_ZL] = s3dm_deltas[DELTA_DZDYL] * dy1 + (triangle->z1 << FIXP16_SHIFT);
+        s3dm_coords[CRD_ZR] = s3dm_deltas[DELTA_DZDYR] * dy2 + (triangle->z2 << FIXP16_SHIFT);
         s3dm_coords[CRD_UL] = s3dm_deltas[DELTA_DUDYL] * dy1 + (triangle->u1 << FIXP16_SHIFT);
         s3dm_coords[CRD_VL] = s3dm_deltas[DELTA_DVDYL] * dy1 + (triangle->v1 << FIXP16_SHIFT);
         s3dm_coords[CRD_UR] = s3dm_deltas[DELTA_DUDYR] * dy2 + (triangle->u2 << FIXP16_SHIFT);
@@ -779,7 +880,8 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
           (triangle->tex != NULL ? (UWORD *) triangle->tex->bitmap->bitmap_buffer : NULL),
           (triangle->tex != NULL ? triangle->tex->bitmap->width : triangle->color),
           (UWORD *) bitmap->bitmap_buffer,
-          bitmap->width
+          bitmap->width,
+          (UWORD *) SageContext.Sage3D->render.zbuffer.buffer
       );
     }
 #endif
@@ -790,12 +892,16 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
         dy1 = clipping->top - triangle->y1;
         s3dm_coords[CRD_XL] = s3dm_deltas[DELTA_DXDYL] * dy1 + (triangle->x1 << FIXP16_SHIFT);
         s3dm_coords[CRD_XR] = s3dm_deltas[DELTA_DXDYR] * dy1 + (triangle->x1 << FIXP16_SHIFT);
+        s3dm_coords[CRD_ZL] = s3dm_deltas[DELTA_DZDYL] * dy1 + (triangle->z1 << FIXP16_SHIFT);
+        s3dm_coords[CRD_ZR] = s3dm_deltas[DELTA_DZDYR] * dy1 + (triangle->z1 << FIXP16_SHIFT);
         // Screen start address
         s3dm_coords[CRD_LINE] = clipping->top * bitmap->width;
         dy1 = triangle->y2 - clipping->top;
       } else {
         s3dm_coords[CRD_XL] = triangle->x1 << FIXP16_SHIFT;
         s3dm_coords[CRD_XR] = triangle->x1 << FIXP16_SHIFT;
+        s3dm_coords[CRD_ZL] = triangle->z1 << FIXP16_SHIFT;
+        s3dm_coords[CRD_ZR] = triangle->z1 << FIXP16_SHIFT;
         // Screen start address
         s3dm_coords[CRD_LINE] = triangle->y1 * bitmap->width;
       }
@@ -808,6 +914,8 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
         dy1 = clipping->top - triangle->y1;
         s3dm_coords[CRD_XL] = s3dm_deltas[DELTA_DXDYL] * dy1 + (triangle->x1 << FIXP16_SHIFT);
         s3dm_coords[CRD_XR] = s3dm_deltas[DELTA_DXDYR] * dy1 + (triangle->x1 << FIXP16_SHIFT);
+        s3dm_coords[CRD_ZL] = s3dm_deltas[DELTA_DZDYL] * dy1 + (triangle->z1 << FIXP16_SHIFT);
+        s3dm_coords[CRD_ZR] = s3dm_deltas[DELTA_DZDYR] * dy1 + (triangle->z1 << FIXP16_SHIFT);
         s3dm_coords[CRD_UL] = s3dm_deltas[DELTA_DUDYL] * dy1 + (triangle->u1 << FIXP16_SHIFT);
         s3dm_coords[CRD_VL] = s3dm_deltas[DELTA_DVDYL] * dy1 + (triangle->v1 << FIXP16_SHIFT);
         s3dm_coords[CRD_UR] = s3dm_deltas[DELTA_DUDYR] * dy1 + (triangle->u1 << FIXP16_SHIFT);
@@ -818,6 +926,8 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
       } else {
         s3dm_coords[CRD_XL] = triangle->x1 << FIXP16_SHIFT;
         s3dm_coords[CRD_XR] = triangle->x1 << FIXP16_SHIFT;
+        s3dm_coords[CRD_ZL] = triangle->z1 << FIXP16_SHIFT;
+        s3dm_coords[CRD_ZR] = triangle->z1 << FIXP16_SHIFT;
         s3dm_coords[CRD_UL] = triangle->u1 << FIXP16_SHIFT;
         s3dm_coords[CRD_VL] = triangle->v1 << FIXP16_SHIFT;
         s3dm_coords[CRD_UR] = triangle->u1 << FIXP16_SHIFT;
@@ -914,7 +1024,8 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
             (triangle->tex != NULL ? (UWORD *) triangle->tex->bitmap->bitmap_buffer : NULL),
             (triangle->tex != NULL ? triangle->tex->bitmap->width : triangle->color),
             (UWORD *) bitmap->bitmap_buffer,
-            bitmap->width
+            bitmap->width,
+            (UWORD *) SageContext.Sage3D->render.zbuffer.buffer
         );
       }
 #endif
@@ -1005,7 +1116,8 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
             (triangle->tex != NULL ? (UWORD *) triangle->tex->bitmap->bitmap_buffer : NULL),
             (triangle->tex != NULL ? triangle->tex->bitmap->width : triangle->color),
             (UWORD *) bitmap->bitmap_buffer,
-            bitmap->width
+            bitmap->width,
+            (UWORD *) SageContext.Sage3D->render.zbuffer.buffer
         );
       }
 #endif
@@ -1017,16 +1129,20 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
       if (triangle->tex == NULL) {
         if (slope == 1) {
           s3dm_deltas[DELTA_DXDYL] = ((triangle->x3 - triangle->x2) << FIXP16_SHIFT) / dy3;
+          s3dm_deltas[DELTA_DZDYL] = ((triangle->z3 - triangle->z2) << FIXP16_SHIFT) / dy3;
         } else {
           s3dm_deltas[DELTA_DXDYR] = ((triangle->x3 - triangle->x2) << FIXP16_SHIFT) / dy3;
+          s3dm_deltas[DELTA_DZDYR] = ((triangle->z3 - triangle->z2) << FIXP16_SHIFT) / dy3;
         }
       } else {
         if (slope == 1) {
           s3dm_deltas[DELTA_DXDYL] = ((triangle->x3 - triangle->x2) << FIXP16_SHIFT) / dy3;
+          s3dm_deltas[DELTA_DZDYL] = ((triangle->z3 - triangle->z2) << FIXP16_SHIFT) / dy3;
           s3dm_deltas[DELTA_DUDYL] = ((triangle->u3 - triangle->u2) << FIXP16_SHIFT) / dy3;
           s3dm_deltas[DELTA_DVDYL] = ((triangle->v3 - triangle->v2) << FIXP16_SHIFT) / dy3;
         } else {
           s3dm_deltas[DELTA_DXDYR] = ((triangle->x3 - triangle->x2) << FIXP16_SHIFT) / dy3;
+          s3dm_deltas[DELTA_DZDYR] = ((triangle->z3 - triangle->z2) << FIXP16_SHIFT) / dy3;
           s3dm_deltas[DELTA_DUDYR] = ((triangle->u3 - triangle->u2) << FIXP16_SHIFT) / dy3;
           s3dm_deltas[DELTA_DVDYR] = ((triangle->v3 - triangle->v2) << FIXP16_SHIFT) / dy3;
         }
@@ -1123,7 +1239,8 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
             (triangle->tex != NULL ? (UWORD *) triangle->tex->bitmap->bitmap_buffer : NULL),
             (triangle->tex != NULL ? triangle->tex->bitmap->width : triangle->color),
             (UWORD *) bitmap->bitmap_buffer,
-            bitmap->width
+            bitmap->width,
+            (UWORD *) SageContext.Sage3D->render.zbuffer.buffer
         );
       }
 #endif
@@ -1132,68 +1249,91 @@ VOID SAGE_DrawGeneric(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clippi
 }
 
 /**
+ * Check the triangle type & order the vertices
+ */
+ULONG SAGE_CheckTriangleType(S3D_Triangle * triangle, SAGE_Clipping * clipping)
+{
+  LONG tx, ty, tz, tu, tv;
+
+  // Degenerated triangle elimination
+  if (triangle->x1 == triangle->x2 && triangle->x2 == triangle->x3) {
+    return TRI_REJECTED;
+  }
+  if (triangle->y1 == triangle->y2 && triangle->y2 == triangle->y3) {
+    return TRI_REJECTED;
+  }
+  SD(SAGE_TraceLog(" => not degenerated"));
+  // Order triangle vertices from top to bottom
+  if (triangle->y1 > triangle->y3) {
+    tx = triangle->x1; ty = triangle->y1; tz = triangle->z1; tu = triangle->u1; tv = triangle->v1;
+    triangle->x1 = triangle->x3; triangle->y1 = triangle->y3; triangle->z1 = triangle->z3;
+    triangle->u1 = triangle->u3; triangle->v1 = triangle->v3;
+    triangle->x3 = tx; triangle->y3 = ty; triangle->z3 = tz; triangle->u3 = tu; triangle->v3 = tv;
+  }
+  if (triangle->y1 > triangle->y2) {
+    tx = triangle->x1; ty = triangle->y1; tz = triangle->z1; tu = triangle->u1; tv = triangle->v1;
+    triangle->x1 = triangle->x2; triangle->y1 = triangle->y2; triangle->z1 = triangle->z2;
+    triangle->u1 = triangle->u2; triangle->v1 = triangle->v2;
+    triangle->x2 = tx; triangle->y2 = ty; triangle->z2 = tz; triangle->u2 = tu; triangle->v2 = tv;
+  }
+  if (triangle->y2 > triangle->y3) {
+    tx = triangle->x2; ty = triangle->y2; tz = triangle->z2; tu = triangle->u2; tv = triangle->v2;
+    triangle->x2 = triangle->x3; triangle->y2 = triangle->y3; triangle->z2 = triangle->z3;
+    triangle->u2 = triangle->u3; triangle->v2 = triangle->v3;
+    triangle->x3 = tx; triangle->y3 = ty; triangle->z3 = tz; triangle->u3 = tu; triangle->v3 = tv;
+  }
+  // Trivial rejection
+  if (triangle->y3 < clipping->top || triangle->y1 >= clipping->bottom) {
+    return TRI_REJECTED;
+  }
+  if (triangle->x1 < clipping->left && triangle->x2 < clipping->left && triangle->x3 < clipping->left) {
+    return TRI_REJECTED;
+  }
+  if (triangle->x1 >= clipping->right && triangle->x2 >= clipping->right && triangle->x3 >= clipping->right) {
+    return TRI_REJECTED;
+  }
+  SD(SAGE_TraceLog(" => not rejected"));
+  // Check the type & order from left to right
+  if (triangle->y1 == triangle->y2) {
+    if (triangle->x1 > triangle->x2) {
+      tx = triangle->x1; ty = triangle->y1; tz = triangle->z1; tu = triangle->u1; tv = triangle->v1;
+      triangle->x1 = triangle->x2; triangle->y1 = triangle->y2; triangle->z1 = triangle->z2;
+      triangle->u1 = triangle->u2; triangle->v1 = triangle->v2;
+      triangle->x2 = tx; triangle->y2 = ty; triangle->z2 = tz; triangle->u2 = tu; triangle->v2 = tv;
+    }
+    return TRI_FLATTOP;
+  } else if (triangle->y2 == triangle->y3) {
+    if (triangle->x2 > triangle->x3) {
+      tx = triangle->x2; ty = triangle->y2; tz = triangle->z2; tu = triangle->u2; tv = triangle->v2;
+      triangle->x2 = triangle->x3; triangle->y2 = triangle->y3; triangle->z2 = triangle->z3;
+      triangle->u2 = triangle->u3; triangle->v2 = triangle->v3;
+      triangle->x3 = tx; triangle->y3 = ty; triangle->z3 = tz; triangle->u3 = tu; triangle->v3 = tv;
+    }
+    return TRI_FLATBOTTOM;
+  }
+  return TRI_GENERIC;
+}
+
+/**
  * Draw a textured triangle
  */
 BOOL SAGE_DrawTexturedTriangle(S3D_Triangle * triangle, SAGE_Bitmap * bitmap, SAGE_Clipping * clipping)
 {
-  LONG tx, ty, tu, tv;
+  ULONG type;
 
   SD(SAGE_TraceLog("---- SAGE_DrawTexturedTriangle"));
-  SD(SAGE_TraceLog(" => x1=%d y1=%d u1=%d v1=%d", triangle->x1, triangle->y1, triangle->u1, triangle->v1));
-  SD(SAGE_TraceLog(" => x2=%d y2=%d u2=%d v2=%d", triangle->x2, triangle->y2, triangle->u2, triangle->v2));
-  SD(SAGE_TraceLog(" => x3=%d y3=%d u3=%d v3=%d", triangle->x3, triangle->y3, triangle->u3, triangle->v3));
+  SD(SAGE_TraceLog(" => x1=%d y1=%d z1=%d u1=%d v1=%d", triangle->x1, triangle->y1, triangle->z1, triangle->u1, triangle->v1));
+  SD(SAGE_TraceLog(" => x2=%d y2=%d z2=%d u2=%d v2=%d", triangle->x2, triangle->y2, triangle->z2, triangle->u2, triangle->v2));
+  SD(SAGE_TraceLog(" => x3=%d y3=%d z3=%d u3=%d v3=%d", triangle->x3, triangle->y3, triangle->z3, triangle->u3, triangle->v3));
 
-  // Degenerated triangle elimination
-  if (triangle->x1 == triangle->x2 && triangle->x2 == triangle->x3) {
-    return TRUE;
-  }
-  if (triangle->y1 == triangle->y2 && triangle->y2 == triangle->y3) {
-    return TRUE;
-  }
-  SD(SAGE_TraceLog(" => not degenerated"));
-  // Order triangle vertices
-  if (triangle->y1 > triangle->y3) {
-    tx = triangle->x1; ty = triangle->y1; tu = triangle->u1; tv = triangle->v1;
-    triangle->x1 = triangle->x3; triangle->y1 = triangle->y3; triangle->u1 = triangle->u3; triangle->v1 = triangle->v3;
-    triangle->x3 = tx; triangle->y3 = ty; triangle->u3 = tu; triangle->v3 = tv;
-  }
-  if (triangle->y1 > triangle->y2) {
-    tx = triangle->x1; ty = triangle->y1; tu = triangle->u1; tv = triangle->v1;
-    triangle->x1 = triangle->x2; triangle->y1 = triangle->y2; triangle->u1 = triangle->u2; triangle->v1 = triangle->v2;
-    triangle->x2 = tx; triangle->y2 = ty; triangle->u2 = tu; triangle->v2 = tv;
-  }
-  if (triangle->y2 > triangle->y3) {
-    tx = triangle->x2; ty = triangle->y2; tu = triangle->u2; tv = triangle->v2;
-    triangle->x2 = triangle->x3; triangle->y2 = triangle->y3; triangle->u2 = triangle->u3; triangle->v2 = triangle->v3;
-    triangle->x3 = tx; triangle->y3 = ty; triangle->u3 = tu; triangle->v3 = tv;
-  }
-  // Trivial rejection
-  if (triangle->y3 < clipping->top || triangle->y1 >= clipping->bottom) {
-    return TRUE;
-  }
-  if (triangle->x1 < clipping->left && triangle->x2 < clipping->left && triangle->x3 < clipping->left) {
-    return TRUE;
-  }
-  if (triangle->x1 >= clipping->right && triangle->x2 >= clipping->right && triangle->x3 >= clipping->right) {
-    return TRUE;
-  }
-  SD(SAGE_TraceLog(" => not rejected"));
+  // Check for triangle type
+  type = SAGE_CheckTriangleType(triangle, clipping);
   // Render triangle depending on his type
-  if (triangle->y1 == triangle->y2) {
-    if (triangle->x1 > triangle->x2) {
-      tx = triangle->x1; ty = triangle->y1; tu = triangle->u1; tv = triangle->v1;
-      triangle->x1 = triangle->x2; triangle->y1 = triangle->y2; triangle->u1 = triangle->u2; triangle->v1 = triangle->v2;
-      triangle->x2 = tx; triangle->y2 = ty; triangle->u2 = tu; triangle->v2 = tv;
-    }
+  if (type == TRI_FLATTOP) {
     SAGE_DrawFlatTop(triangle, bitmap, clipping);
-  } else if (triangle->y2 == triangle->y3) {
-    if (triangle->x2 > triangle->x3) {
-      tx = triangle->x2; ty = triangle->y2; tu = triangle->u2; tv = triangle->v2;
-      triangle->x2 = triangle->x3; triangle->y2 = triangle->y3; triangle->u2 = triangle->u3; triangle->v2 = triangle->v3;
-      triangle->x3 = tx; triangle->y3 = ty; triangle->u3 = tu; triangle->v3 = tv;
-    }
+  } else if (type == TRI_FLATBOTTOM) {
     SAGE_DrawFlatBottom(triangle, bitmap, clipping);
-  } else {
+  } else if (type == TRI_GENERIC) {
     SAGE_DrawGeneric(triangle, bitmap, clipping);
   }
   return TRUE;

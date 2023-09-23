@@ -18,10 +18,15 @@ void main(void)
   printf("* SAGE library CORE test (VAMPIRE) / %s\n", SAGE_GetVersion());
   printf("--------------------------------------------------------------------------------\n");
   if (SAGE_Init(SMOD_NONE)) {
-    if (SAGE_ApolloPresence()) {
-      printf("You have a Vampire inside !\n");
+    if (SAGE_ApolloCore()) {
+      printf("You have a 68080 inside !\n");
+      if (SAGE_VampireV4()) {
+        printf(" and it's a V4 model !\n");
+      } else {
+        printf(" and it's a V2 model !\n");
+      }
     } else {
-      printf("You don't have a Vampire.\n");
+      printf("You don't have a 68080.\n");
     }
   }
   SAGE_Exit();

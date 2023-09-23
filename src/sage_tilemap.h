@@ -44,6 +44,8 @@ UBYTE * SAGE_GetTileMapB(UWORD);
 /** Get tile map as UWORD array */
 UWORD * SAGE_GetTileMapW(UWORD);
 
+/** WORK IN PROGRESS !!! */
+
 /** Get tile UBYTE value at map position */
 UBYTE SAGE_GetTileValueB(UWORD, UWORD, UWORD);
 

@@ -302,15 +302,15 @@ void main(void)
 {
   SAGE_Timer * timer = NULL;
   SAGE_Event * event = NULL;
-  BOOL show_logo = TRUE, show_bg = TRUE, show_vampire = FALSE, show_help = FALSE, finish = FALSE, music = TRUE, use_ammx = FALSE;
+  BOOL show_logo = FALSE, show_bg = TRUE, show_vampire = FALSE, show_help = FALSE, finish = FALSE, music = TRUE, use_ammx = FALSE;
   ULONG bg_posx = 0, logo_posy = LOGOPOSY, frame_count = 0, elapsed_time = 0, avg_render = 0;
-  UWORD index = 0, show_sprite = 5; //, fps = 0, mouse_cursor = 0;
+  UWORD index = 0, show_sprite = 0; //, fps = 0, mouse_cursor = 0;
 
-  SAGE_SetLogLevel(SLOG_WARNING);
+  //SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("** SAGE library dragon crown demo V1.2 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_AUDIO)) {
-    if (SAGE_AMMX2Available()) {
+    if (SAGE_ApolloCore()) {
       SAGE_AppliLog("AMMX detected !!!");
     } else {
       SAGE_AppliLog("AMMX not detected");

@@ -27,7 +27,7 @@
 /** Demo variables */
 WORD rotate = S3DE_ONEDEGREE*180;
 FLOAT zoom = 50.0;
-BOOL finish = FALSE;
+BOOL finish = FALSE, textured = TRUE;
 UBYTE string_buffer[256];
 
 // Controls
@@ -165,8 +165,16 @@ VOID _Update(VOID)
         SAGE_AppliLog("Debug");
         SAGE_EngineDebug(TRUE);
       }
+      if (event->code == SKEY_FR_T) {
+        if (textured) {
+          textured = FALSE;
+        } else {
+          textured = TRUE;
+        }
+      }
       if (event->code == SKEY_FR_SPACE) {
-        rotate = S3DE_ONEDEGREE*180; zoom = 50.0F;
+        rotate = S3DE_ONEDEGREE*180;
+        zoom = 50.0F;
       }
     }
   }
@@ -179,6 +187,11 @@ VOID _Render(VOID)
   SAGE_EngineMetrics * metrics;
 
   SAGE_BlitLayerToScreen(BG_LAYER, 0, 0);
+  if (textured) {
+    SAGE_Set3DRenderMode(S3DR_RENDER_TEXT);
+  } else {
+    SAGE_Set3DRenderMode(S3DR_RENDER_WIRE);
+  }
   SAGE_RenderWorld();
   // Draw the angles
   sprintf(string_buffer, "DINO ROTATE=%d  ZOOM=%f", (rotate/SMTH_PRECISION), zoom);

@@ -70,7 +70,7 @@ BOOL SAGE_CreateTileBank(UWORD index, UWORD tilewidth, UWORD tileheight, UWORD s
         bank->tiles[tile].flags = 0;
         bank->tiles[tile].user_data = NULL;
       }
-      if ((bank->bitmap = SAGE_AllocBitmap(picture->bitmap->width, picture->bitmap->height, picture->bitmap->depth, picture->bitmap->pixformat, NULL)) != NULL) {
+      if ((bank->bitmap = SAGE_AllocBitmap(picture->bitmap->width, picture->bitmap->height, picture->bitmap->depth, 0, picture->bitmap->pixformat, NULL)) != NULL) {
         SAGE_BlitBitmap(picture->bitmap, 0, 0, picture->bitmap->width, picture->bitmap->height, bank->bitmap, 0, 0);
         SageContext.SageVideo->tiles[index] = bank;
         return TRUE;

@@ -4,10 +4,15 @@
 # V2.2 January 2022
 #----------------------------------------------------------
 
-# Build options
+# Build options Debug mode
 OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far DEFINE=_SAGE_DEBUG_MODE_=1 DEFINE=_SAGE_SAFE_MODE_=1
+
+# Build options Safe mode
 #OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far DEFINE=_SAGE_SAFE_MODE_=1
+
+# Build options Fast mode
 #OPT=CPU=68040 IDIR=libinclude: MATH=68882 DATA=far nostackcheck
+
 SAGELIB=/lib/sage.lib
 
 # Objects
@@ -16,10 +21,10 @@ VIDEOOBJ=sage_video.o sage_bitmap.o sage_event.o sage_screen.o sage_layer.o sage
 INPUTOBJ=sage_input.o sage_keyboard.o sage_joyport.o
 AUDIOOBJ=sage_audio.o sage_loadwave.o sage_load8svx.o sage_sound.o sage_loadtracker.o sage_loadaiff.o sage_music.o
 INTOBJ=sage_interrupt.o
-S3DOBJ=sage_3d.o sage_3dtexture.o sage_3drender.o sage_3dtexmap.o
+S3DOBJ=sage_3d.o sage_3dtexture.o sage_3drender.o sage_3dtexmap.o sage_3dmaggie.o
 S3EOBJ=sage_3dengine.o sage_3dentity.o sage_3dcamera.o sage_3dmaterial.o sage_3dskybox.o sage_3dterrain.o sage_loadlwo.o sage_loadobj.o
 NETOBJ=sage_network.o
-ASMOBJ=sage_blitter.o sage_ammxblit.o sage_vblint.o sage_fastdraw.o sage_itserver.o sage_fastmap.o
+ASMOBJ=sage_blitter.o sage_ammxblit.o sage_vblint.o sage_fastdraw.o sage_itserver.o sage_3dfastmap.o sage_3dmaggiemap.o
 
 # Build sage library
 dist: cleanlib asmcode external core module
@@ -38,7 +43,8 @@ module: $(INPUTOBJ) $(AUDIOOBJ) $(INTOBJ) $(NETOBJ) $(VIDEOOBJ) $(S3DOBJ) $(S3EO
   oml $(SAGELIB) Add $(INPUTOBJ) $(AUDIOOBJ) $(INTOBJ) $(NETOBJ) $(VIDEOOBJ) $(S3DOBJ) $(S3EOBJ)
   @echo "** Module build complete **"
 
-external: ext/PT-AHIPlay.o
+#external: ext/PT-AHIPlay.o
+external:
   oml $(SAGELIB) Add ext/PT-AHIPlay.o
   @echo "** External build complete **"
 
@@ -60,8 +66,11 @@ sage_fastdraw.o: sage_fastdraw.asm sage_draw.h
 sage_itserver.o: sage_itserver.asm
   vasm -m68040 -Fhunk -o sage_itserver.o sage_itserver.asm
 
-sage_fastmap.o: sage_fastmap.asm sage_3dtexmap.h
-  vasm -m68040 -Fhunk -o sage_fastmap.o sage_fastmap.asm
+sage_3dfastmap.o: sage_3dfastmap.asm sage_3dtexmap.h
+  vasm -m68040 -Fhunk -o sage_3dfastmap.o sage_3dfastmap.asm
+
+sage_3dmaggiemap.o: sage_3dmaggiemap.asm sage_3dmaggie.h
+  vasm -m68040 -Fhunk -o sage_3dmaggiemap.o sage_3dmaggiemap.asm
 
 # Build core module
 buildcore: $(COREOBJ)
@@ -186,6 +195,9 @@ sage_3drender.o: sage_3drender.c sage_3drender.h
 
 sage_3dtexmap.o: sage_3dtexmap.c sage_3dtexmap.h
   sc sage_3dtexmap.c $(OPT)
+
+sage_3dmaggie.o: sage_3dmaggie.c sage_3dmaggie.h
+  sc sage_3dmaggie.c $(OPT)
 
 sage_3dengine.o: sage_3dengine.c sage_3dengine.h
   sc sage_3dengine.c $(OPT)

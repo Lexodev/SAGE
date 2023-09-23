@@ -100,6 +100,7 @@ BOOL SAGE_AddInterruptionHandler(UWORD index, VOID ASM (*handler)(REG(a5, APTR))
     SageContext.Interruptions[index].data = data;
     SageContext.Interruptions[index].handler = handler;
     SageContext.Interruptions[index].used = TRUE;
+    SD(SAGE_DebugLog("Interruption handler added"));
     return TRUE;
   }
   SAGE_SetError(SERR_IT_USED);
@@ -122,6 +123,7 @@ BOOL SAGE_RemoveInterruptionHandler(UWORD index)
     SageContext.Interruptions[index].count = 0;
     SageContext.Interruptions[index].data = NULL;
     SageContext.Interruptions[index].handler = NULL;
+    SD(SAGE_DebugLog("Interruption handler removed"));
     return TRUE;
   }
   SAGE_SetError(SERR_IT_INDEX);
@@ -142,6 +144,7 @@ BOOL SAGE_StartInterruption(UWORD index, UWORD ticks)
     SageContext.Interruptions[index].ticks = ticks;
     SageContext.Interruptions[index].count = 0;
     SageContext.Interruptions[index].active = TRUE;
+    SD(SAGE_DebugLog("Interruption %d started", index));
     return TRUE;
   }
   SAGE_SetError(SERR_IT_INDEX);
@@ -161,6 +164,7 @@ BOOL SAGE_StopInterruption(UWORD index)
     SageContext.Interruptions[index].active = FALSE;
     SageContext.Interruptions[index].ticks = 1;
     SageContext.Interruptions[index].count = 0;
+    SD(SAGE_DebugLog("Interruption %d stopped", index));
     return TRUE;
   }
   SAGE_SetError(SERR_IT_INDEX);

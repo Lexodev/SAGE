@@ -17,11 +17,13 @@
 #include "sage_logger.h"
 #include "sage_memory.h"
 #include "sage_context.h"
+#include "sage_blitter.h"
 #include "sage_bitmap.h"
 #include "sage_screen.h"
 #include "sage_draw.h"
 #include "sage_3dtexture.h"
 #include "sage_3dtexmap.h"
+#include "sage_3dmaggie.h"
 #include "sage_3drender.h"
 
 /** SAGE context */
@@ -63,8 +65,43 @@ BOOL SAGE_Init3DRender()
   if (SageContext.Sage3D != NULL) {
     SageContext.Sage3D->render.render_triangles = 0;
     SageContext.Sage3D->render.render_mode = S3DR_RENDER_TEXT;
+    SageContext.Sage3D->render.zbuffer.buffer = NULL;
   }
   return TRUE;
+}
+
+/**
+ * Allocate the Z buffer
+ *
+ * @return Operation success
+ */
+BOOL SAGE_AllocateZBuffer(VOID)
+{
+  if (SageContext.Sage3D->render.zbuffer.buffer != NULL) {
+    return TRUE;
+  }
+  SAFE(if (SageContext.SageVideo->screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return FALSE;
+  })
+  SageContext.Sage3D->render.zbuffer.width = SageContext.SageVideo->screen->width;
+  SageContext.Sage3D->render.zbuffer.height = SageContext.SageVideo->screen->height;
+  SageContext.Sage3D->render.zbuffer.buffer = SAGE_AllocMem(SageContext.SageVideo->screen->width * SageContext.SageVideo->screen->height * 2);
+  if (SageContext.Sage3D->render.zbuffer.buffer == NULL) {
+    return FALSE;
+  }
+  return TRUE;
+}
+
+/**
+ * Release the Z buffer resources
+ */
+VOID SAGE_ReleaseZBuffer(VOID)
+{
+  if (SageContext.Sage3D->render.zbuffer.buffer != NULL) {
+    SAGE_FreeMem(SageContext.Sage3D->render.zbuffer.buffer);
+    SageContext.Sage3D->render.zbuffer.buffer = NULL;
+  }
 }
 
 /**
@@ -83,12 +120,45 @@ BOOL SAGE_EnableZBuffer(BOOL status)
   if (SageContext.Sage3D->render_system == S3DD_W3DRENDER) {
     // Check if W3D system support z-buffer
     // Set z-buffer option
-  } else if (SageContext.Sage3D->render_system == S3DD_M3DRENDER) {
   } else {
-    // No Z-buffer support actually
-    SageContext.Sage3D->render.options &= ~S3DR_ZBUFFER;
+    if (status) {
+      if (SAGE_AllocateZBuffer()) {
+        SageContext.Sage3D->render.options |= S3DR_ZBUFFER;
+      }
+    } else {
+      SageContext.Sage3D->render.options &= ~S3DR_ZBUFFER;
+    }
   }
   return (BOOL)(SageContext.Sage3D->render.options & S3DR_ZBUFFER);
+}
+
+/**
+ * Enable/disable filtering
+ *
+ * @param status Filtering status
+ *
+ * @return New filtering status
+ */
+BOOL SAGE_EnableFiltering(BOOL status)
+{
+  SAFE(if (SageContext.Sage3D == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
+    return FALSE;
+  })
+  if (SageContext.Sage3D->render_system == S3DD_W3DRENDER) {
+    // Check if W3D system support filtering
+    // Set filtering option
+  } else if (SageContext.Sage3D->render_system == S3DD_M3DRENDER) {
+    if (status) {
+      SageContext.Sage3D->render.options |= S3DR_BILINEAR;
+    } else {
+      SageContext.Sage3D->render.options &= ~S3DR_BILINEAR;
+    }
+  } else {
+    // No filtering support actually
+    SageContext.Sage3D->render.options &= ~S3DR_BILINEAR;
+  }
+  return (BOOL)(SageContext.Sage3D->render.options & S3DR_BILINEAR);
 }
 
 /**
@@ -114,6 +184,22 @@ BOOL SAGE_Set3DRenderMode(UWORD mode)
   })
   SageContext.Sage3D->render.render_mode = mode;
   return TRUE;
+}
+
+/**
+ * Clear Z buffer
+ */
+BOOL SAGE_ClearZBuffer()
+{
+  SAFE(if (SageContext.Sage3D->render.zbuffer.buffer == NULL) {
+    SAGE_SetError(SERR_ZBUFFER);
+    return FALSE;
+  })
+  return SAGE_FastClearZBuffer(
+    (ULONG)SageContext.Sage3D->render.zbuffer.buffer,
+    (UWORD)SageContext.Sage3D->render.zbuffer.height,
+    (UWORD)SageContext.Sage3D->render.zbuffer.width * 2
+  );
 }
 
 /**
@@ -271,21 +357,23 @@ VOID SAGE_RenderFlatted3DTriangles(SAGE_SortedTriangle * triangles, UWORD nb_tri
 }
 
 /**
- * Render triangles in textured mode
+ * Render triangles with internal system
  */
-VOID SAGE_RenderTextured3DTriangles(SAGE_Screen * screen, SAGE_SortedTriangle * triangles, UWORD nb_triangles)
+VOID SAGE_RenderSage3DTriangles(SAGE_Screen * screen, SAGE_SortedTriangle * triangles, UWORD nb_triangles)
 {
   SAGE_3DTriangle * triangle;
   S3D_Triangle s3d_triangle;
   UWORD index;
   
-  SED(SAGE_DebugLog("** SAGE_RenderTextured3DTriangles(nb_triangles %d)", nb_triangles);)
+  SED(SAGE_DebugLog("** SAGE_RenderSage3DTriangles(nb_triangles %d)", nb_triangles);)
   for (index = 0;index < nb_triangles;index++) {
     triangle = triangles[index].triangle;
     SED(
       SAGE_DebugLog(
-        " => triangle %d : %f,%f -> %f,%f -> %f,%f", index,
-        triangle->x1, triangle->y1, triangle->x2, triangle->y2, triangle->x3, triangle->y3
+        " => triangle %d : %f,%f,%f -> %f,%f,%f -> %f,%f,%f", index,
+        triangle->x1, triangle->y1, triangle->z1,
+        triangle->x2, triangle->y2, triangle->z2,
+        triangle->x3, triangle->y3, triangle->z3
       );
     )
     s3d_triangle.x1 = triangle->x1;
@@ -304,11 +392,7 @@ VOID SAGE_RenderTextured3DTriangles(SAGE_Screen * screen, SAGE_SortedTriangle * 
     s3d_triangle.u3 = triangle->u3;
     s3d_triangle.v3 = triangle->v3;
     s3d_triangle.color = triangle->color;
-    if (triangle->texture == STEX_USECOLOR) {
-      s3d_triangle.tex = NULL;
-    } else {
-      s3d_triangle.tex = SAGE_GetTexture(triangle->texture);
-    }
+    s3d_triangle.tex = SAGE_GetTexture(triangle->texture);
     SAGE_DrawTexturedTriangle(&s3d_triangle, screen->back_bitmap, &(screen->clipping));
   }
 }
@@ -381,6 +465,64 @@ VOID SAGE_RenderWarp3DTriangles(SAGE_Screen * screen, W3D_Context * context, SAG
 }
 
 /**
+ * Render triangles with Maggie
+ */
+VOID SAGE_RenderMaggie3DTriangles(SAGE_Screen * screen, SAGE_SortedTriangle * triangles, UWORD nb_triangles)
+{
+  SAGE_3DTriangle * triangle;
+  SAGE_MaggieData magdata;
+  S3D_Triangle s3d_triangle;
+  UWORD index;
+  
+  SED(SAGE_DebugLog("** SAGE_RenderMaggie3DTriangles(nb_triangles %d)", nb_triangles);)
+  magdata.zbuffer = SageContext.Sage3D->render.zbuffer.buffer;
+  magdata.mode = 0;
+  if (screen->back_bitmap->depth == SBMP_DEPTH16) {
+    magdata.mode |= MAGGIE_16BITS;
+    magdata.texmod = MAGGIE_TEXEL16;
+  } else {
+    magdata.texmod = MAGGIE_TEXEL32;
+  }
+  if (SAGE_Get3DRenderOption(S3DR_ZBUFFER)) {
+    magdata.mode |= MAGGIE_ZBUFFER;
+  }
+  if (SAGE_Get3DRenderOption(S3DR_BILINEAR)) {
+    magdata.mode |= MAGGIE_BILINEAR;
+  }
+  for (index = 0;index < nb_triangles;index++) {
+    triangle = triangles[index].triangle;
+    SED(
+      SAGE_DebugLog(
+        " => triangle %d : %f,%f,%f -> %f,%f,%f -> %f,%f,%f", index,
+        triangle->x1, triangle->y1, triangle->z1,
+        triangle->x2, triangle->y2, triangle->z2,
+        triangle->x3, triangle->y3, triangle->z3
+      );
+    )
+    s3d_triangle.x1 = triangle->x1;
+    s3d_triangle.y1 = triangle->y1;
+    s3d_triangle.z1 = triangle->z1;
+    s3d_triangle.u1 = triangle->u1;
+    s3d_triangle.v1 = triangle->v1;
+    s3d_triangle.x2 = triangle->x2;
+    s3d_triangle.y2 = triangle->y2;
+    s3d_triangle.z2 = triangle->z2;
+    s3d_triangle.u2 = triangle->u2;
+    s3d_triangle.v2 = triangle->v2;
+    s3d_triangle.x3 = triangle->x3;
+    s3d_triangle.y3 = triangle->y3;
+    s3d_triangle.z3 = triangle->z3;
+    s3d_triangle.u3 = triangle->u3;
+    s3d_triangle.v3 = triangle->v3;
+    s3d_triangle.color = triangle->color;
+    s3d_triangle.tex = SAGE_GetTexture(triangle->texture);
+    magdata.texture = s3d_triangle.tex->bitmap->bitmap_buffer;
+    magdata.mipsize = s3d_triangle.tex->mipsize;
+    SAGE_DrawMaggieTriangle(&s3d_triangle, screen->back_bitmap, &(screen->clipping), &magdata);
+  }
+}
+
+/**
  * Render all triangles in the queue
  *
  * @return Operation success
@@ -411,6 +553,9 @@ BOOL SAGE_Render3DTriangles()
     SAGE_Sort3DTriangles();
     SED(SAGE_DebugLog("*** After sorting triangles ***");)
     SED(SAGE_DumpTriangleList(device->render.ordered_triangles, device->render.render_triangles);)
+  } else {
+    SED(SAGE_DebugLog("*** Clearing Z buffer ***");)
+    SAGE_ClearZBuffer();
   }
   if (device->render.render_mode == S3DR_RENDER_WIRE) {
     SAGE_RenderWired3DTriangles(device->render.ordered_triangles, device->render.render_triangles);
@@ -420,8 +565,9 @@ BOOL SAGE_Render3DTriangles()
     if (device->render_system == S3DD_W3DRENDER) {
       SAGE_RenderWarp3DTriangles(screen, device->context, device->render.ordered_triangles, device->render.render_triangles);
     } else if (device->render_system == S3DD_M3DRENDER) {
+      SAGE_RenderMaggie3DTriangles(screen, device->render.ordered_triangles, device->render.render_triangles);
     } else {
-      SAGE_RenderTextured3DTriangles(screen, device->render.ordered_triangles, device->render.render_triangles);
+      SAGE_RenderSage3DTriangles(screen, device->render.ordered_triangles, device->render.render_triangles);
     }
   }
   device->render.render_triangles = 0;

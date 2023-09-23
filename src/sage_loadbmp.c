@@ -113,7 +113,7 @@ SAGE_Picture * SAGE_DecodeBMPPicture(BPTR file_handle)
   }
   // Now allocate the picture bitmap
   SD(SAGE_DebugLog("Allocate picture bitmap %dx%dx%d", dib_header.width, dib_header.height, dib_header.depth));
-  if ((picture->bitmap = SAGE_AllocBitmap(dib_header.width, dib_header.height, dib_header.depth, pixformat, NULL)) == NULL) {
+  if ((picture->bitmap = SAGE_AllocBitmap(dib_header.width, dib_header.height, dib_header.depth, 0, pixformat, NULL)) == NULL) {
     SAGE_FreeMem(picture_body);
     SAGE_ReleasePicture(picture);
     return NULL;  

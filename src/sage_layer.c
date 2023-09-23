@@ -59,7 +59,7 @@ BOOL SAGE_CreateLayer(UWORD index, ULONG width, ULONG height)
     layer->view[SLAY_OVERNONE].width = width;
     layer->view[SLAY_OVERNONE].height = height;
     layer->overflow = SLAY_OVERNONE;
-    if ((layer->bitmap = SAGE_AllocBitmap(width, height, screen->depth, screen->pixformat, NULL)) != NULL) {
+    if ((layer->bitmap = SAGE_AllocBitmap(width, height, screen->depth, 0, screen->pixformat, NULL)) != NULL) {
       SageContext.SageVideo->layers[index] = layer;
       return TRUE;
     }

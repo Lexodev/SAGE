@@ -35,10 +35,6 @@ void main(int argc, char **argv)
   printf("* SAGE library VIDEO test (PICTURE) / %s\n", SAGE_GetVersion());
   printf("--------------------------------------------------------------------------------\n");
   if (SAGE_Init(SMOD_VIDEO)) {
-    SAGE_DumpVideoModes();
-    printf("Loading unexistant picture\n");
-    picture = SAGE_LoadPicture("erreur.pic");
-    SAGE_DisplayError();
     if (argc >= 2 && strcmp(argv[1], "BMP") == 0) {
       bmp = TRUE;
     }
@@ -55,6 +51,7 @@ void main(int argc, char **argv)
         depth = 24;
       }
     }
+    printf("Loading picture\n");
     if (bmp && clut) {
       picture = SAGE_LoadPicture("/data/desert256.bmp");
     } else if (bmp && !clut) { 
@@ -66,6 +63,7 @@ void main(int argc, char **argv)
     }
     SAGE_DisplayError();
     printf("Opening screen\n");
+    SAGE_DumpVideoModes();
     if (picture != NULL && SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, depth, SSCR_STRICTRES)) {
       printf("Remapping picture\n");
       SAGE_RemapPicture(picture);

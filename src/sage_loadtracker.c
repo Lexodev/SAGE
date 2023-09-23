@@ -12,10 +12,10 @@
 #include <stdio.h>
 
 #include "sage_debug.h"
+#include "sage_logger.h"
 #include "sage_error.h"
 #include "sage_memory.h"
 #include "sage_loadtracker.h"
-#include "sage_music.h"
 
 #include <proto/dos.h>
 #include <proto/exec.h>
@@ -32,6 +32,7 @@ SAGE_Music * SAGE_LoadPTModule(BPTR file_handle)
   SAGE_Music * music;
   LONG bytes_read;
 
+  SD(SAGE_DebugLog("Loading Protracker module"));
   if ((music = SAGE_AllocMusic()) == NULL) {
     return NULL;
   }

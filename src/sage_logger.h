@@ -22,8 +22,7 @@
 #define SLOG_ERROR        5L
 #define SLOG_FATAL        6L
 #define SLOG_OFF          9L
-// Unmaskable log level
-#define SLOG_APPLICATION  10L
+#define SLOG_APPLICATION  10L     // Unmaskable log level
 
 /** Set the log level */
 VOID SAGE_SetLogLevel(LONG);

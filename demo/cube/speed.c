@@ -175,7 +175,7 @@ void main(int argc, char ** argv)
   SAGE_AppliLog("** SAGE library texmap speed test V1.0 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_INPUT|SMOD_3D|SMOD_INTERRUPTION)) {
-    if (SAGE_ApolloPresence()) {
+    if (SAGE_ApolloCore()) {
       SAGE_AppliLog("AMMX detected !!!");
     } else {
       SAGE_AppliLog("AMMX not detected");

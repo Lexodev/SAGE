@@ -177,7 +177,7 @@ VOID main(VOID)
   SAGE_AppliLog("** SAGE library Blood demo V1.0 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_INPUT|SMOD_INTERRUPTION)) {
-    if (SAGE_ApolloPresence()) {
+    if (SAGE_ApolloCore()) {
       SAGE_AppliLog("AMMX detected !!!");
     } else {
       SAGE_AppliLog("AMMX not detected");

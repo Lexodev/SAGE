@@ -9,6 +9,7 @@
  */
 
 // Port of example voxel code by Sebastian Macke https://github.com/s-macke/VoxelSpace
+//  & Gustavo Pezzi https://github.com/gustavopezzi/voxelspace
 
 #include <stdlib.h>
 #include <math.h>
@@ -19,24 +20,27 @@
 #define SCREEN_HEIGHT         240L
 #define SCREEN_DEPTH          8L
 
-#define HM_WIDTH              1024
-#define HM_HEIGHT             1024
-
-#define CM_WIDTH              1024
-#define CM_HEIGHT             1024
+#define MAP_SIZE              1024
+#define SCALE_FACTOR          70.0
 
 #define PI_VAL                3.14159265358979323846f
 
-struct {
-  float x;          // x position on the map
-  float y;          // y position on the map
-  float height;     // height of the camera
-  float angle;      // direction of the camera
-  float horizon;    // horizon position (look up and down)
-  float distance;   // distance of map
-} camera = { 512, 800, 78, 0, 100, 800 };
+struct _camera {
+  FLOAT x;         // x position on the map
+  FLOAT y;         // y position on the map
+  FLOAT height;    // height of the camera
+  FLOAT horizon;   // offset of the horizon position (looking up-down)
+  FLOAT zfar;      // distance of the camera looking forward
+  FLOAT angle;     // camera angle (radians, clockwise)
+} camera = { 512.0, 512.0, 70., 60.0, 600.0, (1.5 * PI_VAL) };
 
-int hiddeny[SCREEN_WIDTH];
+struct _datacast {
+  FLOAT plx, ply, dix, diy, scale;
+  LONG screen_width, screen_height, map_size;
+  UBYTE * framebuffer, * heightmap, * colormap;
+} datacast = { 0.0, 0.0, 0.0, 0.0, SCALE_FACTOR, SCREEN_WIDTH, SCREEN_HEIGHT, MAP_SIZE, NULL, NULL, NULL};
+
+//extern VOID __asm fast_raycast(register __a0 APTR cam, register __a1 APTR cast);
 
 // Controls
 #define KEY_NBR               9
@@ -66,16 +70,120 @@ SAGE_KeyScan keys[KEY_NBR] = {
 
 UBYTE string_buffer[256];
 
+BOOL finish;
+
+void keyboard(void)
+{
+  SAGE_ScanKeyboard(keys, KEY_NBR);
+  if (keys[KEY_QUIT].key_pressed) {
+    SAGE_AppliLog("Exit loop");
+    finish = TRUE;
+  }
+  if (keys[KEY_LEFT].key_pressed) {
+    camera.angle -= 0.02f;
+  } else if (keys[KEY_RIGHT].key_pressed) {
+    camera.angle += 0.02f;
+  }
+  if (keys[KEY_UP].key_pressed) {
+    camera.x += (FLOAT)cos(camera.angle);
+    camera.y += (FLOAT)sin(camera.angle);
+  } else if (keys[KEY_DOWN].key_pressed) {
+    camera.x -= (FLOAT)cos(camera.angle);
+    camera.y -= (FLOAT)sin(camera.angle);
+  }
+  if (keys[KEY_A].key_pressed) {
+    camera.height++;
+  } else if(keys[KEY_Q].key_pressed) {
+    camera.height--;
+  }
+  if (keys[KEY_Z].key_pressed) {
+    camera.horizon += 1.5f;
+  } else if (keys[KEY_S].key_pressed) {
+    camera.horizon -= 1.5f;
+  }
+}
+
+void raycast(struct _camera * cam, struct _datacast * cast)
+{
+  LONG x, y, mapoffset, tallestheight, projheight;
+  FLOAT deltax, deltay, deltaz, rx, ry, z;
+
+  // Loop 320 rays from left to right
+  for (x = 0; x < cast->screen_width; x++) {
+    deltax = (cast->plx + cast->dix * x) / cam->zfar;
+    deltay = (cast->ply + cast->diy * x) / cam->zfar;
+    deltaz = 1.0f;
+
+    // Ray (x,y) coords
+    rx = cam->x;
+    ry = cam->y;
+
+    // Store the tallest projected height per-ray
+    tallestheight = cast->screen_height;
+
+    // Loop all depth units until the zfar distance limit
+    for (z = 1.0; z < cam->zfar; z += deltaz) {
+      rx += deltax;
+      ry += deltay;
+
+      // Find the offset that we have to go and fetch values from the heightmap
+      mapoffset = ((cast->map_size * ((int)(ry) & (cast->map_size - 1))) + ((int)(rx) & (cast->map_size - 1)));
+
+      // Project height values and find the height on-screen
+      projheight = (int)((cam->height - cast->heightmap[mapoffset]) / z * cast->scale + cam->horizon);
+
+      // Only draw pixels if the new projected height is taller than the previous tallest height
+      if (projheight < tallestheight) {
+        // Draw pixels from previous max-height until the new projected height
+        for (y = projheight; y < tallestheight; y++) {
+          if (y >= 0) {
+            cast->framebuffer[(cast->screen_width * y) + x] = cast->colormap[mapoffset];
+          }
+        }
+        tallestheight = projheight;
+      }
+      deltaz += 0.005f;
+    }
+  }
+}
+
+void voxel(UBYTE * framebuffer, UBYTE * heightmap, UBYTE * colormap)
+{
+  FLOAT sinangle, cosangle, prx, pry;
+
+  sinangle = sin(camera.angle);
+  cosangle = cos(camera.angle);
+
+  // Left-most point of the FOV
+  datacast.plx = cosangle * camera.zfar + sinangle * camera.zfar;
+  datacast.ply = sinangle * camera.zfar - cosangle * camera.zfar;
+
+  // Right-most point of the FOV
+  prx = cosangle * camera.zfar - sinangle * camera.zfar;
+  pry = sinangle * camera.zfar + cosangle * camera.zfar;
+
+  datacast.dix = (prx - datacast.plx) / SCREEN_WIDTH;
+  datacast.diy = (pry - datacast.ply) / SCREEN_WIDTH;
+
+  datacast.scale = SCALE_FACTOR;
+  datacast.screen_width = SCREEN_WIDTH;
+  datacast.screen_height = SCREEN_HEIGHT;
+  datacast.map_size = MAP_SIZE;
+
+  datacast.framebuffer = framebuffer;
+  datacast.heightmap = heightmap;
+  datacast.colormap = colormap;
+
+  raycast(&camera, &datacast);
+//  fast_raycast(&camera, &datacast);
+  
+}
+
 void main(void)
 {
-  SAGE_Event * event = NULL;
   SAGE_Picture * picheight, * piccolor;
-  int x, y, mapwidthperiod, mapheightperiod, mapshift, cameraoffs;
-  int mapoffset, heightonscreen, col;
-  float sinang, cosang, deltaz, z;
-  float plx, ply, prx, pry, dx, dy, invz;
-  unsigned char * buffer, * heightmap, * colormap;
-  BOOL finish;
+  UBYTE * heightmap, * colormap;
+  
 
   SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("SAGE library voxel demo V1.0");
@@ -104,79 +212,11 @@ void main(void)
       finish = FALSE;
       while (!finish) {
 
-        buffer = (unsigned char *) SAGE_GetBackBitmap()->bitmap_buffer;
-
-        mapwidthperiod = HM_WIDTH - 1;
-        mapheightperiod = HM_HEIGHT - 1;
-        mapshift = 10;
-
-        // Collision detection. Don't fly below the surface.
-        cameraoffs = ((((int)camera.y) & mapwidthperiod ) << mapshift ) + (((int)camera.x) & mapheightperiod);
-        if ((heightmap[cameraoffs] + 10.0f ) > camera.height) camera.height = heightmap[cameraoffs] + 10.0f;
-
-        sinang = (float)sin(camera.angle);
-        cosang = (float)cos(camera.angle);
-
-        for (x = 0;x < SCREEN_WIDTH;++x) hiddeny[x] = SCREEN_HEIGHT;
-        deltaz = 1.0f;
-
         SAGE_ClearScreen();
         
-        // Draw from front to back
-        for (z = 1.0f;z < camera.distance;z += deltaz) {
-          // 90 degree field of view
-          plx =  -cosang * z - sinang * z;
-          ply =   sinang * z - cosang * z;
-          prx =   cosang * z - sinang * z;
-          pry =  -sinang * z - cosang * z;
+        keyboard();
 
-          dx = (prx - plx) / SCREEN_WIDTH;
-          dy = (pry - ply) / SCREEN_HEIGHT;
-          plx += camera.x;
-          ply += camera.y;
-          invz = 1.0f / z * 100.0f;
-          for (x = 0;x < SCREEN_WIDTH;++x) {
-            mapoffset = ((((int)ply) & mapwidthperiod ) << mapshift) + (((int)plx) & mapheightperiod);
-            heightonscreen = (int)((camera.height - heightmap[mapoffset] ) * invz + camera.horizon);
-            if (heightonscreen < 0) heightonscreen = 0;
-            col = colormap[mapoffset];
-            for (y = heightonscreen;y < hiddeny[x];++y) {
-              buffer[x + y * SCREEN_WIDTH] = col;
-            }
-            if (heightonscreen < hiddeny[x] ) hiddeny[x] = heightonscreen; 
-            plx += dx;
-            ply += dy;
-          }
-          deltaz += 0.005f;
-        }
-
-        SAGE_ScanKeyboard(keys, KEY_NBR);      
-        if (keys[KEY_QUIT].key_pressed) {
-          SAGE_AppliLog("Exit loop");
-          finish = TRUE;
-        }
-        if (keys[KEY_LEFT].key_pressed) {
-          camera.angle += 0.02f;
-        } else if (keys[KEY_RIGHT].key_pressed) {
-          camera.angle -= 0.02f;
-        }
-        if (keys[KEY_UP].key_pressed) {
-          camera.x -= (float)sin( camera.angle ) * 1.1f;
-          camera.y -= (float)cos( camera.angle ) * 1.1f;
-        } else if (keys[KEY_DOWN].key_pressed) {
-          camera.x += (float)sin( camera.angle ) * 0.75f;
-          camera.y += (float)cos( camera.angle ) * 0.75f;
-        }
-        if (keys[KEY_A].key_pressed) {
-          camera.height += 0.5f;
-        } else if(keys[KEY_Q].key_pressed) {
-          camera.height -= 0.5f;
-        }
-        if (keys[KEY_Z].key_pressed) {
-          camera.horizon += 1.5f;
-        } else if (keys[KEY_S].key_pressed) {
-          camera.horizon -= 1.5f;
-        }
+        voxel((UBYTE *) SAGE_GetBackBitmap()->bitmap_buffer, heightmap, colormap);
 
         sprintf(string_buffer, "%d fps", SAGE_GetFps());
         SAGE_PrintText(string_buffer, 10, 10);
@@ -198,109 +238,3 @@ void main(void)
   SAGE_AppliLog("End of demo");
 }
 
-
-/**
-
-int main( int argc, char* argv[] ) {
-    setvideomode( videomode_320x200 ); 
-
-    uint8_t palette[ 768 ];
-    int mapwidth, mapheight, palcount;
-    uint8_t* mapcol = loadgif( "files/C1W.gif", &mapwidth, &mapheight, &palcount, palette );    
-    uint8_t* mapalt = loadgif( "files/D1.gif", &mapwidth, &mapheight, NULL, NULL );    
-
-    for( int i = 0; i < palcount; ++i ) {
-        setpal(i, palette[ 3 * i + 0 ],palette[ 3 * i + 1 ], palette[ 3 * i + 2 ] );
-    }
-    setpal( 0, 36, 36, 56 );
-
-    struct {
-        float x;       // x position on the map
-        float y;       // y position on the map
-        float height;  // height of the camera
-        float angle;   // direction of the camera
-        float horizon; // horizon position (look up and down)
-        float distance; // distance of map
-    } camera = { 512, 800, 78, 0, 100, 800 };
-
-    setdoublebuffer( 1 );
-    uint8_t* screen = screenbuffer();
-
-    while( !shuttingdown() ) {
-        waitvbl();
-        clearscreen();        
-
-        if( keystate( KEY_LEFT ) ) camera.angle += 0.02f;
-        if( keystate( KEY_RIGHT ) ) camera.angle -= 0.02f;
-        if( keystate( KEY_UP ) ) {
-            camera.x -= (float)sin( camera.angle ) * 1.1f;
-            camera.y -= (float)cos( camera.angle ) * 1.1f;
-        }
-        if( keystate( KEY_DOWN ) ) {
-            camera.x += (float)sin( camera.angle ) * 0.75f;
-            camera.y += (float)cos( camera.angle ) * 0.75f;
-        }
-        if( keystate( KEY_R ) ) camera.height += 0.5f;
-        if( keystate( KEY_F ) ) camera.height -= 0.5f;
-        if( keystate( KEY_Q ) ) camera.horizon += 1.5f;
-        if( keystate( KEY_W ) ) camera.horizon -= 1.5f;
-
-        int mapwidthperiod = mapwidth - 1;
-        int mapheightperiod = mapheight - 1;
-        int mapshift = 10;
-
-        // Collision detection. Don't fly below the surface.
-        int cameraoffs = ( ( ((int)camera.y) & mapwidthperiod ) << mapshift ) + ( ((int)camera.x) & mapheightperiod );
-        if( ( mapalt[ cameraoffs ] + 10.0f ) > camera.height ) camera.height = mapalt[ cameraoffs ] + 10.0f;
-
-        int screenwidth = 320;
-        int screenheight = 200;
-        float sinang = (float)sin( camera.angle );
-        float cosang = (float)cos( camera.angle );
-
-        int hiddeny[ 320 ];
-        for( int i = 0; i < screenwidth; ++i )  hiddeny[ i ] = screenheight;
-        float deltaz = 1.0f;
-
-        // Draw from front to back
-        for( float z = 1.0f; z < camera.distance; z += deltaz ) {
-            // 90 degree field of view
-            float plx =  -cosang * z - sinang * z;
-            float ply =   sinang * z - cosang * z;
-            float prx =   cosang * z - sinang * z;
-            float pry =  -sinang * z - cosang * z;
-
-            float dx = ( prx - plx ) / screenwidth;
-            float dy = ( pry - ply ) / screenwidth;
-            plx += camera.x;
-            ply += camera.y;
-            float invz = 1.0f / z * 100.0f;
-            for( int i = 0; i < screenwidth; ++i ) {
-                int mapoffset = ( ( ((int)ply) & mapwidthperiod ) << mapshift ) + ( ((int)plx) & mapheightperiod );
-                int heightonscreen = (int)( ( camera.height - mapalt[ mapoffset ] ) * invz + camera.horizon );
-                if( heightonscreen < 0 ) heightonscreen = 0;
-                int col = mapcol[ mapoffset ];
-                for( int y = heightonscreen; y < hiddeny[ i ]; ++y ) {
-                    screen[ i + y * 320 ] = (uint8_t)col;
-                }
-                if( heightonscreen < hiddeny[ i ] )  hiddeny[ i ] = heightonscreen; 
-                plx += dx;
-                ply += dy;
-            }
-            deltaz += 0.005f;
-        }
-        
-        setcolor( 255 );
-        outtextxy( 10, 10, "UP/DOWN/LEFT/RIGHT - move/turn" );
-        outtextxy( 10, 18, "R/F - change altitude" );
-        outtextxy( 10, 26, "Q/W - change pitch" );
-
-        screen = swapbuffers();
-
-        if( keystate( KEY_ESCAPE ) )  break;
-    }
-
-    return 0;
-}
-
-*/

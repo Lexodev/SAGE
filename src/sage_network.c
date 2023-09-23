@@ -582,9 +582,3 @@ LONG SAGE_GetLastSocketError(SAGE_BsdSocket * bsdsocket)
   return SNET_SOCKET_ERROR;
 }
 
-/**
- * Dump network device
- */
-VOID SAGE_DumpNetworkDevice()
-{
-}

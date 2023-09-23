@@ -47,6 +47,8 @@ BOOL SAGE_AllocVideoDevice(VOID);
 /** Release video device */
 BOOL SAGE_FreeVideoDevice(VOID);
 
+/** Only for debug purpose, don't use it in your code */
+
 /** Dump available RTG vide modes */
 VOID SAGE_DumpVideoModes(VOID);
 

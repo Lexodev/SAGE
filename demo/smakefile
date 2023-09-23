@@ -32,10 +32,11 @@ blood: blood/blood.c blood/blood.h blood/blood_engine.c blood/blood_engine.h blo
 sotb: sotb/sotb_ehanced.c $(LIB)
   sc LINK sotb/sotb_ehanced.c $(OPT) $(LIB)
 
-cube: cube/mapcube.c cube/flatcube.c cube/speed.c $(LIB)
+cube: cube/mapcube.c cube/flatcube.c cube/speed.c cube/maggiecube.c $(LIB)
   sc LINK cube/mapcube.c $(OPT) $(LIB) DATA=far
   sc LINK cube/flatcube.c $(OPT) $(LIB) DATA=far
   sc LINK cube/speed.c $(OPT) $(LIB) DATA=far
+  sc LINK cube/maggiecube.c $(OPT) $(LIB) DATA=far
 
 engine: engine/entity.c engine/skybox.c engine/camera.c engine/terrain.c engine/dino.c engine/gtcar.c engine/gt2car.c $(LIB)
   sc LINK engine/camera.c $(OPT) $(LIB) CODE=far DATA=far
@@ -55,28 +56,33 @@ effect: effect/plasma.c effect/tunnel.c effect/rotozoom.c effect/voxel.c $(LIB)
   sc LINK effect/mandelbrot.c $(OPT) $(LIB)
   sc LINK effect/fire_effect.c $(OPT) $(LIB)
 
+# Voxel effect
+voxel: effect/voxel.c effect/raycast.a $(LIB)
+  sc LINK effect/voxel.c effect/raycast.a $(OPT) $(LIB) CODE=far DATA=far
+
 # Force all builds
 force : cleanall
-  sc LINK dragon/dragon_crown.c $(OPT) $(LIB)
-  sc LINK troll/troll_run.c $(OPT) $(LIB)
-  sc LINK odysseus/odysseus.c $(OPT) $(LIB)
-  sc LINK runner/runner.c $(OPT) $(LIB) DATA=far
-  sc LINK blood/blood.c blood/blood_engine.c blood/blood_control.c $(OPT) $(LIB) CODE=far DATA=far
-  sc LINK sotb/sotb_ehanced.c $(OPT) $(LIB)
+#  sc LINK dragon/dragon_crown.c $(OPT) $(LIB)
+#  sc LINK troll/troll_run.c $(OPT) $(LIB)
+#  sc LINK odysseus/odysseus.c $(OPT) $(LIB)
+#  sc LINK runner/runner.c $(OPT) $(LIB) DATA=far
+#  sc LINK blood/blood.c blood/blood_engine.c blood/blood_control.c $(OPT) $(LIB) CODE=far DATA=far
+#  sc LINK sotb/sotb_ehanced.c $(OPT) $(LIB)
   sc LINK cube/mapcube.c $(OPT) $(LIB) DATA=far
   sc LINK cube/flatcube.c $(OPT) $(LIB) DATA=far
-  sc LINK engine/camera.c $(OPT) $(LIB) CODE=far DATA=far
-  sc LINK engine/entity.c $(OPT) $(LIB) CODE=far DATA=far
-  sc LINK engine/skybox.c $(OPT) $(LIB) CODE=far DATA=far
-  sc LINK engine/terrain.c $(OPT) $(LIB) CODE=far DATA=far
-  sc LINK engine/gtcar.c $(OPT) $(LIB) CODE=far DATA=far
-  sc LINK engine/dino.c $(OPT) $(LIB) CODE=far DATA=far
-  sc LINK effect/plasma.c $(OPT) $(LIB) CODE=far DATA=far
-  sc LINK effect/tunnel.c $(OPT) $(LIB) CODE=far DATA=far
-  sc LINK effect/rotozoom.c $(OPT) $(LIB) CODE=far DATA=far
-  sc LINK effect/voxel.c $(OPT) $(LIB) CODE=far DATA=far
-  sc LINK effect/mandelbrot.c $(OPT) $(LIB)
-  sc LINK effect/fire_effect.c $(OPT) $(LIB)
+  sc LINK cube/maggiecube.c $(OPT) $(LIB) DATA=far
+#  sc LINK engine/camera.c $(OPT) $(LIB) CODE=far DATA=far
+#  sc LINK engine/entity.c $(OPT) $(LIB) CODE=far DATA=far
+#  sc LINK engine/skybox.c $(OPT) $(LIB) CODE=far DATA=far
+#  sc LINK engine/terrain.c $(OPT) $(LIB) CODE=far DATA=far
+#  sc LINK engine/gtcar.c $(OPT) $(LIB) CODE=far DATA=far
+#  sc LINK engine/dino.c $(OPT) $(LIB) CODE=far DATA=far
+#  sc LINK effect/plasma.c $(OPT) $(LIB) CODE=far DATA=far
+#  sc LINK effect/tunnel.c $(OPT) $(LIB) CODE=far DATA=far
+#  sc LINK effect/rotozoom.c $(OPT) $(LIB) CODE=far DATA=far
+#  sc LINK effect/voxel.c $(OPT) $(LIB) CODE=far DATA=far
+#  sc LINK effect/mandelbrot.c $(OPT) $(LIB)
+#  sc LINK effect/fire_effect.c $(OPT) $(LIB)
 
 # Clean files
 cleanall: clean cleanexe

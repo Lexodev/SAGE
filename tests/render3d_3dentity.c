@@ -76,7 +76,6 @@ void main(void)
   BOOL finish = FALSE, pause = FALSE;
   SAGE_Entity * cube1, * cube2, * cube3;
   BOOL show_c1 = TRUE, show_c2 = TRUE, show_c3 = TRUE;
-  SAGE_Picture * texture;
   SAGE_EngineMetrics * metrics;
 
   SAGE_AppliLog("--------------------------------------------------------------------------------");
@@ -94,7 +93,7 @@ void main(void)
 
       if (SAGE_Init3DEngine()) {
         SAGE_AddCamera(MAIN_CAMERA, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-        if ((texture = SAGE_LoadPicture("/data/vamptex.bmp")) != NULL && SAGE_CreateTextureFromPicture(TEX_VAMPIRE, 0, 0, STEX_FULLSIZE, texture)) {
+        if (SAGE_CreateTextureFromFile(TEX_VAMPIRE, "/data/vamptex.bmp")) {
           SAGE_InitEntity(&Cube);
           cube1 = SAGE_CloneEntity(&Cube);
           cube2 = SAGE_CloneEntity(&Cube);
@@ -110,6 +109,7 @@ void main(void)
             SAGE_AppliLog("Entering main loop");
             while (!finish) {
               SAGE_EngineDebug(FALSE);
+              SAGE_SetTraceDebug(FALSE);
               while ((event = SAGE_GetEvent()) != NULL) {
                 if (event->type == SEVT_RAWKEY) {
                   if (event->code == SKEY_FR_ESC) {
@@ -119,6 +119,7 @@ void main(void)
                   if (event->code == SKEY_FR_D) {
                     SAGE_AppliLog("Activate DEBUG mode");
                     SAGE_EngineDebug(TRUE);
+                    SAGE_SetTraceDebug(TRUE);
                   }
                   if (event->code == SKEY_FR_P) {
                     SAGE_AppliLog("Switch pause");
@@ -201,7 +202,6 @@ void main(void)
           }
         }
         SAGE_ReleaseTexture(TEX_VAMPIRE);
-        SAGE_ReleasePicture(texture);
       }
       SAGE_Release3DEngine();
 

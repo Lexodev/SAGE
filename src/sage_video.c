@@ -110,7 +110,7 @@ BOOL SAGE_AllocVideoDevice()
     return FALSE;
   }
   video->video_modes = NULL;
-  if (SAGE_ApolloPresence()) {
+  if (SAGE_VampireV4()) {
     video->SAGAReady = TRUE;
   } else {
     video->SAGAReady = FALSE;
@@ -178,6 +178,8 @@ BOOL SAGE_FreeVideoDevice()
   return TRUE;
 }
 
+/********************************** DEBUG ONLY ********************************/
+
 /**
  * Dump available RTG vide modes
  */
@@ -185,5 +187,8 @@ VOID SAGE_DumpVideoModes()
 {
   SAGE_VideoDevice * video;
 
+  video = NULL;
   SAGE_WarningLog("Not available !");
 }
+
+/********************************** DEBUG ONLY ********************************/

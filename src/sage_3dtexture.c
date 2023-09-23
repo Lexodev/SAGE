@@ -9,8 +9,10 @@
  */
 
 #include <exec/types.h>
+#include <dos/dos.h>
 
 #include <proto/Warp3D.h>
+#include <proto/dos.h>
 
 #include "sage_debug.h"
 #include "sage_error.h"
@@ -35,6 +37,179 @@ BOOL SAGE_CheckTextureSize(ULONG width, ULONG height)
     return FALSE;
   }
   return TRUE;
+}
+
+/**
+ * Check for a DDS file
+ *
+ * @param file_name DDS file name
+ *
+ * @return File is a DDS
+ */
+BOOL SAGE_CheckDDSFile(STRPTR file_name)
+{
+  BPTR file_handle;
+  LONG dds_tag, bytes_read;
+  
+  file_handle = Open(file_name, MODE_OLDFILE);
+  if (file_handle != 0) {
+    // Check if it's a DDS file
+    bytes_read = Read(file_handle, &dds_tag, sizeof(dds_tag));
+    if (bytes_read != sizeof(dds_tag)) {
+      SAGE_SetError(SERR_READFILE);
+      Close(file_handle);
+      return FALSE;
+    }
+    Close(file_handle);
+    if (dds_tag == STEX_DDSTAG) {
+      return TRUE;
+    }
+  } else {
+    SAGE_SetError(SERR_OPENFILE);
+  }
+  return FALSE;
+}
+
+/**
+ * Load a DDS texture
+ *
+ * @param file_name DDS file name
+ *
+ * @return Picture structure pointer or NULL on error
+ */
+SAGE_DDSFile * SAGE_LoadDDSTexture(STRPTR file_name)
+{
+  BPTR file_handle;
+  SAGE_DDSHeader header;
+  SAGE_DDSFile * dds;
+  ULONG file_size, bytes_read;
+
+  SD(SAGE_DebugLog("SAGE_LoadDDSTexture"));
+  file_handle = Open(file_name, MODE_OLDFILE);
+  if (file_handle != 0) {
+    dds = (SAGE_DDSFile *) SAGE_AllocMem(sizeof(SAGE_DDSFile));
+    if (dds == NULL) {
+      Close(file_handle);
+      return NULL;
+    }
+    // Get the file size
+    bytes_read = Seek(file_handle, 0, OFFSET_END);
+    file_size = Seek(file_handle, 0, OFFSET_BEGINNING);
+    // Read the header
+    bytes_read = Read(file_handle, &header, sizeof(header));
+    if (bytes_read != sizeof(header)) {
+      SAGE_SetError(SERR_READFILE);
+      Close(file_handle);
+      return NULL;
+    }
+    dds->width = SAGE_LONGTOBE(header.width);
+    dds->height = SAGE_LONGTOBE(header.height);
+    dds->depth = 24;
+    dds->data_size = file_size - sizeof(header);
+    SD(SAGE_DebugLog("DDS header => width=%d, height=%d, depth=%d, data_size=%d", dds->width, dds->height, dds->depth, dds->data_size));
+    // Read the body
+    if ((dds->data = SAGE_AllocAlignMem(dds->data_size, STEX_DDSALIGN)) == NULL) {
+      SAGE_FreeMem(dds);
+      Close(file_handle);
+      return NULL;
+    }
+    bytes_read = Read(file_handle, dds->data, dds->data_size);
+    if (bytes_read != dds->data_size) {
+      SAGE_SetError(SERR_READFILE);
+      SAGE_FreeMem(dds->data);
+      SAGE_FreeMem(dds);
+      Close(file_handle);
+      return NULL;
+    }
+    return dds;
+  } else {
+    SAGE_SetError(SERR_OPENFILE);
+  }
+  return NULL;
+}
+
+/**
+ * Get the mip size value depending on texture size
+ *
+ * @param size Texture size
+ *
+ * @return Mip size
+ */
+UWORD SAGE_GetTextureMipsize(UWORD size)
+{
+  switch (size) {
+    case STEX_SIZE64:
+      return 6;
+    case STEX_SIZE128:
+      return 7;
+    case STEX_SIZE256:
+      return 8;
+    case STEX_SIZE512:
+      return 9;
+  }
+  return 0;
+}
+
+/**
+ * Create a texture from a file
+ *
+ * @param index     Texture index
+ * @param file_name File name
+ *
+ * @return Operation success
+ */
+BOOL SAGE_CreateTextureFromFile(UWORD index, STRPTR file_name)
+{
+  SAGE_DDSFile * dds;
+  SAGE_3DTexture * texture;
+  SAGE_Picture * picture;
+
+  SD(SAGE_DebugLog("Create texture #%d from file %s", index, file_name));
+  if (SageContext.Sage3D == NULL) {
+    SAGE_SetError(SERR_NO_3DDEVICE);
+    return FALSE;
+  }
+  if (SAGE_CheckDDSFile(file_name)) {
+    if ((dds = SAGE_LoadDDSTexture(file_name)) == NULL) {
+      return FALSE;
+    }
+    if (!SAGE_CheckTextureSize(dds->width, dds->height)) {
+      SAGE_FreeMem(dds->data);
+      SAGE_FreeMem(dds);
+      SAGE_SetError(SERR_TEXTURE_SIZE);
+      return FALSE;
+    }
+    // Allocate and init texture
+    if (SageContext.Sage3D->textures[index] != NULL) {
+      SAGE_ReleaseTexture(index);
+    }
+    texture = (SAGE_3DTexture *) SAGE_AllocMem(sizeof(SAGE_3DTexture));
+    if (texture != NULL) {
+      texture->size = dds->width;
+      texture->mipsize = SAGE_GetTextureMipsize(texture->size);
+      if ((texture->bitmap = SAGE_AllocBitmap(texture->size, texture->size, 32, 0, PIXFMT_DXT1, dds->data)) != NULL) {
+        texture->bitmap->properties = SBMP_COMPRESSED;
+        texture->w3dtex = NULL;
+        texture->texformat = STEX_PIXFMT_DXT1;
+        SageContext.Sage3D->textures[index] = texture;
+        SAGE_FreeMem(dds);
+        return TRUE;
+      }
+    }
+    SAGE_FreeMem(texture);
+    SAGE_FreeMem(dds->data);
+    SAGE_FreeMem(dds);
+  } else {
+    if ((picture = SAGE_LoadPicture(file_name)) != NULL) {
+      // Create a new texture
+      if (SAGE_CreateTextureFromPicture(index, 0, 0, STEX_FULLSIZE, picture)) {
+        SAGE_ReleasePicture(picture);
+        return TRUE;
+      }
+      SAGE_ReleasePicture(picture);
+    }
+  }
+  return FALSE;
 }
 
 /**
@@ -92,7 +267,9 @@ BOOL SAGE_CreateTextureFromPicture(UWORD index, UWORD left, UWORD top, UWORD siz
   texture = (SAGE_3DTexture *) SAGE_AllocMem(sizeof(SAGE_3DTexture));
   if (texture != NULL) {
     texture->size = size;
-    if ((texture->bitmap = SAGE_AllocBitmap(texture->size, texture->size, screen->depth, screen->pixformat, NULL)) != NULL) {
+    texture->mipsize = SAGE_GetTextureMipsize(texture->size);
+    if ((texture->bitmap = SAGE_AllocBitmap(texture->size, texture->size, screen->depth, 0, screen->pixformat, NULL)) != NULL) {
+      texture->w3dtex = NULL;
       if (SAGE_BlitPictureToBitmap(picture, left, top, texture->size, texture->size, texture->bitmap, 0, 0)) {
         // Set texture format
         switch (screen->pixformat) {
@@ -138,7 +315,7 @@ BOOL SAGE_CreateTextureFromPicture(UWORD index, UWORD left, UWORD top, UWORD siz
  *
  * @return Texture structure
  */
-SAGE_3DTexture * SAGE_GetTexture(UWORD index)
+SAGE_3DTexture * SAGE_GetTexture(WORD index)
 {
   // Check for 3d device
   SAFE(if (SageContext.Sage3D == NULL) {
@@ -149,6 +326,9 @@ SAGE_3DTexture * SAGE_GetTexture(UWORD index)
     SAGE_SetError(SERR_TEX_INDEX);
     return NULL;
   })
+  if (index == STEX_USECOLOR) {
+    return NULL;
+  }
   return SageContext.Sage3D->textures[index];
 }
 
@@ -159,7 +339,7 @@ SAGE_3DTexture * SAGE_GetTexture(UWORD index)
  *
  * @return W3D texture structure
  */
-W3D_Texture * SAGE_GetW3DTexture(UWORD index)
+W3D_Texture * SAGE_GetW3DTexture(WORD index)
 {
   // Check for 3d device
   SAFE(if (SageContext.Sage3D == NULL) {
@@ -170,6 +350,9 @@ W3D_Texture * SAGE_GetW3DTexture(UWORD index)
     SAGE_SetError(SERR_TEX_INDEX);
     return NULL;
   })
+  if (index == STEX_USECOLOR) {
+    return NULL;
+  }
   return SageContext.Sage3D->textures[index]->w3dtex;
 }
 

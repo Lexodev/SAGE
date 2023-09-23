@@ -67,11 +67,24 @@ _SAGE_ResetVblCount:
   rts
 
 ;--------------------------------------
+; Wait for vertical blank
+;--------------------------------------
+  xdef _SAGE_WaitVbl
+
+_SAGE_WaitVbl:
+  move.w  #0,_SAGE_VblFlag
+.JustWait:
+  tst.w   _SAGE_VblFlag
+  beq.s   .JustWait
+  rts
+
+;--------------------------------------
 ; The VBL interrupt handler
 ;--------------------------------------
 _SAGE_VblInterrupt:
   movem.l d0-d7/a0-a6,-(sp)
   addq.l  #1,_SAGE_VblCount
+  move.w  #-1,_SAGE_VblFlag
   movem.l (sp)+,d0-d7/a0-a6
   move.l  #CUSTOM,a0              ; Mandatory setting if prio >= 10
   moveq.l #0,d0
@@ -81,6 +94,9 @@ _SAGE_VblInterrupt:
 
 _SAGE_VblCount:
   dc.l    0                       ; Count the VBL
+
+_SAGE_VblFlag:
+  dc.w    0                       ; Flag for VBL Wait
 
 _SAGE_VBLServer:
   dc.l    0,0                     ; ln_Succ, ln_Pred

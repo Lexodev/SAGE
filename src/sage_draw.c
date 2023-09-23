@@ -20,6 +20,11 @@
 /** SAGE context */
 extern SAGE_Context SageContext;
 
+/********************************** DEBUG ONLY ********************************/
+
+/**
+ * Dump coordinates
+ */
 VOID SAGE_DumpCoords(STRPTR type, LONG * crd, ULONG nb)
 {
   LONG index;
@@ -150,6 +155,8 @@ VOID SAGE_DumpLineCoords(LONG x1, LONG y1, LONG x2, LONG y2)
   }
   SAGE_DebugLog("********************************************************************");
 }
+
+/********************************** DEBUG ONLY ********************************/
 
 /**
  * Draw a pixel with clipping

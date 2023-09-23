@@ -137,7 +137,7 @@ SAGE library is still in a development phase, some functions can change in futur
 - BOOL SAGE_VerticalSynchro(BOOL sync) : activate/deactivate the vertical synchronization, return FALSE on error.
 - BOOL SAGE_MaximumFPS(ULONG fps) : set the maximum frame per second if vertical synchro is deactivate (default 30), return FALSE on error.
 - BOOL SAGE_RefreshScreen(VOID) : refresh the screen view, switch the screen buffers, return FALSE on error.
-- BOOL SAGE_WaitVBlank(VOID) : wait for vertical blank, return FALSE on error.
+- VOID SAGE_WaitVbl(VOID) : wait for vertical blank.
 - SAGE_Event * SAGE_GetEvent(VOID) : get the screen's window events (non blocking).
 - BOOL SAGE_IsFrontMostScreen(VOID) : tell if our screen is in front.
 - SAGE_Bitmap * SAGE_GetFrontBitmap(VOID) : get the bitmap of the front screen buffer.
@@ -278,7 +278,7 @@ SAGE library is still in a development phase, some functions can change in futur
 
 14 - 3D functions
 
- a) Rendering (work in progress)
+ a) Rendering (work in progress to support Maggie)
 - BOOL SAGE_EnableZBuffer(BOOL flag) : enable or disable the z-buffering support
 - BOOL SAGE_Get3DRenderOption(LONGBITS option) : get the status of a render option
 - BOOL SAGE_Set3DRenderMode(UWORD mode) : set the rendering mode between internal, Maggie or Warp3D
@@ -287,6 +287,7 @@ SAGE library is still in a development phase, some functions can change in futur
 - BOOL SAGE_Render3DTriangles(VOID) : render all triangles in the rendering queue
 
  b) Texture management
+- BOOL SAGE_CreateTextureFromFile(UWORD index, STRPTR file_name) : create a texture directly from a file
 - BOOL SAGE_CreateTextureFromPicture(UWORD index, UWORD left, UWORD top, UWORD size, SAGE_Picture * picture) : create a texture from a picture
 - SAGE_3DTexture * SAGE_GetTexture(UWORD index) : get a texture from her index
 - W3D_Texture * SAGE_GetW3DTexture(UWORD index) : get a W3D texture from her index

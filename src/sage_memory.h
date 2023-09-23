@@ -13,6 +13,10 @@
 
 #include <exec/exec.h>
 
+// Little endian to Big endian conversion
+#define SAGE_WORDTOBE(value)  ((value & 0xff00) >> 8) | ((value & 0xff) << 8)
+#define SAGE_LONGTOBE(value)  ((value & 0xff) << 24) | ((value & 0xff00) << 8) | ((value & 0xff000000) >> 24) | ((value & 0xff0000) >> 8)
+
 /** Memory node */
 typedef struct _sage_memory_node {
   /** Base address of bloc, before alignment */

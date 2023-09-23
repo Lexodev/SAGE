@@ -29,6 +29,10 @@ typedef struct {
   BOOL AmmxReady;
   /** Auto remap picture */
   BOOL AutoRemap;
+  /** SAGE interruptions */
+  SAGE_Interruption Interruptions[SINT_MAX_INTERRUPT];
+  /** SAGE threads */
+  SAGE_Thread * Threads[STHD_MAX_THREAD];
   /** SAGE video */
   SAGE_VideoDevice * SageVideo;
   /** SAGE audio */
@@ -37,10 +41,6 @@ typedef struct {
   SAGE_InputDevice * SageInput;
   /** SAGE network */
   SAGE_NetworkDevice * SageNetwork;
-  /** SAGE interruptions */
-  SAGE_Interruption Interruptions[SINT_MAX_INTERRUPT];
-  /** SAGE threads */
-  SAGE_Thread * Threads[STHD_MAX_THREAD];
   /** SAGE 3D */
   SAGE_3DDevice * Sage3D;
 } SAGE_Context;

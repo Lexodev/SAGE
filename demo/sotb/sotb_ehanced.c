@@ -180,6 +180,7 @@ BOOL OpenScreen(VOID)
   if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_TRIPLEBUF|SSCR_STRICTRES|SSCR_INDIRECT)) {
     SAGE_SetScreenClip(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     SAGE_SetTextColor(2, 1);
+    SAGE_VerticalSynchro(TRUE);
     return TRUE;
   }
   SAGE_DisplayError();
@@ -565,7 +566,6 @@ VOID AnimateFence(VOID)
 
 VOID AnimateBeast(VOID)
 {
-  // beast_bank = 0, beast_spr = 0, beast_delay = 0, beast_direction = 0, beast_status = 0, beast_anim = 0
   if (beast_direction == BEAST_RIGHTDIR) {
     beast_bank = SPR_BEASTRIGHT;
   } else {
@@ -720,7 +720,7 @@ void main(void)
   SAGE_AppliLog("** SAGE library SOTB ehanced demo V1.0 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_AUDIO|SMOD_INPUT|SMOD_INTERRUPTION)) {
-    if (SAGE_AMMX2Available()) {
+    if (SAGE_ApolloCore()) {
       SAGE_AppliLog("AMMX detected !!!");
     } else {
       SAGE_AppliLog("AMMX not detected");

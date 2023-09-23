@@ -19,6 +19,11 @@
 #include "sage_3dtexture.h"
 #include "sage_3drender.h"
 
+#define TRI_REJECTED          0
+#define TRI_FLATTOP           1
+#define TRI_FLATBOTTOM        2
+#define TRI_GENERIC           3
+
 #define FIXP16_SHIFT          16
 #define FIXP16_ROUND_UP       0x8000
 
@@ -30,6 +35,9 @@
 #define DELTA_DVDYR           5
 #define DELTA_DU              6
 #define DELTA_DV              7
+#define DELTA_DZDYL           8
+#define DELTA_DZDYR           9
+#define DELTA_DZ              10
 
 #define CRD_XL                0
 #define CRD_XR                1
@@ -41,6 +49,8 @@
 #define CRD_LCLIP             7
 #define CRD_RCLIP             8
 #define CRD_TCOLOR            9
+#define CRD_ZL                10
+#define CRD_ZR                11
 
 typedef struct {
   LONG x1, y1, z1, u1, v1;
@@ -49,6 +59,13 @@ typedef struct {
   ULONG color;
   SAGE_3DTexture * tex;
 } S3D_Triangle;
+
+/** External function for z buffer clear */
+extern BOOL ASM SAGE_FastClearZBuffer(
+  REG(a0, ULONG source),
+  REG(d0, UWORD lines),
+  REG(d1, UWORD bytes)
+);
 
 /** External function for 8bits texture mapping */
 extern BOOL ASM SAGE_FastMap8BitsTexture(
@@ -117,6 +134,9 @@ extern BOOL ASM SAGE_FastMap16BitsTransparent(
 /** DEBUG */
 VOID SAGE_DumpS3DTriangle(S3D_Triangle *);
 /** DEBUG */
+
+/** Check the triangle type & order the vertices */
+ULONG SAGE_CheckTriangleType(S3D_Triangle *, SAGE_Clipping *);
 
 /** Draw a textured triangle */
 BOOL SAGE_DrawTexturedTriangle(S3D_Triangle *, SAGE_Bitmap *, SAGE_Clipping *);

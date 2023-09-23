@@ -92,7 +92,7 @@ VOID SAGE_DumpEntity(SAGE_Entity * entity, UWORD mode)
 /*****************************************************************************/
 
 /**
- * Create an empty entity 
+ * Create an empty entity
  */
 SAGE_Entity * SAGE_CreateEntity(UWORD nb_vertices, UWORD nb_faces)
 {

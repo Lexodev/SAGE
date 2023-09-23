@@ -17,7 +17,7 @@
 #include "sage.h"
 
 /** @var Library version */
-STRPTR SAGE_Version = "$VER: SAGE V1.2206 June 2022";
+STRPTR SAGE_Version = "$VER: SAGE V23.2 September 2023";
 
 /** @var Application context */
 SAGE_Context SageContext;
@@ -43,7 +43,7 @@ BOOL SAGE_Init(LONGBITS modules)
   // Init the modules
   SageContext.LoadedModules = SMOD_NONE;
   SageContext.TraceDebug = FALSE;
-  SageContext.AmmxReady = SAGE_AMMX2Available();
+  SageContext.AmmxReady = SAGE_ApolloCore();
   SageContext.AutoRemap = TRUE;
   SageContext.SageVideo = NULL;
   SageContext.SageAudio = NULL;
@@ -89,7 +89,7 @@ BOOL SAGE_Init(LONGBITS modules)
     }
     SageContext.LoadedModules |= SMOD_NETWORK;
   }
-  SAGE_DebugLog("Loaded modules %d", SageContext.LoadedModules);
+  SD(SAGE_DebugLog("Loaded modules %d", SageContext.LoadedModules));
   return TRUE;
 }
 
@@ -133,7 +133,7 @@ VOID SAGE_Exit(VOID)
   // Finally clean memory
   SD(SAGE_DumpMemory());
   SAGE_ReleaseMem();  // Free all remaining memory
-  SAGE_DebugLog("Available memory %d KB", SAGE_AvailMem());
+  SD(SAGE_DebugLog("Available memory %d KB", SAGE_AvailMem()));
 }
 
 /**
@@ -168,7 +168,7 @@ STRPTR SAGE_GetVersion(VOID)
  */
 VOID SAGE_UseAMMX(BOOL ammx)
 {
-  if (ammx && SAGE_AMMX2Available()) {
+  if (ammx && SAGE_ApolloCore()) {
     SageContext.AmmxReady = TRUE;
   } else {
     SageContext.AmmxReady = FALSE;

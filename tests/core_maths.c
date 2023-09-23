@@ -97,9 +97,6 @@ void RotateXY(WORD ax, WORD ay)
 
 void main(void)
 {
-  FLOAT angle;
-  ULONG i;
-
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   SAGE_AppliLog("* SAGE library CORE test (MATHS) / %s", SAGE_GetVersion());
   SAGE_AppliLog("--------------------------------------------------------------------------------");

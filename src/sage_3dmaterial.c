@@ -31,6 +31,7 @@ extern SAGE_3DWorld sage_world;
  */
 VOID SAGE_ReleaseMaterial(SAGE_Material * material)
 {
+  SD(SAGE_DebugLog("SAGE_ReleaseMaterial"));
   if (material != NULL) {
     if (material->file != NULL) {
       SAGE_FreeMem(material->file);
@@ -78,6 +79,7 @@ BOOL SAGE_AddMaterialList(SAGE_Material * materials, LONG number)
 {
   LONG idx;
   
+  SD(SAGE_DebugLog("SAGE_AddMaterialList (%d)", number));
   for (idx = 0;idx < number;idx++) {
     if (!SAGE_AddMaterial(materials[idx].file, materials[idx].name, materials[idx].left, materials[idx].top, materials[idx].size, materials[idx].index)) {
       return FALSE;
@@ -96,6 +98,7 @@ BOOL SAGE_LoadMaterials()
   STRPTR file;
   LONG idx;
   
+  SD(SAGE_DebugLog("SAGE_LoadMaterials"));
   file = NULL;
   picture = NULL;
   for (idx = 0;idx < sage_world.nb_materials;idx++) {
@@ -137,6 +140,7 @@ VOID SAGE_FlushMaterials()
   LONG idx;
   SAGE_Material * material;
   
+  SD(SAGE_DebugLog("SAGE_FlushMaterials"));
   SAGE_FlushTextures();
   for (idx = 0;idx < sage_world.nb_materials;idx++) {
     material = sage_world.materials[idx];

@@ -198,7 +198,7 @@ SAGE_Picture * SAGE_LoadPicture(STRPTR file_name)
           return NULL;  
         }
         // Allocate the picture bitmap
-        if ((picture->bitmap = SAGE_AllocBitmap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, pixformat, NULL)) == NULL) {
+        if ((picture->bitmap = SAGE_AllocBitmap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, 0, pixformat, NULL)) == NULL) {
           DisposeDTObject(object);
           SAGE_ReleasePicture(picture);
           return NULL;  
@@ -268,7 +268,7 @@ SAGE_Picture * SAGE_LoadPicture(STRPTR file_name)
         }
       } else {
         // Allocate the picture bitmap
-        if ((picture->bitmap = SAGE_AllocBitmap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, PIXFMT_CLUT, NULL)) == NULL) {
+        if ((picture->bitmap = SAGE_AllocBitmap(bmhd->bmh_Width, bmhd->bmh_Height, bmhd->bmh_Depth, 0, PIXFMT_CLUT, NULL)) == NULL) {
           DisposeDTObject(object);
           SAGE_ReleasePicture(picture);
           return NULL;  

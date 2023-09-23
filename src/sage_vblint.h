@@ -27,4 +27,7 @@ extern ULONG ASM SAGE_GetVblCount(VOID);
 /** External function for VBL count reset */
 extern ULONG ASM SAGE_ResetVblCount(VOID);
 
+/** Wait for vertical blank */
+extern VOID ASM SAGE_WaitVbl(VOID);
+
 #endif

@@ -113,7 +113,7 @@ void main(void)
         SAGE_ErrorLog("Can't activate frame rate counter !");
       }
       SAGE_AppliLog("Load colormap");
-      SAGE_LoadFileColorMap("/data/flame.rgb", 0, 256, SSCR_RGBCOLOR);
+      SAGE_LoadFileColorMap("data/flame.rgb", 0, 256, SSCR_RGBCOLOR);
       InitPrecalc();
       for (index = 0;index < SSCR_MAXCOLORS;index++) {
         color = SAGE_GetColor(index);

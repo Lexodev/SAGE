@@ -18,22 +18,23 @@
 #define AFF_68080             (1<<AFB_68080)
 #endif
 
-#define SAGA_FBADDR           0xdff1ec
+#define SAPO_VCARD            0xdff3fc
+#define SAPO_V600             1
+#define SAPO_V500             2
+#define SAPO_V4500            3
+#define SAPO_V41200           4
+#define SAPO_V4SA             5
+#define SAPO_V1200            6
+#define SAPO_V4600            7
 
 #define SAPO_UNDEFINED        0
 #define SAPO_ENABLE           1
 #define SAPO_DISABLE          2
 
-/** Check for Vampire presence */
-BOOL SAGE_ApolloPresence(VOID);
+/** Check for 68080 support */
+BOOL SAGE_ApolloCore(VOID);
 
-/** Check for AMMX2 availability */
-BOOL SAGE_AMMX2Available(VOID);
-
-/** Set the Vampire frame buffer address */
-BOOL SAGE_SetVampireFrameBuffer(APTR);
-
-/** Get the Vampire frame buffer address */
-APTR SAGE_GetVampireFrameBuffer(VOID);
+/** Check for Vampire V4 card */
+BOOL SAGE_VampireV4(VOID);
 
 #endif

@@ -30,6 +30,24 @@ struct PTData pt_data;
 /** SAGE context */
 extern SAGE_Context SageContext;
 
+/********************************** DEBUG ONLY ********************************/
+
+/** Dump music structure */
+VOID SAGE_DumpMusic(SAGE_Music * music)
+{
+  if (music != NULL) {
+    SAGE_DebugLog("** Music structure **");
+    SAGE_DebugLog(". Size = %d", music->size);
+    SAGE_DebugLog(". Type = %d", music->type);
+    SAGE_DebugLog(". Channel = %d", music->channel);
+    SAGE_DebugLog(". Sample = %d", music->sample);
+    SAGE_DebugLog(". Frequency = %d", music->frequency);
+    SAGE_DebugLog(". Bitrate = %d", music->bitrate);
+  }
+}
+
+/********************************** DEBUG ONLY ********************************/
+
 /**
  * Allocate music structure
  *
@@ -69,20 +87,6 @@ VOID SAGE_ReleaseMusic(SAGE_Music * music)
       SAGE_FreeMem(music->buffer);
     }
     SAGE_FreeMem(music);
-  }
-}
-
-/** Dump music structure */
-VOID SAGE_DumpMusic(SAGE_Music * music)
-{
-  if (music != NULL) {
-    SAGE_DebugLog("** Music structure **");
-    SAGE_DebugLog(". Size = %d", music->size);
-    SAGE_DebugLog(". Type = %d", music->type);
-    SAGE_DebugLog(". Channel = %d", music->channel);
-    SAGE_DebugLog(". Sample = %d", music->sample);
-    SAGE_DebugLog(". Frequency = %d", music->frequency);
-    SAGE_DebugLog(". Bitrate = %d", music->bitrate);
   }
 }
 

@@ -14,7 +14,7 @@ VIDEOEXE=video_video video_screen video_dblbuf video_event video_bitmap video_la
 INPUTEXE=input_input input_keyboard input_joyport input_handler
 AUDIOEXE=audio_audio audio_sound audio_music audio_mix
 INTEXE=interrupt_interrupt interrupt_handler
-3DEEXE=render3d_3ddevice render3d_3dtexture render3d_3dtriangle render3d_3dskybox render3d_3dentity render3d_3deload  render3d_3dterrain
+3DEEXE=render3d_3ddevice render3d_3dtexture render3d_3dtriangle render3d_3dmapper render3d_3dskybox render3d_3dentity render3d_3deload  render3d_3dterrain render3d_3dmaggie
 NETEXE=network_network network_tcpsocket network_udpsocket network_handler
 
 # Build all tests
@@ -138,6 +138,9 @@ interrupt_handler: interrupt_handler.c $(LIB)
 # Build 3D render tests
 render3d: $(3DEEXE)
 
+render3d_3dmapper: render3d_3dmapper.c $(LIB)
+  sc LINK render3d_3dmapper.c $(OPT) $(LIB)
+
 render3d_3deload: render3d_3deload.c $(LIB)
   sc LINK render3d_3deload.c $(OPT) $(LIB)
 
@@ -158,6 +161,9 @@ render3d_3dtexture: render3d_3dtexture.c $(LIB)
 
 render3d_3ddevice: render3d_3ddevice.c $(LIB)
   sc LINK render3d_3ddevice.c $(OPT) $(LIB)
+
+render3d_3dmaggie: render3d_3dmaggie.c $(LIB)
+  sc LINK render3d_3dmaggie.c $(OPT) $(LIB)
 
 # Build network tests
 network: $(NETEXE)

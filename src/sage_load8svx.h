@@ -24,13 +24,13 @@
 /** 8SVX file header */
 typedef struct
 {
-    ULONG  oneShotHiSamples;  // high octave 1-shot samples
-    ULONG  repeatHiSamples;   // high octave repeat samples
-    ULONG  samplesPerHiCycle; // high octave samples per cycle
-    UWORD  samplesPerSec;     // sampling rate
-    UBYTE  ctOctave;          // number of octaves
-    UBYTE  sCompression;      // Compression mode
-    LONG   vol;               // Playback volume
+    ULONG oneShotHiSamples;     // high octave 1-shot samples
+    ULONG repeatHiSamples;      // high octave repeat samples
+    ULONG samplesPerHiCycle;    // high octave samples per cycle
+    UWORD samplesPerSec;        // sampling rate
+    UBYTE ctOctave;             // number of octaves
+    UBYTE sCompression;         // Compression mode
+    LONG vol;                   // Playback volume
 } SAGE_8SVXHeader;
 
 /** Load a 8SVX file */

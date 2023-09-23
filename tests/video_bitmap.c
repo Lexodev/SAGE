@@ -31,7 +31,7 @@ void main(void)
     printf("Opening screen\n");
     if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES)) {
       printf("Allocate bitmap\n");
-      if ((bitmap = SAGE_AllocBitmap(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SAGE_GetPixelFormat(), NULL)) != NULL) {
+      if ((bitmap = SAGE_AllocBitmap(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, 0, SAGE_GetPixelFormat(), NULL)) != NULL) {
         printf("Fill and blit bitmap\n");
         pixel = 0;
         buffer = (UWORD *) bitmap->bitmap_buffer;

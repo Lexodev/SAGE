@@ -187,6 +187,8 @@ UWORD * SAGE_GetTileMapW(UWORD index)
   return (UWORD *)tilemap->map;
 }
 
+/** WORK IN PROGRESS !!! */
+
 /** Get tile UBYTE value at map position */
 UBYTE SAGE_GetTileValueB(UWORD index, UWORD col, UWORD row);
 

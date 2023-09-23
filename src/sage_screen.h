@@ -142,9 +142,6 @@ BOOL SAGE_MaximumFPS(ULONG);
 /** Switch the screen buffers */
 BOOL SAGE_RefreshScreen(VOID);
 
-/** Wait for vertical blank */
-BOOL SAGE_WaitVBlank(VOID);
-
 /** Get the last intuition event */
 SAGE_Event * SAGE_GetEvent(VOID);
 

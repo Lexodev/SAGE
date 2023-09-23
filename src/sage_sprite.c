@@ -61,7 +61,7 @@ BOOL SAGE_CreateSpriteBank(UWORD index, UWORD size, SAGE_Picture * picture)
         bank->sprites[sprite].width = 0;
         bank->sprites[sprite].height = 0;
       }
-      if ((bank->bitmap = SAGE_AllocBitmap(picture->bitmap->width, picture->bitmap->height, picture->bitmap->depth, picture->bitmap->pixformat, NULL)) != NULL) {
+      if ((bank->bitmap = SAGE_AllocBitmap(picture->bitmap->width, picture->bitmap->height, picture->bitmap->depth, 0, picture->bitmap->pixformat, NULL)) != NULL) {
         SAGE_BlitBitmap(picture->bitmap, 0, 0, picture->bitmap->width, picture->bitmap->height, bank->bitmap, 0, 0);
         SageContext.SageVideo->sprites[index] = bank;
         return TRUE;
@@ -406,8 +406,8 @@ BOOL SAGE_SpriteCollide(UWORD idx1, UWORD spr1, LONG x1, LONG y1, UWORD idx2, UW
     y1 -= bank1->sprites[spr1].hs_y;
     x2 -= bank2->sprites[spr2].hs_x;
     y2 -= bank2->sprites[spr2].hs_y;
-    //printf("SpriteCollide x1 %d, y1 %d, w1 %d, h1 %d\n", x1, y1, bank1->sprites[spr1].width, bank1->sprites[spr1].height);
-    //printf("              x2 %d, y2 %d, w2 %d, h2 %d\n", x2, y2, bank2->sprites[spr2].width, bank2->sprites[spr2].height);
+    SD(SAGE_TraceLog("SpriteCollide x1 %d, y1 %d, w1 %d, h1 %d", x1, y1, bank1->sprites[spr1].width, bank1->sprites[spr1].height));
+    SD(SAGE_TraceLog("              x2 %d, y2 %d, w2 %d, h2 %d\n", x2, y2, bank2->sprites[spr2].width, bank2->sprites[spr2].height));
     // Check collision
     if (x2 > (x1 + bank1->sprites[spr1].width)) return FALSE;
     if (x1 > (x2 + bank2->sprites[spr2].width)) return FALSE;

@@ -27,12 +27,9 @@
 #define S3DR_MAX_TRIANGLES    8192                  // Maximum number of triangles to render
 
 typedef struct {
-  FLOAT x1, y1, u1, v1;
-  DOUBLE z1;
-  FLOAT x2, y2, u2, v2;
-  DOUBLE z2;
-  FLOAT x3, y3, u3, v3;
-  DOUBLE z3;
+  FLOAT x1, y1, z1, u1, v1;
+  FLOAT x2, y2, z2, u2, v2;
+  FLOAT x3, y3, z3, u3, v3;
   WORD texture;
   ULONG color;
 } SAGE_3DTriangle;
@@ -43,10 +40,16 @@ typedef struct {
 } SAGE_SortedTriangle;
 
 typedef struct {
+  UWORD width, height;
+  UWORD * buffer;
+} SAGE_ZBuffer;
+
+typedef struct {
   LONGBITS options;
   UWORD render_triangles, render_mode;
   SAGE_3DTriangle s3d_triangles[S3DR_MAX_TRIANGLES];
   SAGE_SortedTriangle ordered_triangles[S3DR_MAX_TRIANGLES];
+  SAGE_ZBuffer zbuffer;
 } SAGE_Render;
 
 /** DEBUG */
@@ -59,11 +62,23 @@ BOOL SAGE_Init3DRender(VOID);
 /** Enable/disable Z buffer */
 BOOL SAGE_EnableZBuffer(BOOL);
 
+/** Enable/disable filtering */
+BOOL SAGE_EnableFiltering(BOOL);
+
 /** Tell if a render option is active */
 BOOL SAGE_Get3DRenderOption(LONGBITS);
 
 /** Set the rendering mode */
 BOOL SAGE_Set3DRenderMode(UWORD);
+
+/** Allocate Z buffer */
+BOOL SAGE_AllocateZBuffer(VOID);
+
+/** Release Z buffer */
+VOID SAGE_ReleaseZBuffer(VOID);
+
+/** Clear Z buffer */
+BOOL SAGE_ClearZBuffer(VOID);
 
 /** Add a triangle to the rendering queue */
 BOOL SAGE_Push3DTriangle(SAGE_3DTriangle *);

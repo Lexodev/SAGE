@@ -12,73 +12,46 @@
 #include <exec/types.h>
 
 #include "sage_debug.h"
-#include "ext/vampire.h"
+#include "sage_logger.h"
 #include "sage_vampire.h"
 
 /** @var Intuition library */
 extern struct ExecBase * SysBase;
-
-/** @var Vampire library */
-struct Library * VampireBase;
 
 /**
  * Check if Apollo core is available
  *
  * @return Apollo core is available
  */
-BOOL SAGE_ApolloPresence()
+BOOL SAGE_ApolloCore()
 {
   if (SysBase->AttnFlags & AFF_68080) {
+    SD(SAGE_DebugLog("Core 68080 detected"));
     return TRUE;
   }
   return FALSE;
 }
 
 /**
- * Check for AMMX2 availability
+ * Check for Vampire V4 card
  *
- * @return AMMX2 is available
+ * @return V4 is available
  */
-BOOL SAGE_AMMX2Available()
+BOOL SAGE_VampireV4()
 {
-  /*if (!(VampireBase = OpenResource(V_VAMPIRENAME))) {
-    return FALSE;
-  }
-  if (VampireBase->lib_Version >= 45) {
-    if (V_EnableAMMX(V_AMMX_V2) != VRES_ERROR) {
+  volatile UWORD * card_version = (UWORD *) SAPO_VCARD;
+  UWORD vampire;
+
+  if (SAGE_ApolloCore()) {
+    vampire = *card_version;
+    SD(SAGE_DebugLog("Vampire card version is 0x%X", vampire));
+    vampire >>= 8;
+    vampire &= 0xff;
+    if (vampire == SAPO_V4500 || vampire == SAPO_V4600 || vampire == SAPO_V41200 || vampire == SAPO_V4SA) {
+      SD(SAGE_DebugLog("Vampire V4 card detected"));
       return TRUE;
     }
-  }*/
-  // Let's rely on the case that if we have a 68080 we have AMMX2
-  if (SysBase->AttnFlags & AFF_68080) {
-    return TRUE;
   }
   return FALSE;
 }
 
-/**
- * Set the Vampire frame buffer address
- *
- * @param buffer Frame buffer address
- *
- * @return Operation success
- */
-BOOL SAGE_SetVampireFrameBuffer(APTR buffer)
-{
-  ULONG * vampire_fb = (ULONG *) SAGA_FBADDR;
-
-  *vampire_fb = (ULONG) buffer;
-  return TRUE;
-}
-
-/**
- * Get the Vampire frame buffer address
- *
- * @return Frame buffer address
- */
-APTR SAGE_GetVampireFrameBuffer()
-{
-  ULONG * vampire_fb = (ULONG *) SAGA_FBADDR;
-
-  return (APTR) *vampire_fb;
-}

@@ -24,8 +24,6 @@
 #include "sage_3dtexture.h"
 #include "sage_3dengine.h"
 
-#define SAGE_FAST_MATRIX      1
-
 #define SAGE_ENABLE_SKYBOX    1
 #define SAGE_ENABLE_TERRAIN   1
 #define SAGE_ENABLE_ENTITIES  1
@@ -104,9 +102,6 @@ VOID SAGE_DumpTransformedVertices(UWORD nb_vertices)
 VOID SAGE_SetupCameraMatrix(SAGE_Camera * camera)
 {
   FLOAT sin_x, sin_y, sin_z, cos_x, cos_y, cos_z;
-#if SAGE_FAST_MATRIX == 0
-  SAGE_Matrix rx, ry, rz, rzy;
-#endif
 
   sin_x = SAGE_FastSine(camera->anglex);
   sin_y = SAGE_FastSine(camera->angley);
@@ -114,7 +109,6 @@ VOID SAGE_SetupCameraMatrix(SAGE_Camera * camera)
   cos_x = SAGE_FastCosine(camera->anglex);
   cos_y = SAGE_FastCosine(camera->angley);
   cos_z = SAGE_FastCosine(camera->anglez);
-#if SAGE_FAST_MATRIX == 1
   CameraMatrix.m11 = cos_z*cos_y;
   CameraMatrix.m12 = (cos_z*sin_y*sin_x) - (sin_z*cos_x);
   CameraMatrix.m13 = (sin_z*sin_x) + (cos_z*sin_y*cos_x);
@@ -124,25 +118,6 @@ VOID SAGE_SetupCameraMatrix(SAGE_Camera * camera)
   CameraMatrix.m31 = -sin_y;
   CameraMatrix.m32 = cos_y*sin_x;
   CameraMatrix.m33 = cos_y*cos_x;
-#else
-  SAGE_IdentityMatrix(&rx);
-  rx.m22 = cos_x;
-  rx.m23 = -sin_x;
-  rx.m32 = sin_x;
-  rx.m33 = cos_x;
-  SAGE_IdentityMatrix(&ry);
-  ry.m11 = cos_y;
-  ry.m13 = sin_y;
-  ry.m31 = -sin_y;
-  ry.m33 = cos_y;
-  SAGE_IdentityMatrix(&rz);
-  rz.m11 = cos_z;
-  rz.m12 = -sin_z;
-  rz.m21 = sin_z;
-  rz.m22 = cos_z;
-  SAGE_MultiplyMatrix(&rzy, &rz, &ry);
-  SAGE_MultiplyMatrix(&CameraMatrix, &rzy, &rx);
-#endif
   SED(SAGE_DumpCameraMatrix();)
 }
 
@@ -170,9 +145,6 @@ VOID SAGE_SetupCameraMatrix(SAGE_Camera * camera)
 VOID SAGE_SetupEntityMatrix(SAGE_Entity * entity)
 {
   FLOAT sin_x, sin_y, sin_z, cos_x, cos_y, cos_z;
-#if SAGE_FAST_MATRIX == 0
-  SAGE_Matrix rx, ry, rz , rxy;
-#endif
 
   sin_x = SAGE_FastSine(entity->anglex);
   sin_y = SAGE_FastSine(entity->angley);
@@ -180,7 +152,6 @@ VOID SAGE_SetupEntityMatrix(SAGE_Entity * entity)
   cos_x = SAGE_FastCosine(entity->anglex);
   cos_y = SAGE_FastCosine(entity->angley);
   cos_z = SAGE_FastCosine(entity->anglez);
-#if SAGE_FAST_MATRIX == 1
   EntityMatrix.m11 = cos_y*cos_z;
   EntityMatrix.m12 = cos_y*sin_z;
   EntityMatrix.m13 = -sin_y;
@@ -190,25 +161,6 @@ VOID SAGE_SetupEntityMatrix(SAGE_Entity * entity)
   EntityMatrix.m31 = (cos_x*sin_y*cos_z) + (sin_x*sin_z);
   EntityMatrix.m32 = (cos_x*sin_y*sin_z) - (sin_x*cos_z);
   EntityMatrix.m33 = cos_x*cos_y;
-#else
-  SAGE_IdentityMatrix(&rx);
-  rx.m22 = cos_x;
-  rx.m23 = sin_x;
-  rx.m32 = -sin_x;
-  rx.m33 = cos_x;
-  SAGE_IdentityMatrix(&ry);
-  ry.m11 = cos_y;
-  ry.m13 = -sin_y;
-  ry.m31 = sin_y;
-  ry.m33 = cos_y;
-  SAGE_IdentityMatrix(&rz);
-  rz.m11 = cos_z;
-  rz.m12 = sin_z;
-  rz.m21 = -sin_z;
-  rz.m22 = cos_z;
-  SAGE_MultiplyMatrix(&rxy, &rx, &ry);
-  SAGE_MultiplyMatrix(&EntityMatrix, &rxy, &rz);
-#endif
   SED(SAGE_DumpEntityMatrix();)
 }
 
@@ -253,7 +205,7 @@ VOID SAGE_VerticesProjection(SAGE_TransformedVertex * vertices, UWORD nb_vertice
         vertices[index].py = 0.0;
         vertices[index].pz = 0.0;
         vertices[index].iz = 0.0;
-        SED(SAGE_DebugLog(" - vertex %d has a negative Z", index);)
+        SED(SAGE_DebugLog(" - vertex %d has a negative or null Z (%f)", index, vertices[index].cz);)
       }
       sage_world.metrics.rendered_vertices++;
     }
@@ -722,7 +674,7 @@ VOID SAGE_TransformSkybox(SAGE_Camera * camera)
   SAGE_SkyboxPlaneWorldToCamera(skybox, camera, sage_world.transformed_vertices);
   for (plane = 0;plane < S3DE_SKYBOX_PLANES;plane++) {
     if (SAGE_SkyboxPlaneVisibility(skybox, plane, camera, sage_world.transformed_vertices)) {
-      SD(if (engine_debug) SAGE_DebugLog(" - plane %d is visible", plane);)
+      SED(SAGE_DebugLog(" - plane %d is visible", plane);)
       SAGE_SkyboxFaceWorldToCamera(skybox, plane, camera, sage_world.transformed_vertices);
       if (!skybox->planes[plane].culled) {
         SAGE_SkyboxFaceClipping(skybox, plane, camera, sage_world.transformed_vertices);
@@ -1104,7 +1056,7 @@ VOID SAGE_EntityBackfaceCulling(SAGE_Entity * entity, SAGE_Camera * camera, SAGE
       SED(SAGE_DebugLog(" => face %d is visible", index);)
     } else {
       entity->faces[index].culled = TRUE;
-      SED(SAGE_DebugLog(" =>Face %d is culled", index);)
+      SED(SAGE_DebugLog(" => face %d is culled", index);)
     }
     entity->faces[index].clipped = S3DE_NOCLIP;
   }

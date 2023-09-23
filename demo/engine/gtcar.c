@@ -214,7 +214,7 @@ VOID _Render(VOID)
 
 void main(void)
 {
-  SAGE_SetLogLevel(SLOG_WARNING);
+  SAGE_SetLogLevel(SLOG_DEBUG);
   SAGE_AppliLog("SAGE library engine GT car demo V1.0");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_INPUT|SMOD_3D|SMOD_INTERRUPTION)) {

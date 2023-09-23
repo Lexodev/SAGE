@@ -26,6 +26,7 @@
 #define SBMP_TRANSPARENT      1UL
 #define SBMP_CUSTOM           2UL
 #define SBMP_FASTCOPY         4UL
+#define SBMP_COMPRESSED       8UL
 
 // Bitmap size constraint (in pixels)
 #define SBMP_SIZE8BITS        8UL
@@ -53,6 +54,7 @@
 #define PIXFMT_RGBA32         RGBFB_R8G8B8A8
 #define PIXFMT_BGRA32         RGBFB_B8G8R8A8*/
 #define PIXFMT_ABGR32         14UL
+#define PIXFMT_DXT1           15UL
 #define PIXFMT_UNDEFINED      100UL
 
 /** SAGE bitmap */
@@ -81,7 +83,7 @@ BOOL SAGE_CheckSizeConstraint(ULONG, ULONG);
 BOOL SAGE_AllocateFastDrawBuffers(SAGE_Bitmap *);
 
 /** Allocate a bitmap structure */
-SAGE_Bitmap * SAGE_AllocBitmap(ULONG, ULONG, ULONG, ULONG, APTR);
+SAGE_Bitmap * SAGE_AllocBitmap(ULONG, ULONG, ULONG, ULONG, ULONG, APTR);
 
 /** Get the bitmap buffer address */
 APTR * SAGE_GetBitmapBuffer(SAGE_Bitmap *);

@@ -106,7 +106,7 @@ APTR SAGE_AllocMemoryBloc(ULONG size, ULONG attributes, ULONG align)
     SAGE_SetError(SERR_NO_MEMORY);
     return NULL;
   }
-  SD(SAGE_DebugLog("Memory allocation 0x%X (0x%X) of %d bytes", base, memory, size));
+  SD(SAGE_DebugLog("Memory allocation 0x%X (0x%X) of %d bytes (align %d)", base, memory, size, align));
   return memory;
 }
 
@@ -252,14 +252,15 @@ VOID SAGE_DumpMemory()
   node = SAGE_Memory.head;
   if (node == NULL) {
     SAGE_DebugLog("- List is empty !");
-  }
-  while (node != NULL) {
-    count++;
-    SAGE_DebugLog("* Node %d :", count);
-    SAGE_DebugLog(" - Base address 0x%X", node->base_address);
-    SAGE_DebugLog(" - Aligned address 0x%X", node->memory_bloc);
-    SAGE_DebugLog(" - Size %d", node->bloc_size);
-    node = node->next;
+  } else {
+    while (node != NULL) {
+      count++;
+      SAGE_DebugLog("* Node %d :", count);
+      SAGE_DebugLog(" - Base address 0x%X", node->base_address);
+      SAGE_DebugLog(" - Aligned address 0x%X", node->memory_bloc);
+      SAGE_DebugLog(" - Size %d", node->bloc_size);
+      node = node->next;
+    }
   }
   SAGE_DebugLog("** End of list **");
 }

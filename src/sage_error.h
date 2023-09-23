@@ -13,10 +13,6 @@
 
 #include <exec/types.h>
 
-// Utilities should be in another file but this one is always included
-#define SAGE_WORDTOBE(value)  ((value & 0xff00) >> 8) | ((value & 0xff) << 8)
-#define SAGE_LONGTOBE(value)  ((value & 0xff) << 24) | ((value & 0xff00) << 8) | ((value & 0xff000000) >> 24) | ((value & 0xff0000) >> 8)
-
 // Error constants
 #define SERR_ENDOF_ERROR      -1L
 #define SERR_NO_ERROR         0L
@@ -111,10 +107,12 @@
 // 3D errors
 #define SERR_NO_3DDRIVER      100L
 #define SERR_NO_3DCONTEXT     101L
+#define SERR_NO_MAGGIE        102L
 #define SERR_TEX_INDEX        105L
 #define SERR_TEX_ALLOC        106L
 #define SERR_LOCKHARDWARE     107L
 #define SERR_DRAWTRIANGLE     108L
+#define SERR_ZBUFFER          109L
 #define SERR_CAMERA_INDEX     110L
 #define SERR_NO_CAMERA        111L
 #define SERR_ENTITY_INDEX     112L

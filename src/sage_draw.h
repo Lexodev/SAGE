@@ -125,8 +125,6 @@ extern BOOL ASM SAGE_DrawFlatQuad32Bits(
   REG(d2, LONG color)
 );
 
-VOID SAGE_DumpLineCoords(LONG, LONG, LONG, LONG);
-
 /** Draw a pixel with clipping */
 BOOL SAGE_DrawClippedPixel(LONG, LONG, LONG);
 
@@ -153,5 +151,10 @@ BOOL SAGE_DrawTriangle(LONG, LONG, LONG, LONG, LONG, LONG, LONG);
 
 /** Draw a clipped triangle */
 BOOL SAGE_DrawClippedTriangle(LONG, LONG, LONG, LONG, LONG, LONG, LONG);
+
+/** Only for debug purpose, don't use it in your code */
+
+/** DEBUG : Dump line coordinates */
+VOID SAGE_DumpLineCoords(LONG, LONG, LONG, LONG);
 
 #endif

@@ -413,7 +413,7 @@ BOOL SAGE_ParseWavefrontFile(BPTR fd, SAGE_WavefrontObject * object)
   WORD idx_vertex, idx_texture, idx_normal, idx_face, tokens, active_material;
   STRPTR error;
 
-  SD(SAGE_DebugLog("* SAGE_ParseWavefrontFile");)
+  SD(SAGE_DebugLog("* SAGE_ParseWavefrontFile first pass");)
   if (object->nb_materials > 0) {
     material_fd = Open(object->matlib, MODE_OLDFILE);
     if (material_fd != 0) {
@@ -432,7 +432,7 @@ BOOL SAGE_ParseWavefrontFile(BPTR fd, SAGE_WavefrontObject * object)
   idx_normal = 0;
   idx_face = 0;
   active_material = S3DE_OBJNOMATERIAL;
-  SD(SAGE_DebugLog("* SAGE_ParseWavefrontFile 2");)
+  SD(SAGE_DebugLog("* SAGE_ParseWavefrontFile second pass");)
   while ((error = FGets(fd, obj_line_buffer, 1024)) != 0) {
     tokens = SAGE_OBJTokenizeLine(obj_line_buffer);
     if (tokens > 0) {
@@ -515,6 +515,7 @@ SAGE_Entity * SAGE_BuildEntityFromObject(SAGE_WavefrontObject * object)
   SAGE_Entity * entity;
   WORD idx, size;
 
+  SD(SAGE_DebugLog("SAGE_BuildEntityFromObject"));
   entity = NULL;
   if (SAGE_LoadOBJMaterial(object)) {
     entity = SAGE_CreateEntity(object->nb_vertices, object->nb_faces);

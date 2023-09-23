@@ -40,11 +40,12 @@
 #define STEX_PIXFMT_RGB24     W3D_R8G8B8
 #define STEX_PIXFMT_ARGB32    W3D_A8R8G8B8
 #define STEX_PIXFMT_RGBA32    W3D_R8G8B8A8
+#define STEX_PIXFMT_DXT1      99
 
 /** SAGE 3D texture structure */
 typedef struct {
-  /** Texture size */
-  UWORD size;
+  /** Texture size & mipsize */
+  UWORD size, mipsize;
   /** Texture bitmap */
   SAGE_Bitmap * bitmap;
   /** Warp3D texture */
@@ -55,14 +56,37 @@ typedef struct {
   ULONG palette[STEX_MAXCOLORS];
 } SAGE_3DTexture;
 
+/** DDS texture */
+#define STEX_DDSTAG           0x44445320
+#define STEX_DDSALIGN         8
+
+typedef struct {
+  ULONG tag;
+  ULONG size, flags, height, width;
+  ULONG dummy, depth, mipmap;
+  ULONG reserved1[11];
+  ULONG pixsize, pixflags, pixfourcc;
+  ULONG pixrgb, pixrmask, pixgmask, pixbmask, pixamask;
+  ULONG caps, caps2, caps3, caps4;
+  ULONG reserved2;
+} SAGE_DDSHeader;
+
+typedef struct {
+  ULONG width, height, depth, data_size;
+  APTR * data;
+} SAGE_DDSFile;
+
+/** Create a texture from a file */
+BOOL SAGE_CreateTextureFromFile(UWORD, STRPTR);
+
 /** Create a texture from a picture */
 BOOL SAGE_CreateTextureFromPicture(UWORD, UWORD, UWORD, UWORD, SAGE_Picture *);
 
 /** Get a texture by his index */
-SAGE_3DTexture * SAGE_GetTexture(UWORD);
+SAGE_3DTexture * SAGE_GetTexture(WORD);
 
 /** Get the Warp3D texture by his index */
-W3D_Texture * SAGE_GetW3DTexture(UWORD);
+W3D_Texture * SAGE_GetW3DTexture(WORD);
 
 /** Return the first free slot in texture array */
 WORD SAGE_GetFreeTextureIndex(VOID);

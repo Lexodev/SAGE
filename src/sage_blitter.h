@@ -186,6 +186,7 @@ extern BOOL ASM SAGE_AMMXBlitCookieCut16Bits(
 );
 
 /** External function for 16 bits bitmap transparent zoom copy using AMMX cookie cut instruction */
+/** WIP, DO NOT USE YET !!! */
 extern BOOL ASM SAGE_AMMXBlitCookieCutZoom16Bits(
   REG(a0, ULONG source),
   REG(d0, UWORD src_width),

@@ -126,7 +126,4 @@ LONG SAGE_GetLastNetworkError(VOID);
 /** Get the last socket error */
 LONG SAGE_GetLastSocketError(SAGE_BsdSocket *);
 
-/** Dump network device */
-VOID SAGE_DumpNetworkDevice(VOID);
-
 #endif

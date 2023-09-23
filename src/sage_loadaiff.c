@@ -17,7 +17,6 @@
 #include "sage_logger.h"
 #include "sage_memory.h"
 #include "sage_loadaiff.h"
-#include "sage_music.h"
 
 #include <proto/dos.h>
 #include <proto/exec.h>

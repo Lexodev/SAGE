@@ -148,23 +148,28 @@ BOOL InitTexture(VOID)
 {
   SAGE_Picture * picture;
 
-  SAGE_AppliLog("Load texture");
   if (screen_depth == 8) {
+    SAGE_AppliLog("Load picture");
     picture = SAGE_LoadPicture("data/vamptex.bmp");
-  } else {
-    picture = SAGE_LoadPicture("data/vampire.png");
-  }
-  if (picture != NULL) {
-    if (screen_depth == 8) {
+    if (picture != NULL) {
       SAGE_LoadPictureColorMap(picture);
       SAGE_RefreshColors(0, 256);
       SAGE_SetTextColor(200, 0);
+      SAGE_AppliLog("Create texture from picture");
+      if (SAGE_CreateTextureFromPicture(TEX_VAMPIRE, 0, 0, STEX_SIZE128, picture)) {
+        SAGE_AppliLog("Add texture to card memory");
+        if (SAGE_AddTexture(TEX_VAMPIRE)) {
+          SAGE_ReleasePicture(picture);
+          return TRUE;
+        }
+      }
+      SAGE_ReleasePicture(picture);
     }
-    SAGE_AppliLog("Create texture from picture");
-    if (SAGE_CreateTextureFromPicture(TEX_VAMPIRE, 0, 0, STEX_SIZE128, picture)) {
+  } else {
+    SAGE_AppliLog("Create texture from file");
+    if (SAGE_CreateTextureFromFile(TEX_VAMPIRE, "data/vampire.png")) {
       SAGE_AppliLog("Add texture to card memory");
       if (SAGE_AddTexture(TEX_VAMPIRE)) {
-        SAGE_ReleasePicture(picture);
         return TRUE;
       }
     }
@@ -409,7 +414,7 @@ void main(int argc, char ** argv)
   SAGE_AppliLog("** SAGE library mapped 3D cube demo V1.0 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_INPUT|SMOD_3D|SMOD_INTERRUPTION)) {
-    if (SAGE_ApolloPresence()) {
+    if (SAGE_ApolloCore()) {
       SAGE_AppliLog("AMMX detected !!!");
     } else {
       SAGE_AppliLog("AMMX not detected");

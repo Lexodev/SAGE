@@ -128,7 +128,7 @@ typedef struct {
 #define SPR6STEPX             3L
 
 // Transparent color
-#define TRANSPCOLOR           0xF81F
+#define TRANSPCOLOR           0xFF0FF
 
 // Music
 #define DRAGON_MUSIC          0

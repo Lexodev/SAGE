@@ -47,6 +47,13 @@ void main(void)
       } else {
         SAGE_DisplayError();
       }
+      printf("Load DDS texture\n");
+      if (SAGE_CreateTextureFromFile(TEX_VAMPIRE, "/data/testtex.dds")) {
+        printf("OK\n");
+        SAGE_ReleaseTexture(TEX_VAMPIRE);
+      } else {
+        SAGE_DisplayError();
+      }
       SAGE_Pause(50);
       SAGE_CloseScreen();
     }

@@ -544,8 +544,11 @@ VOID DrawCube(CubeObject * cube, Camera * camera)
 VOID DrawWorld()
 {
   SetupViewMatrix(&ViewCam);
+  if (debug) printf("**** DrawCube 1 ****\n");
   DrawCube(&FrontCube, &ViewCam);
+  if (debug) printf("**** DrawCube 2 ****\n");
   DrawCube(&LeftCube, &ViewCam);
+  if (debug) printf("**** DrawCube 3 ****\n");
   DrawCube(&BottomCube, &ViewCam);
 }
 
@@ -567,7 +570,7 @@ void main(void)
   SAGE_AppliLog("** SAGE library flat 3D cube demo V1.0 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_INPUT|SMOD_INTERRUPTION)) {
-    if (SAGE_ApolloPresence()) {
+    if (SAGE_ApolloCore()) {
       SAGE_AppliLog("AMMX detected !!!");
     } else {
       SAGE_AppliLog("AMMX not detected");

@@ -23,6 +23,42 @@
 UBYTE line_buffer[SCFG_BUFFER_SIZE];
 STRPTR empty_string = "";
 
+/******************************************************************************/
+
+/**
+ * Dump a config structure (debug)
+ */
+VOID SAGE_DumpConfiguration(SAGE_Configuration * config)
+{
+  SAGE_ConfSection * section;
+  SAGE_ConfParameter * parameter;
+  
+  SAGE_DebugLog("** Configuration dump");
+  if (config->parameters != NULL) {
+    parameter = config->parameters;
+    while (parameter != NULL) {
+      SAGE_DebugLog("%s=%s", parameter->param_name, parameter->param_value);
+      parameter = (SAGE_ConfParameter *) parameter->next_param;
+    }
+  }
+  if (config->sections != NULL) {
+    section = config->sections;
+    while (section != NULL) {
+      SAGE_DebugLog("[%s]", section->section_name);
+      if (section->parameters != NULL) {
+        parameter = section->parameters;
+        while (parameter != NULL) {
+          SAGE_DebugLog("%s=%s", parameter->param_name, parameter->param_value);
+          parameter = (SAGE_ConfParameter *) parameter->next_param;
+        }
+      }
+      section = (SAGE_ConfSection *) section->next_section;
+    }
+  }
+}
+
+/******************************************************************************/
+
 /**
  * Find a section in config file
  *
@@ -147,38 +183,6 @@ BOOL SAGE_GetParameterFromFile(STRPTR filename, STRPTR section, STRPTR parameter
   Close(fdesc);
   SAGE_SetError(SERR_NOPARAMETER);
   return FALSE;
-}
-
-/**
- * Dump a config structure (debug)
- */
-VOID SAGE_DumpConfiguration(SAGE_Configuration * config)
-{
-  SAGE_ConfSection * section;
-  SAGE_ConfParameter * parameter;
-  
-  SAGE_DebugLog("** Configuration dump");
-  if (config->parameters != NULL) {
-    parameter = config->parameters;
-    while (parameter != NULL) {
-      SAGE_DebugLog("%s=%s", parameter->param_name, parameter->param_value);
-      parameter = (SAGE_ConfParameter *) parameter->next_param;
-    }
-  }
-  if (config->sections != NULL) {
-    section = config->sections;
-    while (section != NULL) {
-      SAGE_DebugLog("[%s]", section->section_name);
-      if (section->parameters != NULL) {
-        parameter = section->parameters;
-        while (parameter != NULL) {
-          SAGE_DebugLog("%s=%s", parameter->param_name, parameter->param_value);
-          parameter = (SAGE_ConfParameter *) parameter->next_param;
-        }
-      }
-      section = (SAGE_ConfSection *) section->next_section;
-    }
-  }
 }
 
 /**

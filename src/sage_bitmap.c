@@ -60,6 +60,8 @@ STRPTR SAGE_GetPixelFormatName(ULONG format)
       return "RGBA32";
     case PIXFMT_BGRA32:
       return "BGRA32";
+    case PIXFMT_DXT1:
+      return "DXT1";
   }
   return "Undefined";
 }
@@ -74,19 +76,14 @@ STRPTR SAGE_GetPixelFormatName(ULONG format)
 ULONG SAGE_GetBitmapAddress(struct BitMap * bitmap)
 {
   APTR cgx_handle = NULL;
-  ULONG memory, bpr;
+  ULONG memory;
 
   if (GetCyberMapAttr(bitmap, CYBRMATTR_ISCYBERGFX)) {
-    cgx_handle = LockBitMapTags(
-      bitmap,
-      LBMI_BASEADDRESS, &memory,
-      LBMI_BYTESPERROW, &bpr,
-      TAG_DONE
-    );
+    cgx_handle = LockBitMapTags(bitmap, LBMI_BASEADDRESS, &memory, TAG_DONE);
   }
   if (cgx_handle != NULL) {
     UnLockBitMap(cgx_handle);
-    SD(SAGE_DebugLog(" Bitmap was locked with FB address 0x%X (BPR %d)", memory, bpr));
+    SD(SAGE_DebugLog(" Bitmap was locked, FB address is 0x%X", memory));
     SD(if ((memory & 0xffffffe0) == memory) {
       SAGE_DebugLog(" Bitmap is 32 bytes aligned");
     } else {
@@ -109,24 +106,14 @@ ULONG SAGE_GetBitmapAddress(struct BitMap * bitmap)
 ULONG SAGE_GetBitmapBPR(struct BitMap * bitmap)
 {
   APTR cgx_handle = NULL;
-  ULONG memory, bpr;
+  ULONG bpr;
 
   if (GetCyberMapAttr(bitmap, CYBRMATTR_ISCYBERGFX)) {
-    cgx_handle = LockBitMapTags(
-      bitmap,
-      LBMI_BASEADDRESS, &memory,
-      LBMI_BYTESPERROW, &bpr,
-      TAG_DONE
-    );
+    cgx_handle = LockBitMapTags(bitmap, LBMI_BYTESPERROW, &bpr, TAG_DONE);
   }
   if (cgx_handle != NULL) {
     UnLockBitMap(cgx_handle);
-    SD(SAGE_DebugLog(" Bitmap was locked with FB address 0x%X (BPR %d)", memory, bpr));
-    SD(if ((memory & 0xffffffe0) == memory) {
-      SAGE_DebugLog(" Bitmap is 32 bytes aligned");
-    } else {
-      SAGE_DebugLog(" Bitmap is not 32 bytes aligned");
-    })
+    SD(SAGE_DebugLog(" Bitmap was locked, FB bytes per row are %d", bpr));
   } else {
     bpr = 0;
     SAGE_SetError(SERR_LOCKBITMAP);
@@ -194,12 +181,13 @@ BOOL SAGE_AllocateFastDrawBuffers(SAGE_Bitmap * bitmap)
  * @param width         Bitmap width
  * @param height        Bitmap height
  * @param depth         Bitmap depth
+ * @param bpr           Bitmap bytes per row
  * @param pixformat     Pixel format
  * @param custom_bitmap Address of a custom bitmap to use as buffer
  *
  * @return SAGE Bitmap pointer
  */
-SAGE_Bitmap * SAGE_AllocBitmap(ULONG width, ULONG height, ULONG depth, ULONG pixformat, APTR custom_bitmap)
+SAGE_Bitmap * SAGE_AllocBitmap(ULONG width, ULONG height, ULONG depth, ULONG bpr, ULONG pixformat, APTR custom_bitmap)
 {
   SAGE_Bitmap * bitmap = NULL;
 
@@ -214,7 +202,11 @@ SAGE_Bitmap * SAGE_AllocBitmap(ULONG width, ULONG height, ULONG depth, ULONG pix
     bitmap->width = width;
     bitmap->height = height;
     bitmap->depth = depth;
-    bitmap->bpr = width * (depth / 8);
+    if (bpr == 0) {
+      bitmap->bpr = width * (depth / 8);
+    } else {
+      bitmap->bpr = bpr;
+    }
     bitmap->transparency = 0;
     bitmap->pixformat = pixformat;
     bitmap->bitmap_buffer = NULL;
@@ -225,7 +217,7 @@ SAGE_Bitmap * SAGE_AllocBitmap(ULONG width, ULONG height, ULONG depth, ULONG pix
       bitmap->bitmap_buffer = custom_bitmap;
       return bitmap;
     } else {
-      bitmap->bitmap_buffer = SAGE_AllocMem(width * height * (depth / 8));
+      bitmap->bitmap_buffer = SAGE_AllocMem(bitmap->bpr * bitmap->height);
       if (bitmap->bitmap_buffer != NULL) {
         return bitmap;
       }
@@ -721,7 +713,7 @@ VOID SAGE_Blit32BitsBitmap(SAGE_Bitmap * source, ULONG left, ULONG top, ULONG wi
   src_offset = source->width - width;
   dst_buffer = (ULONG *) destination->bitmap_buffer;
   dst_buffer += (x_start + (destination->width * y_start));
-  dst_offset = destination->width - width;
+  dst_offset = (destination->width - width) * 4;
   if (source->properties & SBMP_TRANSPARENT) {
     SAGE_BlitTransparentCopy32Bits(
       (ULONG)src_buffer,
@@ -1434,9 +1426,7 @@ BOOL SAGE_RemapBitmap(SAGE_Bitmap * bitmap, ULONG * palette, ULONG pixformat)
   return TRUE;
 }
 
-/**
- *    DEBUG ONLY
- */
+/********************************** DEBUG ONLY ********************************/
 
 /**
  * Display the bitmap pixel format
@@ -1485,6 +1475,9 @@ VOID SAGE_DumpPixelFormat(ULONG format)
     case PIXFMT_BGRA32:
       SAGE_DebugLog(" Pixel format is BGRA32 (%d)", format);
       break;
+    case PIXFMT_DXT1:
+      SAGE_DebugLog(" Pixel format is DXT1 (%d)", format);
+      break;
     default:
       SAGE_DebugLog(" Pixel format %d is undefined", format);
   }
@@ -1532,7 +1525,10 @@ VOID SAGE_DumpBitmap(SAGE_Bitmap * bitmap)
   SAGE_DebugLog(" Width                 %d", bitmap->width);
   SAGE_DebugLog(" Height                %d", bitmap->height);
   SAGE_DebugLog(" Depth                 %d", bitmap->depth);
+  SAGE_DebugLog(" Bytes per row         %d", bitmap->bpr);
   SAGE_DebugLog(" Transparency          0x%08X", bitmap->transparency);
   SAGE_DebugLog(" Pixel format          %s (%d)", SAGE_GetPixelFormatName(bitmap->pixformat), bitmap->pixformat);
   SAGE_DebugLog(" Buffer                0x%X", bitmap->bitmap_buffer);
 }
+
+/********************************** DEBUG ONLY ********************************/

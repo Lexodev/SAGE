@@ -29,6 +29,8 @@
 /** SAGE context */
 extern SAGE_Context SageContext;
 
+/********************************** DEBUG ONLY ********************************/
+
 /** Dump sound structure */
 VOID SAGE_DumpSound(SAGE_Sound * sound)
 {
@@ -44,6 +46,8 @@ VOID SAGE_DumpSound(SAGE_Sound * sound)
     SAGE_DebugLog(". Pan = %d", sound->pan);
   }
 }
+
+/********************************** DEBUG ONLY ********************************/
 
 /**
  *  Get the type of a sound file
@@ -131,7 +135,7 @@ SAGE_Sound * SAGE_LoadSound(STRPTR file_name)
 }
 
 /**
- * Load a sound using datatypes
+ * Load a sound using datatypes (NOT USED)
  *
  * @param file_name Sound file name
  *

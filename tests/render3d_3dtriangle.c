@@ -17,91 +17,48 @@
 #define SCREEN_DEPTH          16L
 
 #define TEX_VAMPIRE           1
-#define TEX_WIDTH             255
+#define TEX_WIDTH             256
 
-void draw_textri(void)
+void draw_triangle(void)
 {
   SAGE_3DTriangle triangle;
   
-  triangle.x1 = 20.0;
+  triangle.x1 = 310.0;
   triangle.y1 = 15.0;
   triangle.z1 = 10.0;
   triangle.u1 = 0.0;
   triangle.v1 = 0.0;
-  triangle.x2 = 300.0;
-  triangle.y2 = 15.0;
-  triangle.z2 = 10.0;
-  triangle.u2 = TEX_WIDTH;
+  triangle.x2 = 175.0;
+  triangle.y2 = 112.0;
+  triangle.z2 = 33.0;
+  triangle.u2 = TEX_WIDTH-1;
   triangle.v2 = 0.0;
-  triangle.x3 = 20.0;
-  triangle.y3 = 200.0;
-  triangle.z3 = 10.0;
+  triangle.x3 = 420.0;
+  triangle.y3 = 275.0;
+  triangle.z3 = 44.0;
   triangle.u3 = 0.0;
-  triangle.v3 = TEX_WIDTH;
+  triangle.v3 = TEX_WIDTH-1;
+  triangle.color = 0xf800f800;
   triangle.texture = TEX_VAMPIRE;
   SAGE_Push3DTriangle(&triangle);
 
-  triangle.x1 = 300.0;
-  triangle.y1 = 15.0;
-  triangle.z1 = 10.0;
-  triangle.u1 = TEX_WIDTH;
+  triangle.x1 = 275.0;
+  triangle.y1 = 35.0;
+  triangle.z1 = 60.0;
+  triangle.u1 = TEX_WIDTH-1;
   triangle.v1 = 0.0;
   triangle.x2 = 500.0;
-  triangle.y2 = 400.0;
-  triangle.z2 = 10.0;
-  triangle.u2 = TEX_WIDTH;
-  triangle.v2 = TEX_WIDTH;
-  triangle.x3 = 20.0;
-  triangle.y3 = 200.0;
-  triangle.z3 = 10.0;
+  triangle.y2 = 110.0;
+  triangle.z2 = 12.0;
+  triangle.u2 = TEX_WIDTH-1;
+  triangle.v2 = TEX_WIDTH-1;
+  triangle.x3 = 0.0;
+  triangle.y3 = 375.0;
+  triangle.z3 = 23.0;
   triangle.u3 = 0.0;
-  triangle.v3 = TEX_WIDTH;
+  triangle.v3 = TEX_WIDTH-1;
+  triangle.color = 0xf800f800;
   triangle.texture = TEX_VAMPIRE;
-  SAGE_Push3DTriangle(&triangle);
-
-  SAGE_Render3DTriangles();
-}
-
-void draw_coltri(void)
-{
-  SAGE_3DTriangle triangle;
-  
-  triangle.x1 = 20.0;
-  triangle.y1 = 15.0;
-  triangle.z1 = 10.0;
-  triangle.u1 = 0.0;
-  triangle.v1 = 0.0;
-  triangle.x2 = 300.0;
-  triangle.y2 = 15.0;
-  triangle.z2 = 10.0;
-  triangle.u2 = TEX_WIDTH;
-  triangle.v2 = 0.0;
-  triangle.x3 = 20.0;
-  triangle.y3 = 200.0;
-  triangle.z3 = 10.0;
-  triangle.u3 = 0.0;
-  triangle.v3 = TEX_WIDTH;
-  triangle.color = 0xf000f000;
-  triangle.texture = STEX_USECOLOR;
-  SAGE_Push3DTriangle(&triangle);
-
-  triangle.x1 = 300.0;
-  triangle.y1 = 15.0;
-  triangle.z1 = 10.0;
-  triangle.u1 = TEX_WIDTH;
-  triangle.v1 = 0.0;
-  triangle.x2 = 500.0;
-  triangle.y2 = 400.0;
-  triangle.z2 = 10.0;
-  triangle.u2 = TEX_WIDTH;
-  triangle.v2 = TEX_WIDTH;
-  triangle.x3 = 20.0;
-  triangle.y3 = 200.0;
-  triangle.z3 = 10.0;
-  triangle.u3 = 0.0;
-  triangle.v3 = TEX_WIDTH;
-  triangle.color = 0x000f000f;
-  triangle.texture = STEX_USECOLOR;
   SAGE_Push3DTriangle(&triangle);
 
   SAGE_Render3DTriangles();
@@ -122,7 +79,7 @@ void main(void)
     if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES)) {
       SAGE_HideMouse();
       SAGE_AppliLog("Load texture picture");
-      if ((picture = SAGE_LoadPicture("/data/texture.gif")) != NULL) {
+      if ((picture = SAGE_LoadPicture("/data/testtex.gif")) != NULL) {
         SAGE_LoadPictureColorMap(picture);
         SAGE_RefreshColors(0, 256);
         SAGE_AppliLog("Create texture from picture");
@@ -130,6 +87,10 @@ void main(void)
           SAGE_AppliLog("Add texture to card memory");
           if (SAGE_AddTexture(TEX_VAMPIRE)) {
 
+            if (SAGE_EnableZBuffer(TRUE)) {
+              SAGE_AppliLog("Z buffer activated");
+            }
+            
             while (!finish) {
               SAGE_SetTraceDebug(FALSE);
               while ((event = SAGE_GetEvent()) != NULL) {
@@ -145,8 +106,7 @@ void main(void)
                   }
                 }
               }
-              draw_textri();
-//              draw_coltri();
+              draw_triangle();
               if (!SAGE_RefreshScreen()) {
                 SAGE_ErrorLog("Error RefreshScreen !");
                 SAGE_DisplayError();

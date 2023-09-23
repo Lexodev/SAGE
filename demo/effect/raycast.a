@@ -1,0 +1,135 @@
+; Raycast for Voxel effect
+;
+; a0 = Camera
+; a1 = Datacast
+
+; Camera
+CAM_X         EQU 0
+CAM_Y         EQU 4
+CAM_HEIGHT    EQU 8
+CAM_HORIZON   EQU 12
+CAM_ZFAR      EQU 16
+
+; Datacast
+DC_PLX        EQU 0
+DC_PLY        EQU 4
+DC_DIX        EQU 8
+DC_DIY        EQU 12
+DC_SCALE      EQU 16
+DC_SCRW       EQU 20
+DC_SCRH       EQU 24
+DC_MAPS       EQU 28
+DC_FB         EQU 32
+DC_HM         EQU 36
+DC_CM         EQU 40
+
+  xdef _fast_raycast
+  
+  section code
+_fast_raycast:
+
+  move.l  DC_MAPS(a1),d5            ; cast->map_size
+  move.l  d5,d6
+  subq.l  #1,d6                     ; MAP MASK
+
+  move.l  DC_HM(a1),a2              ; cast->heightmap
+  move.l  DC_CM(a1),a3              ; cast->colormap
+  move.l  DC_FB(a1),a4              ; cast->framebuffer
+
+;  for (x = 0; x < cast->screen_width; x++) {
+  moveq.l #0,d7
+next_column:
+  move.l  DC_SCRW(a1),d4            ; cast->screen_width
+  cmp.l   d7,d4
+  bge.s   end_next_column
+
+;    deltax = (cast->plx + cast->dix * x) / cam->zfar;
+  fmove.l d7,fp0
+  fmul.s  DC_DIX(a1),fp0
+  fadd.s  DC_PLX(a1),fp0
+  fdiv.s  CAM_ZFAR(a0),fp0          ; deltax
+
+;    deltay = (cast->ply + cast->diy * x) / cam->zfar;
+  fmove.l d7,fp1
+  fmul.s  DC_DIY(a1),fp1
+  fadd.s  DC_PLY(a1),fp1
+  fdiv.s  CAM_ZFAR(a0),fp1          ; deltay
+
+;    deltaz = 1.0f;
+  fmove.s #1.0,fp2                  ; deltaz
+
+;    rx = cam->x;
+  fmove.s CAM_X(a0),fp3             ; rx
+;    ry = cam->y;
+  fmove.s CAM_Y(a0),fp4             ; ry
+
+;    tallestheight = cast->screen_height;
+  move.l  DC_SCRW(a1),d3            ; tallestheight
+
+;    for (z = 1.0; z < cam->zfar; z += deltaz) {
+  fmove.s #1.0,fp7
+next_distance:
+
+;      rx += deltax;
+  fadd    fp0,fp3
+;      ry += deltay;
+  fadd    fp1,fp4
+
+;      mapoffset = ((cast->map_size * ((int)(ry) & (cast->map_size - 1))) + ((int)(rx) & (cast->map_size - 1)));
+  fmove.l fp4,d0
+  and.l   d6,d0
+  mulu.w  d5,d0
+  fmove.l fp3,d1
+  and.l   d6,d1
+  add.l   d1,d0                     ; mapoffset
+
+;      projheight = (int)((cam->height - cast->heightmap[mapoffset]) / z * cast->scale + cam->horizon);
+  fmove.b (a2,d0.l),fp5
+  fmove.s CAM_HEIGHT(a0),fp6
+  fsub    fp5,fp6
+  fdiv    fp7,fp6
+  fmul.s  DC_SCALE(a1),fp6
+  fadd.s  CAM_HORIZON(a0),fp6
+  fmove.l fp6,d1                    ; projheight
+
+;      if (projheight < tallestheight) {
+  cmp.l   d0,d1
+  ble.s   no_draw
+;        for (y = projheight; y < tallestheight; y++) {
+  move.l  d1,d2                     ; y
+next_pixel:
+;          if (y >= 0) {
+  tst.l   d2
+  ble.s   negative
+;            cast->framebuffer[(cast->screen_width * y) + x] = cast->colormap[mapoffset];
+  mulu.w  d2,d4
+  add.l   d7,d4
+  move.b  (a3,d0.l),(a4,d4.l)
+;          }
+negative:
+  addq.l  #1,d2
+  cmp.l   d2,d3
+  blo.s   next_pixel
+;        }
+
+;        tallestheight = projheight;
+  move.l  d1,d3
+
+;      }
+no_draw:
+;      deltaz += 0.005f;
+  fadd.s  #0.005,fp2
+
+  fadd    fp2,fp7
+  fcmp.s  CAM_ZFAR(a0),fp7
+  fblo    next_distance
+;    }
+
+  addq.l  #1,d7
+  bra.s   next_column
+;  }
+end_next_column:
+
+  rts
+
+  end

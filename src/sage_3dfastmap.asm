@@ -1,5 +1,5 @@
 ;--------------------------------------
-; sage_fastmap.asm
+; sage_3dfastmap.asm
 ;
 ; SAGE (Simple Amiga Game Engine) project
 ; Fast mapping functions
@@ -17,6 +17,9 @@ DELTA_DUDYR         EQU 4*4
 DELTA_DVDYR         EQU 5*4
 DELTA_DU            EQU 6*4
 DELTA_DV            EQU 7*4
+DELTA_DZDYL         EQU 8*4
+DELTA_DZDYR         EQU 9*4
+DELTA_DZ            EQU 10*4
 
 ; Coordinate variables
 CRD_XL              EQU 0*4
@@ -29,10 +32,40 @@ CRD_LINE            EQU 6*4
 CRD_LCLIP           EQU 7*4
 CRD_RCLIP           EQU 8*4
 CRD_TCOLOR          EQU 9*4
+CRD_ZL              EQU 10*4
+CRD_ZR              EQU 11*4
 
 FIXP16_ROUND_UP     EQU $8000
 
   SECTION fastmap,code
+
+;--------------------------------------
+; Clear the z buffer
+;
+; @in a0.l z buffer address
+; @in d0.w number of lines to clear
+; @in d1.w number of bytes per line
+;
+; @out d0.l Operation success
+;--------------------------------------
+  xdef _SAGE_FastClearZBuffer
+
+_SAGE_FastClearZBuffer:
+  movem.l d1/d2/d6/a0,-(sp)
+  move.l  #$FFFFFFFF,d2
+  lsr.w   #3,d1
+  subq.w  #1,d1
+  subq.w  #1,d0
+.NextLine:
+  move.w  d1,d6
+.NextBlock:
+  move.l  d2,(a0)+
+  move.l  d2,(a0)+
+  dbf     d6,.NextBlock
+  dbf     d0,.NextLine
+  movem.l (sp)+,d1/d2/d6/a0
+  move.l  #-1,d0
+  rts
 
 ;--------------------------------------
 ; Map a 8bits texture

@@ -47,7 +47,7 @@ typedef struct {
 /** Load a sound */
 SAGE_Sound * SAGE_LoadSound(STRPTR);
 
-/** Load a sound using datatypes */
+/** Load a sound using datatypes (NOT USED) */
 SAGE_Sound * SAGE_DTLoadSound(STRPTR);
 
 /** Release a sound */

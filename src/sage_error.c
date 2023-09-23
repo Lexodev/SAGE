@@ -93,10 +93,12 @@ SAGE_Error SAGE_errors[] = {
   {SERR_NO_IOREQUEST, "Can't create IO request"},
   {SERR_NO_3DDRIVER, "No 3D driver available"},
   {SERR_NO_3DCONTEXT, "Can't create 3D context"},
+  {SERR_NO_MAGGIE, "Maggie not available"},
   {SERR_TEX_INDEX, "Texture index out of bounds"},
   {SERR_TEX_ALLOC, "Can't allocate texture"},
   {SERR_LOCKHARDWARE, "Can't lock 3D hardware"},
   {SERR_DRAWTRIANGLE, "Failed to render triangle"},
+  {SERR_ZBUFFER, "Z buffer not abailable"},
   {SERR_CAMERA_INDEX, "Camera index out of bounds"},
   {SERR_NO_CAMERA, "No camera at this index"},
   {SERR_ENTITY_INDEX, "Entity index out of bounds"},
@@ -133,6 +135,7 @@ LONG SAGE_last_error = SERR_NO_ERROR;
  */
 VOID SAGE_SetError(LONG error)
 {
+  SD(SAGE_DebugLog("Setting error %d", error));
   SAGE_last_error = error;
 }
 
