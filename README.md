@@ -1,7 +1,7 @@
 <h1>SAGE project</h1>
 <h3>Simple Amiga Game Engine V24.8 August 2024</h3>
 <h4>1. In this repository</h4>
-<p>You will find the libraries in the lib folder in three versions, "sage_debug.lib" has debug log and safe activated, use it for your dev.
+<p>You will find the libraries and the documentation in the lib folder in three versions, "sage_debug.lib" has debug log and safe activated, use it for your dev.
 "sage_safe.lib" as safe mode activated (check for null pointer) and "sage.lib" is the full speed version with no debug and no check.</p>
 <p>"include" folder contains all SAGE includes, copy them in your include folder.</p>
 <p>"demo" folder contains some quick demos off SAGE features</p>
