@@ -10,12 +10,20 @@
 
 // Sound effect https://www.sfxbuzz.com/summary/20-cars-trucks/294-race-car-idle-and-rev-away-sound-effects
 
+/**
+ * Runner :
+ *   - Accelerate with up key
+ *   - Brake with down key
+ *   - Turn with left/right key
+ *   - Quit with ESC
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
 
-#include "/src/sage.h"
+#include <sage/sage.h>
 
 #define SCREEN_WIDTH          640L
 #define SCREEN_HEIGHT         480L
@@ -231,9 +239,9 @@ UBYTE string_buffer[256];
 LONG rendered_segment;
 VOID DumpDebugInfos(VOID)
 {
-  struct RoadLine * l, * p;
-  SAGE_Sprite * spr;
-  WORD * segCars, carIdx;
+  struct RoadLine *l, *p;
+  SAGE_Sprite *spr;
+  WORD *segCars, carIdx;
   FLOAT ratio;
   LONG n, c, y;
 
@@ -303,7 +311,7 @@ VOID DumpDebugInfos(VOID)
 BOOL OpenScreen(VOID)
 {
   SAGE_AppliLog("Opening screen");
-  if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_TRIPLEBUF|SSCR_STRICTRES)) {
+  if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES)) {
     screen = SAGE_GetScreen();
     segment_color[0] = SAGE_RemapColor(ROAD_GRASS1);
     segment_color[1] = SAGE_RemapColor(ROAD_GRASS2);
@@ -325,7 +333,7 @@ BOOL OpenScreen(VOID)
 
 BOOL InitBackgroundLayer(VOID)
 {
-  SAGE_Picture * picture;
+  SAGE_Picture *picture;
 
   SAGE_AppliLog("Load background picture");
   if ((picture = SAGE_LoadPicture("data/runner_bg.png")) != NULL) {
@@ -362,7 +370,7 @@ ULONG Rand(ULONG max)
 
 BOOL InitSprites(VOID)
 {
-  SAGE_Picture * picture;
+  SAGE_Picture *picture;
   UWORD sprite;
 
   SAGE_AppliLog("Load sprite picture");
@@ -508,7 +516,7 @@ VOID InitCars(VOID)
 
 BOOL InitMusic(VOID)
 {
-  SAGE_Music * music = NULL;
+  SAGE_Music *music = NULL;
 
   SAGE_AppliLog("Loading music");
   if ((music = SAGE_LoadMusic("data/runner.mod")) != NULL) {
@@ -632,7 +640,7 @@ VOID _Update(VOID)
   UpdateCars();
 }
 
-VOID Project(struct RoadLine * line, LONG camX, LONG camY, LONG camZ)
+VOID Project(struct RoadLine *line, LONG camX, LONG camY, LONG camZ)
 {
   line->scale = camera_depth / (line->z - camZ);
   line->X = (1 + line->scale * (line->x - camX)) * (SCREEN_WIDTH / 2);
@@ -644,7 +652,7 @@ VOID Project(struct RoadLine * line, LONG camX, LONG camY, LONG camZ)
 
 VOID DrawBackground(VOID)
 {
-  struct RoadLine * l;
+  struct RoadLine *l;
 
   l = &(road[startPos%ROAD_SIZE]);
   if (playerSpeed > 0) {
@@ -661,7 +669,7 @@ VOID DrawBackground(VOID)
 
 VOID DrawRoadType0(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
 {
-  UWORD * buffer;
+  UWORD *buffer;
   LONG gcolor, bcolor, rcolor, start, end, row;
   SAGE_Clipping clip = { 0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1};
 
@@ -688,7 +696,7 @@ VOID DrawRoadType0(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y
 
 VOID DrawRoadType1(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
 {
-  UWORD * buffer;
+  UWORD *buffer;
   LONG gcolor, bcolor, rcolor, start, end, row;
   SAGE_Clipping clip = { 0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1};
 
@@ -715,7 +723,7 @@ VOID DrawRoadType1(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y
 
 VOID DrawRoadType2(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
 {
-  UWORD * buffer;
+  UWORD *buffer;
   LONG gcolor, bcolor, rcolor, lcolor, start, end, row;
   SAGE_Clipping clip = { 0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1};
 
@@ -749,7 +757,7 @@ VOID DrawRoadType2(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y
 
 VOID DrawRoadType3(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
 {
-  UWORD * buffer;
+  UWORD *buffer;
   LONG gcolor, bcolor, rcolor, lcolor, start, end, row;
   SAGE_Clipping clip = { 0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1};
 
@@ -786,7 +794,7 @@ VOID DrawRoadType3(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y
 
 VOID DrawRoadType4(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
 {
-  UWORD * buffer;
+  UWORD *buffer;
   LONG gcolor, bcolor, rcolor, start, end, row;
   SAGE_Clipping clip = { 0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1};
 
@@ -813,7 +821,7 @@ VOID DrawRoadType4(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y
 
 VOID DrawRoadType5(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
 {
-  UWORD * buffer;
+  UWORD *buffer;
   LONG gcolor, bcolor, rcolor, lcolor, start, end, row;
   SAGE_Clipping clip = { 0, 0, SCREEN_WIDTH-1, SCREEN_HEIGHT-1};
 
@@ -847,7 +855,7 @@ VOID DrawRoadType5(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y
 
 VOID DrawRoad(VOID)
 {
-  SAGE_Bitmap * bitmap;
+  SAGE_Bitmap *bitmap;
   LONG roadW, camH, maxy, n;
   struct RoadLine * l, * p;
   FLOAT x = 0, dx = 0;
@@ -894,11 +902,11 @@ VOID DrawRoad(VOID)
 
 VOID DrawSprites(VOID)
 {
-  struct RoadLine * l, * p;
+  struct RoadLine *l, *p;
   LONG n, c, y;
-  WORD * segCars, carIdx;
+  WORD *segCars, carIdx;
   FLOAT ratio;
-  SAGE_Sprite * spr;
+  SAGE_Sprite *spr;
 
   for (n = (startPos + (deep_view-1));n > startPos;n--) {
     l = &(road[n%ROAD_SIZE]);
@@ -945,9 +953,9 @@ VOID DrawSprites(VOID)
 
 VOID DrawPlayer(VOID)
 {
-  struct RoadLine * l, * p;
+  struct RoadLine *l, *p;
   LONG n, c;
-  WORD * segCars, carIdx;
+  WORD *segCars, carIdx;
 
   // Get segment of car
   l = &(road[startPos%ROAD_SIZE]);
@@ -995,11 +1003,9 @@ VOID _Render(VOID)
   // Draw the car sprite
   DrawPlayer();
   // Draw the fps counter
-  sprintf(string_buffer, "%d fps", SAGE_GetFps());
-  SAGE_PrintText(string_buffer, 10, 10);
+  SAGE_PrintFText(10, 10, "%d fps", SAGE_GetFps());
   // Draw the car speed
-  sprintf(string_buffer, "Speed %d", playerSpeed);
-  SAGE_PrintText(string_buffer, 500, 10);
+  SAGE_PrintFText(500, 10, "Speed %d", playerSpeed);
   if (keyboard_state[KEY_D]) DumpDebugInfos();
 }
 
@@ -1009,7 +1015,7 @@ void main(void)
   SAGE_AppliLog("** SAGE library Runner demo V1.5 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_AUDIO|SMOD_INPUT|SMOD_INTERRUPTION)) {
-    if (SAGE_ApolloPresence()) {
+    if (SAGE_ApolloCore()) {
       SAGE_AppliLog("AMMX detected !!!");
     } else {
       SAGE_AppliLog("AMMX not detected");

@@ -5,30 +5,28 @@
  * Parallax horizontal scrolling with transparent layer
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 April 2020
+ * @version 1.1 August 2024
  */
 
-#include "/src/sage.h"
+#include <sage/sage.h>
 
 #define SCREEN_WIDTH          320L
-#define SCREEN_HEIGHT         240L
-#define SCREEN_DEPTH          8L
+#define SCREEN_HEIGHT         256L
+#define SCREEN_DEPTH          16L
 
-#define SKY_WIDTH             256L
-#define SKY_HEIGHT            80L
+#define BG_WIDTH              640L
+#define BG_HEIGHT             256L
+#define BG_LAYER              0
 
-#define BACK_LAYER            0
-
-#define SCROLL_WIDTH          1024L
-#define SCROLL_HEIGHT         192L
-#define SCROLL_TRANSP         1
-
-#define FRONT_LAYER           1
+#define FG_WIDTH              640L
+#define FG_HEIGHT             256L
+#define FG_LAYER              1
+#define TRANSP_COLOR          0xFF00FF
 
 void main(void)
 {
-  SAGE_Event * event = NULL;
-  SAGE_Picture * picture = NULL;
+  SAGE_Event *event = NULL;
+  SAGE_Picture *picture = NULL;
   ULONG xbg_offset, xfg_offset;
   BOOL finish, ok = TRUE;
 
@@ -47,15 +45,11 @@ void main(void)
       SAGE_HideMouse();
       SAGE_AppliLog("Loading the background picture");
       // Load the background picture
-      if ((picture = SAGE_LoadPicture("/data/troll_sky.gif")) != NULL) {
+      if ((picture = SAGE_LoadPicture("data/background.png")) != NULL) {
         // Let's create a background layer
-        if (SAGE_CreateLayer(BACK_LAYER, SKY_WIDTH+SCREEN_WIDTH, SKY_HEIGHT)) {
-          // And copy the picture on this layer, we should blit it 3 times to totally fill the layer width
-          SAGE_BlitPictureToLayer(picture, 0, 0, SKY_WIDTH, SKY_HEIGHT, BACK_LAYER, 0, 0);
-          SAGE_BlitPictureToLayer(picture, 0, 0, SKY_WIDTH, SKY_HEIGHT, BACK_LAYER, SKY_WIDTH, 0);
-          SAGE_BlitPictureToLayer(picture, 0, 0, (SCREEN_WIDTH-SKY_WIDTH), SKY_HEIGHT, BACK_LAYER, SKY_WIDTH*2, 0);
-          // Load the picture palette to the screen
-          SAGE_LoadPictureColorMap(picture);
+        if (SAGE_CreateLayer(BG_LAYER, BG_WIDTH, BG_HEIGHT)) {
+          // And copy the picture on this layer
+          SAGE_BlitPictureToLayer(picture, 0, 0, BG_WIDTH, BG_HEIGHT, BG_LAYER, 0, 0);
         } else {
           ok = FALSE;
         }
@@ -66,14 +60,13 @@ void main(void)
       }
       SAGE_AppliLog("Loading the foreground picture");
       // Load the foreground picture
-      if ((picture = SAGE_LoadPicture("/data/troll_bg.gif")) != NULL) {
+      if ((picture = SAGE_LoadPicture("data/foreground.png")) != NULL) {
         // Let's create a foreground layer
-        if (SAGE_CreateLayer(FRONT_LAYER, (SCROLL_WIDTH+SCREEN_WIDTH), SCROLL_HEIGHT)) {
+        if (SAGE_CreateLayer(FG_LAYER, FG_WIDTH, FG_HEIGHT)) {
           // And copy the picture on this layer
-          SAGE_BlitPictureToLayer(picture, 0, 0, SCROLL_WIDTH, SCROLL_HEIGHT, FRONT_LAYER, 0, 0);
-          SAGE_BlitPictureToLayer(picture, 0, 0, SCREEN_WIDTH, SCROLL_HEIGHT, FRONT_LAYER, SCROLL_WIDTH, 0);
+          SAGE_BlitPictureToLayer(picture, 0, 0, FG_WIDTH, FG_HEIGHT, FG_LAYER, 0, 0);
           // Now let's set the transparency color
-          SAGE_SetLayerTransparency(FRONT_LAYER, SCROLL_TRANSP);
+          SAGE_SetLayerTransparency(FG_LAYER, TRANSP_COLOR);
         } else {
           ok = FALSE;
         }
@@ -84,8 +77,6 @@ void main(void)
       }
       // Continue if the layers are OK
       if (ok) {
-        // Refresh the screen colors
-        SAGE_RefreshColors(0, 256);
         // Let's init our layer coordinates
         xbg_offset = 0;
         xfg_offset = 0;
@@ -104,22 +95,22 @@ void main(void)
             }
           }
           // Set the view of the background layer, the view define what part of the layer will be blit to the screen
-          SAGE_SetLayerView(BACK_LAYER, xbg_offset, 0, SCREEN_WIDTH, SKY_HEIGHT);
+          SAGE_SetLayerView(BG_LAYER, xbg_offset, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
           // Set the view of the foreground layer
-          SAGE_SetLayerView(FRONT_LAYER, xfg_offset, 0, SCREEN_WIDTH, SCROLL_HEIGHT);
+          SAGE_SetLayerView(FG_LAYER, xfg_offset, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
           // First blit the background layer to the screen
-          SAGE_BlitLayerToScreen(BACK_LAYER, 0, 0);
+          SAGE_BlitLayerToScreen(BG_LAYER, 0, 0);
           // Then the foreground layer
-          SAGE_BlitLayerToScreen(FRONT_LAYER, 0, 0);
+          SAGE_BlitLayerToScreen(FG_LAYER, 0, 0);
           // To see the result we have to switch screen buffers
           SAGE_RefreshScreen();
           // Now we can update the layers offset to do the scrolling effect
           xbg_offset += 1;  // One pixel for the background
-          if (xbg_offset >= SKY_WIDTH) {
+          if (xbg_offset >= BG_WIDTH) {
             xbg_offset = 0;
           }
-          xfg_offset += 2; // Two pixel for the foregrounf
-          if (xfg_offset >= SCROLL_WIDTH) {
+          xfg_offset += 2; // Two pixel for the foreground
+          if (xfg_offset >= FG_WIDTH) {
             xfg_offset = 0;
           }
         }
@@ -128,8 +119,8 @@ void main(void)
         SAGE_DisplayError();
       }
       // Release the layers
-      SAGE_ReleaseLayer(FRONT_LAYER);
-      SAGE_ReleaseLayer(BACK_LAYER);
+      SAGE_ReleaseLayer(FG_LAYER);
+      SAGE_ReleaseLayer(BG_LAYER);
       // Show the mouse
       SAGE_ShowMouse();
       // And close the screen

@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "/src/sage.h"
+#include <sage/sage.h>
 
 #define SCREEN_WIDTH          640L
 #define SCREEN_HEIGHT         480L
@@ -21,14 +21,19 @@
 
 BOOL finish = FALSE;
 LONG screen_depth = 16, nb_triangles = 100;
-SAGE_3DTriangle * triangles;
-UBYTE string_buffer[256];
+UWORD render = S3DD_S3DRENDER;
+SAGE_3DElement *triangles;
 
 BOOL OpenScreen(VOID)
 {
   SAGE_AppliLog("Opening screen");
-  if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, screen_depth, SSCR_TRIPLEBUF|SSCR_STRICTRES)) {
+  if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, screen_depth, SSCR_STRICTRES)) {
     SAGE_HideMouse();
+    if (SAGE_Set3DRenderSystem(render)) {
+      SAGE_AppliLog("Rendering system %d enable", render);
+    } else {
+      SAGE_ErrorLog("Failed to activate %d rendering system", render);
+    }
     return TRUE;
   }
   SAGE_DisplayError();
@@ -37,7 +42,7 @@ BOOL OpenScreen(VOID)
 
 BOOL InitTexture(VOID)
 {
-  SAGE_Picture * picture;
+  SAGE_Picture *picture;
 
   SAGE_AppliLog("Load texture");
   if (screen_depth == 8) {
@@ -69,10 +74,11 @@ BOOL InitTriangles(VOID)
   UWORD idx;
   
   SAGE_AppliLog("Init triangles");
-  triangles = (SAGE_3DTriangle *)SAGE_AllocMem(sizeof(SAGE_3DTriangle)*nb_triangles);
+  triangles = (SAGE_3DElement *)SAGE_AllocMem(sizeof(SAGE_3DElement)*nb_triangles);
   if (triangles != NULL) {
     srand(0x68C0DE);
     for (idx = 0;idx < nb_triangles;idx++) {
+      triangles[idx].type = S3DR_ELEM_TRIANGLE;
       triangles[idx].x1 = (FLOAT)(rand() % SCREEN_WIDTH);
       triangles[idx].y1 = (FLOAT)(rand() % SCREEN_HEIGHT);
       triangles[idx].z1 = 50.0;
@@ -152,9 +158,9 @@ VOID DrawTriangles(VOID)
   UWORD idx;
 
   for (idx = 0;idx < nb_triangles;idx++) {
-    SAGE_Push3DTriangle(&(triangles[idx]));
+    SAGE_Push3DElement(&(triangles[idx]));
   }
-  SAGE_Render3DTriangles();
+  SAGE_Render3DElements();
 }
 
 VOID _Render(VOID)
@@ -162,30 +168,34 @@ VOID _Render(VOID)
   SAGE_ClearScreen();
   DrawTriangles();
   // Draw the parameters
-  sprintf(string_buffer, "NBTRI=%d", nb_triangles);
-  SAGE_PrintText(string_buffer, 10, 10);
+  SAGE_PrintFText(10, 10, "NBTRI=%d", nb_triangles);
   // Draw the fps counter
-  sprintf(string_buffer, "%d fps", SAGE_GetFps());
-  SAGE_PrintText(string_buffer, 560, 10);
+  SAGE_PrintFText(560, 10, "%d fps", SAGE_GetFps());
 }
 
-void main(int argc, char ** argv)
+/**
+ * Run : speed depth nb_tri render
+ *   - depth = screen depth (8/16/24/32)
+ *   - nb_tri = number of triangles to draw
+ *   - render = rendering system (S3D/W3D/M3D)
+ */
+void main(int argc, char **argv)
 {
-//  SAGE_SetLogLevel(SLOG_WARNING);
+  SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("** SAGE library texmap speed test V1.0 **");
+  SAGE_AppliLog("** usage : speed depth nb_tri render");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_INPUT|SMOD_3D|SMOD_INTERRUPTION)) {
-    if (SAGE_ApolloPresence()) {
+    if (SAGE_ApolloCore()) {
       SAGE_AppliLog("AMMX detected !!!");
     } else {
       SAGE_AppliLog("AMMX not detected");
     }
-    SAGE_Set3DRenderSystem(S3DD_S3DRENDER);
     if (argc > 3) {
       if (strcmp(argv[3], "W3D") == 0) {
-        SAGE_Set3DRenderSystem(S3DD_W3DRENDER);
+        render = S3DD_W3DRENDER;
       } else if (strcmp(argv[3], "M3D") == 0) {
-        SAGE_Set3DRenderSystem(S3DD_M3DRENDER);
+        render = S3DD_M3DRENDER;
       }
     }
     if (argc > 2) {
@@ -194,6 +204,11 @@ void main(int argc, char ** argv)
     if (argc > 1) {
       screen_depth = atoi(argv[1]);
     }
+    if ((render == S3DD_W3DRENDER || render == S3DD_M3DRENDER) && screen_depth == 8) {
+      SAGE_ErrorLog("You can't activate Warp3D or Maggie3D for a 8bit screen mode");
+      render = S3DD_S3DRENDER;
+    }
+    SAGE_AppliLog("Selected options : render is %d, depth is %d, nb triangles is %d", render, screen_depth, nb_triangles);
     // Init the demo data
     if (_Init()) {
       SAGE_AppliLog("Entering main loop");

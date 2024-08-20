@@ -5,10 +5,10 @@
  * Opening the screen and wait for user input
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 April 2020
+ * @version 1.1 August 2024
  */
 
-#include "/src/sage.h"
+#include <sage/sage.h>
 
 #define SCREEN_WIDTH    640
 #define SCREEN_HEIGHT   480
@@ -16,7 +16,7 @@
 
 void main(void)
 {
-  SAGE_Event * event = NULL;
+  SAGE_Event *event = NULL;
   BOOL finish;
 
   // Get rid of low level logs

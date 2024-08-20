@@ -5,10 +5,10 @@
  * Opening the screen and write some text
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 April 2020
+ * @version 1.1 August 2024
  */
 
-#include "/src/sage.h"
+#include <sage/sage.h>
 
 #define SCREEN_WIDTH    640
 #define SCREEN_HEIGHT   480

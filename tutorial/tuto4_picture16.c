@@ -5,10 +5,10 @@
  * Display a BMP 24bits picture on a 16bits screen
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 April 2020
+ * @version 1.1 August 2024
  */
 
-#include "/src/sage.h"
+#include <sage/sage.h>
 
 #define SCREEN_WIDTH    640
 #define SCREEN_HEIGHT   480
@@ -19,8 +19,8 @@
 
 void main(void)
 {
-  SAGE_Event * event = NULL;
-  SAGE_Picture * picture = NULL;
+  SAGE_Event *event = NULL;
+  SAGE_Picture *picture = NULL;
   BOOL finish;
 
   // Get rid of low level logs
@@ -40,7 +40,7 @@ void main(void)
       SAGE_HideMouse();
       // Load our picture by using the datatypes libraries
       // This is a 24bits picture that is automatically remapped to the screen format
-      if ((picture = SAGE_LoadPicture("/data/desert.bmp")) != NULL) {
+      if ((picture = SAGE_LoadPicture("data/desert.bmp")) != NULL) {
         // We can blit the picture to the screen
         if (!SAGE_BlitPictureToScreen(picture, 0, 0, PICTURE_WIDTH, PICTURE_HEIGHT, 0, 0)) {
           SAGE_DisplayError();

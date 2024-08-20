@@ -8,7 +8,7 @@
  * @version 1.0 February 2022
  */
 
-#include "/src/sage.h"
+#include <sage/sage.h>
 
 #define SCREEN_WIDTH          640L
 #define SCREEN_HEIGHT         480L
@@ -24,7 +24,6 @@
 WORD cax = 0, cay = 0;
 FLOAT cpx = (CELL_SIZE * TERRAIN_SIZE / 2), cpz = (CELL_SIZE * TERRAIN_SIZE / 2), min = CELL_SIZE, max = (CELL_SIZE * TERRAIN_SIZE);
 BOOL finish = FALSE;
-UBYTE string_buffer[256];
 
 // Controls
 #define KEY_NBR               8
@@ -53,7 +52,7 @@ SAGE_KeyScan keys[KEY_NBR] = {
 BOOL OpenScreen(VOID)
 {
   SAGE_AppliLog("Open screen");
-  if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_TRIPLEBUF|SSCR_STRICTRES|SSCR_TRACKMOUSE|SSCR_DELTAMOUSE)) {
+  if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES|SSCR_TRACKMOUSE|SSCR_DELTAMOUSE)) {
     SAGE_HideMouse();
     SAGE_SetColor(0, 0x0);
     SAGE_SetColor(1, 0xffffff);
@@ -238,29 +237,25 @@ VOID _Render(VOID)
   SAGE_ClearScreen();
   SAGE_RenderWorld();
   // Draw the angles
-  sprintf(string_buffer, "CAM AX=%d  AY=%d  PX=%f  PZ=%f", cax, cay, cpx, cpz);
-  SAGE_PrintText(string_buffer, 10, 10);
+  SAGE_PrintFText(10, 10, "CAM AX=%d  AY=%d  PX=%f  PZ=%f", cax, cay, cpx, cpz);
   // Draw the fps counter
-  sprintf(string_buffer, "%d fps", SAGE_GetFps());
-  SAGE_PrintText(string_buffer, 560, 10);
+  SAGE_PrintFText(560, 10, "%d fps", SAGE_GetFps());
   // Draw the metrics
   metrics = SAGE_GetEngineMetrics();
-  sprintf(
-    string_buffer,
-    "P=%d/%d  Z=%d/%d  E=%d/%d  V=%d/%d/%d  F=%d/%d  T=%d",
+  SAGE_PrintFText(10, 470,
+    "P=%d/%d  Z=%d/%d  E=%d/%d  V=%d/%d/%d  F=%d/%d  EL=%d",
     metrics->rendered_planes, metrics->total_planes,
     metrics->rendered_zones, metrics->total_zones,
     metrics->rendered_entities, metrics->total_entities,
     metrics->rendered_vertices, metrics->calculated_vertices, metrics->total_vertices,
     metrics->rendered_faces, metrics->total_faces,
-    metrics->rendered_triangles
+    metrics->rendered_elements
   );
-  SAGE_PrintText(string_buffer, 10, 460);
 }
 
 void main(void)
 {
-//  SAGE_SetLogLevel(SLOG_WARNING);
+  SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("SAGE library terrain demo V1.0");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_3D|SMOD_INTERRUPTION)) {

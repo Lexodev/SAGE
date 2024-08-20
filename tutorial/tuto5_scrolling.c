@@ -5,10 +5,10 @@
  * Simple vertical scroll of a picture
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 April 2020
+ * @version 1.1 August 2024
  */
 
-#include "/src/sage.h"
+#include <sage/sage.h>
 
 #define SCREEN_WIDTH    640
 #define SCREEN_HEIGHT   480
@@ -21,8 +21,8 @@
 
 void main(void)
 {
-  SAGE_Event * event = NULL;
-  SAGE_Picture * picture = NULL;
+  SAGE_Event *event = NULL;
+  SAGE_Picture *picture = NULL;
   ULONG y_offset;
   BOOL finish;
 
@@ -42,7 +42,7 @@ void main(void)
       // Let's hide the mouse pointer
       SAGE_HideMouse();
       // Load our picture by using the datatypes libraries
-      if ((picture = SAGE_LoadPicture("/data/desert.png")) != NULL) {
+      if ((picture = SAGE_LoadPicture("data/desert.bmp")) != NULL) {
         // Let's create a layer that is twice the height of the screen
         // A layer has automatically a bitmap that is compliant with the screen bitmap
         if (SAGE_CreateLayer(SCROLL_LAYER, SCREEN_WIDTH, SCREEN_HEIGHT * 2)) {

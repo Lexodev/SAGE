@@ -5,31 +5,33 @@
  * Sprite and scrolling
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 April 2020
+ * @version 1.1 August 2024
  */
 
-#include "/src/sage.h"
+#include <sage/sage.h>
 
-#define SCREEN_WIDTH          320L
-#define SCREEN_HEIGHT         240L
-#define SCREEN_DEPTH          8L
+#define SCREEN_WIDTH          640L
+#define SCREEN_HEIGHT         480L
+#define SCREEN_DEPTH          16L
 
-#define SKY_WIDTH             256L
-#define SKY_HEIGHT            80L
-
+#define BG_WIDTH              1280L
+#define BG_HEIGHT             720L
 #define BACK_LAYER            0
 
-#define SCROLL_WIDTH          1024L
-#define SCROLL_HEIGHT         192L
-#define SCROLL_TRANSP         1
-
-#define FRONT_LAYER           1
+#define NB_SPRITES            1
+#define SPR_TRANSP            0xff00ff
+#define SPR_LEFT              0L
+#define SPR_TOP               0L
+#define SPR_WIDTH             360L
+#define SPR_HEIGHT            256L
+#define SPR_BANK              0
+#define SPR_NUM               0
 
 void main(void)
 {
-  SAGE_Event * event = NULL;
-  SAGE_Picture * picture = NULL;
-  ULONG xbg_offset, xfg_offset;
+  SAGE_Event *event = NULL;
+  SAGE_Picture *picture = NULL;
+  LONG bg_yoffset;
   BOOL finish, ok = TRUE;
 
   // Get rid of low level logs
@@ -47,48 +49,44 @@ void main(void)
       SAGE_HideMouse();
       SAGE_AppliLog("Loading the background picture");
       // Load the background picture
-      if ((picture = SAGE_LoadPicture("/data/troll_sky.gif")) != NULL) {
+      if ((picture = SAGE_LoadPicture("data/galaxy.png")) != NULL) {
         // Let's create a background layer
-        if (SAGE_CreateLayer(BACK_LAYER, SKY_WIDTH+SCREEN_WIDTH, SKY_HEIGHT)) {
-          // And copy the picture on this layer, we should blit it 3 times to totally fill the layer width
-          SAGE_BlitPictureToLayer(picture, 0, 0, SKY_WIDTH, SKY_HEIGHT, BACK_LAYER, 0, 0);
-          SAGE_BlitPictureToLayer(picture, 0, 0, SKY_WIDTH, SKY_HEIGHT, BACK_LAYER, SKY_WIDTH, 0);
-          SAGE_BlitPictureToLayer(picture, 0, 0, (SCREEN_WIDTH-SKY_WIDTH), SKY_HEIGHT, BACK_LAYER, SKY_WIDTH*2, 0);
-          // Load the picture palette to the screen
-          SAGE_LoadPictureColorMap(picture);
-        } else {
+        if (!SAGE_CreateLayerFromPicture(BACK_LAYER, picture)) {
           ok = FALSE;
+          SAGE_DisplayError();
         }
-        // We don't need this picture anymore, release it before loading the foreground
+        // We don't need this picture anymore, release it before loading the sprite
         SAGE_ReleasePicture(picture);
       } else {
+        ok = FALSE;
         SAGE_DisplayError();
       }
-      SAGE_AppliLog("Loading the foreground picture");
-      // Load the foreground picture
-      if ((picture = SAGE_LoadPicture("/data/troll_bg.gif")) != NULL) {
-        // Let's create a foreground layer
-        if (SAGE_CreateLayer(FRONT_LAYER, (SCROLL_WIDTH+SCREEN_WIDTH), SCROLL_HEIGHT)) {
-          // And copy the picture on this layer
-          SAGE_BlitPictureToLayer(picture, 0, 0, SCROLL_WIDTH, SCROLL_HEIGHT, FRONT_LAYER, 0, 0);
-          SAGE_BlitPictureToLayer(picture, 0, 0, SCREEN_WIDTH, SCROLL_HEIGHT, FRONT_LAYER, SCROLL_WIDTH, 0);
-          // Now let's set the transparency color
-          SAGE_SetLayerTransparency(FRONT_LAYER, SCROLL_TRANSP);
+      SAGE_AppliLog("Loading the sprite picture");
+      // Load the sprite picture
+      if ((picture = SAGE_LoadPicture("data/spaceship.png")) != NULL) {
+        // Let's create a sprite bank
+        if (SAGE_CreateSpriteBank(SPR_BANK, NB_SPRITES, picture)) {
+          // Set the transparency color
+          SAGE_SetSpriteBankTransparency(SPR_BANK, SPR_TRANSP);
+          // Add our sprite and set the hotspot as the middle of the sprite
+          if (!SAGE_AddSpriteToBank(SPR_BANK, SPR_NUM, SPR_LEFT, SPR_TOP, SPR_WIDTH, SPR_HEIGHT, SSPR_HS_MIDDLE)) {
+            ok = FALSE;
+            SAGE_DisplayError();
+          }
         } else {
           ok = FALSE;
+          SAGE_DisplayError();
         }
         // We don't need this picture anymore
         SAGE_ReleasePicture(picture);
       } else {
+        ok = FALSE;
         SAGE_DisplayError();
       }
-      // Continue if the layers are OK
+      // Continue if everything is OK
       if (ok) {
-        // Refresh the screen colors
-        SAGE_RefreshColors(0, 256);
         // Let's init our layer coordinates
-        xbg_offset = 0;
-        xfg_offset = 0;
+        bg_yoffset = BG_HEIGHT - 1;
         finish = FALSE;
         while (!finish) {
           // Read all events raised by the screen
@@ -104,32 +102,26 @@ void main(void)
             }
           }
           // Set the view of the background layer, the view define what part of the layer will be blit to the screen
-          SAGE_SetLayerView(BACK_LAYER, xbg_offset, 0, SCREEN_WIDTH, SKY_HEIGHT);
-          // Set the view of the foreground layer
-          SAGE_SetLayerView(FRONT_LAYER, xfg_offset, 0, SCREEN_WIDTH, SCROLL_HEIGHT);
+          SAGE_SetLayerView(BACK_LAYER, 0, bg_yoffset, SCREEN_WIDTH, SCREEN_HEIGHT);
           // First blit the background layer to the screen
           SAGE_BlitLayerToScreen(BACK_LAYER, 0, 0);
-          // Then the foreground layer
-          SAGE_BlitLayerToScreen(FRONT_LAYER, 0, 0);
+          // Then blit the sprite
+          SAGE_BlitSpriteToScreen(SPR_BANK, SPR_NUM, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2);
           // To see the result we have to switch screen buffers
           SAGE_RefreshScreen();
           // Now we can update the layers offset to do the scrolling effect
-          xbg_offset += 1;  // One pixel for the background
-          if (xbg_offset >= SKY_WIDTH) {
-            xbg_offset = 0;
-          }
-          xfg_offset += 2; // Two pixel for the foregrounf
-          if (xfg_offset >= SCROLL_WIDTH) {
-            xfg_offset = 0;
+          bg_yoffset -= 1;  // One pixel for the background
+          if (bg_yoffset < 0) {
+            bg_yoffset = BG_HEIGHT - 1;
           }
         }
       } else {
-        SAGE_AppliLog("Layers are not OK");
+        SAGE_AppliLog("Init error");
         SAGE_DisplayError();
       }
-      // Release the layers
-      SAGE_ReleaseLayer(FRONT_LAYER);
+      // Release the graphics
       SAGE_ReleaseLayer(BACK_LAYER);
+      SAGE_ReleaseSpriteBank(SPR_BANK);
       // Show the mouse
       SAGE_ShowMouse();
       // And close the screen
@@ -139,5 +131,5 @@ void main(void)
   // Release all resources
   SAGE_Exit();
   // End of tutorial
-  SAGE_AppliLog("End of tutorial 6");
+  SAGE_AppliLog("End of tutorial 7");
 }

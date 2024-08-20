@@ -9,11 +9,11 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 
-#include "/src/sage.h"
+#include <sage/sage.h>
 
-// Wazp3D support only 16 bits screen
 #define SCREEN_WIDTH          640L
 #define SCREEN_HEIGHT         480L
 
@@ -64,7 +64,7 @@ struct cube_object Cube = {
   }
 };
 struct cube_point transf[8];
-BOOL finish = FALSE, debug_on = FALSE;
+BOOL finish = FALSE;
 
 // Controls
 #define KEY_NBR               15
@@ -111,14 +111,12 @@ FLOAT Cosinus[360];
 
 LONG screen_depth = 16;
 
-// Render data
-UBYTE string_buffer[256];
-
 BOOL OpenScreen(VOID)
 {
   SAGE_AppliLog("Opening screen");
-  if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, screen_depth, SSCR_TRIPLEBUF|SSCR_STRICTRES)) {
+  if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, screen_depth, SSCR_STRICTRES)) {
     SAGE_HideMouse();
+    SAGE_Set3DRenderSystem(S3DD_S3DRENDER);
     return TRUE;
   }
   SAGE_DisplayError();
@@ -146,25 +144,30 @@ BOOL InitCube(VOID)
 
 BOOL InitTexture(VOID)
 {
-  SAGE_Picture * picture;
+  SAGE_Picture *picture;
 
-  SAGE_AppliLog("Load texture");
   if (screen_depth == 8) {
+    SAGE_AppliLog("Load picture");
     picture = SAGE_LoadPicture("data/vamptex.bmp");
-  } else {
-    picture = SAGE_LoadPicture("data/vampire.png");
-  }
-  if (picture != NULL) {
-    if (screen_depth == 8) {
+    if (picture != NULL) {
       SAGE_LoadPictureColorMap(picture);
       SAGE_RefreshColors(0, 256);
       SAGE_SetTextColor(200, 0);
+      SAGE_AppliLog("Create texture from picture");
+      if (SAGE_CreateTextureFromPicture(TEX_VAMPIRE, 0, 0, STEX_SIZE128, picture)) {
+        SAGE_AppliLog("Add texture to card memory");
+        if (SAGE_AddTexture(TEX_VAMPIRE)) {
+          SAGE_ReleasePicture(picture);
+          return TRUE;
+        }
+      }
+      SAGE_ReleasePicture(picture);
     }
-    SAGE_AppliLog("Create texture from picture");
-    if (SAGE_CreateTextureFromPicture(TEX_VAMPIRE, 0, 0, STEX_SIZE128, picture)) {
+  } else {
+    SAGE_AppliLog("Create texture from file");
+    if (SAGE_CreateTextureFromFile(TEX_VAMPIRE, "data/vampire.png")) {
       SAGE_AppliLog("Add texture to card memory");
       if (SAGE_AddTexture(TEX_VAMPIRE)) {
-        SAGE_ReleasePicture(picture);
         return TRUE;
       }
     }
@@ -175,7 +178,7 @@ BOOL InitTexture(VOID)
 
 BOOL InitBackLayer(VOID)
 {
-  SAGE_Picture * picture;
+  SAGE_Picture *picture;
 
   if (screen_depth == 8) {
     return TRUE;
@@ -302,9 +305,6 @@ VOID _Update(VOID)
   } else if (keyboard_state[KEY_MOVERIGHT]) {
     Cube.posx += 1.0;
   }
-  if (keyboard_state[KEY_D]) {
-    debug_on = TRUE;
-  }
 }
 
 /**
@@ -343,9 +343,11 @@ VOID TransformPoints(VOID)
 VOID DrawCube(VOID)
 {
   UWORD i;
-  SAGE_3DTriangle triangle;
+  SAGE_3DElement triangle;
 
   TransformPoints();
+  triangle.type = S3DR_ELEM_TRIANGLE;
+  triangle.color = 0xff00ff;
   for (i = 0;i < CUBE_FACES;i++) {
     triangle.x1 = transf[Cube.faces[i].p1].x + (SCREEN_WIDTH/2);
     triangle.y1 = transf[Cube.faces[i].p1].y + (SCREEN_HEIGHT/2);
@@ -364,7 +366,7 @@ VOID DrawCube(VOID)
     triangle.v3 = Cube.faces[i].v3;
     triangle.texture = TEX_VAMPIRE;
     if (((triangle.y1-triangle.y2)*(triangle.x2-triangle.x3)) < ((triangle.y2-triangle.y3)*(triangle.x1-triangle.x2))) {
-      SAGE_Push3DTriangle(&triangle);
+      SAGE_Push3DElement(&triangle);
       triangle.x1 = transf[Cube.faces[i].p1].x + (SCREEN_WIDTH/2);
       triangle.y1 = transf[Cube.faces[i].p1].y + (SCREEN_HEIGHT/2);
       triangle.z1 = transf[Cube.faces[i].p1].z;
@@ -380,10 +382,10 @@ VOID DrawCube(VOID)
       triangle.z3 = transf[Cube.faces[i].p3].z;
       triangle.u3 = Cube.faces[i].u3;
       triangle.v3 = Cube.faces[i].v3;
-      SAGE_Push3DTriangle(&triangle);
+      SAGE_Push3DElement(&triangle);
     }
   }
-  SAGE_Render3DTriangles();
+  SAGE_Render3DElements();
 }
 
 VOID _Render(VOID)
@@ -396,49 +398,30 @@ VOID _Render(VOID)
   }
   DrawCube();
   // Draw the angles
-  sprintf(string_buffer, "AX=%d  AY=%d  AZ=%d  ZOOM=%f  PX=%f  PY=%f", Cube.anglex, Cube.angley, Cube.anglez, Cube.posz, Cube.posx, Cube.posy);
-  SAGE_PrintText(string_buffer, 10, 10);
+  SAGE_PrintFText(10, 10, "AX=%d  AY=%d  AZ=%d  ZOOM=%f  PX=%f  PY=%f", Cube.anglex, Cube.angley, Cube.anglez, Cube.posz, Cube.posx, Cube.posy);
   // Draw the fps counter
-  sprintf(string_buffer, "%d fps", SAGE_GetFps());
-  SAGE_PrintText(string_buffer, 560, 10);
+  SAGE_PrintFText(560, 10, "%d fps", SAGE_GetFps());
 }
 
-void main(int argc, char ** argv)
+void main(int argc, char **argv)
 {
-  //SAGE_SetLogLevel(SLOG_WARNING);
+  SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("** SAGE library mapped 3D cube demo V1.0 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_INPUT|SMOD_3D|SMOD_INTERRUPTION)) {
-    if (SAGE_ApolloPresence()) {
+    if (SAGE_ApolloCore()) {
       SAGE_AppliLog("AMMX detected !!!");
     } else {
       SAGE_AppliLog("AMMX not detected");
     }
-    SAGE_Set3DRenderSystem(S3DD_S3DRENDER);
-    if (argc > 2) {
-      if (strcmp(argv[2], "W3D") == 0) {
-        SAGE_Set3DRenderSystem(S3DD_W3DRENDER);
-      } else if (strcmp(argv[2], "M3D") == 0) {
-        SAGE_Set3DRenderSystem(S3DD_M3DRENDER);
-      }
-    }
     if (argc > 1) {
-      if (strcmp(argv[1], "8") == 0) {
-        screen_depth = 8;
-      }
+      screen_depth = atoi(argv[1]);
     }
     // Init the demo data
     if (_Init()) {
       SAGE_AppliLog("Entering main loop");
       while (!finish) {
         if (SAGE_IsFrontMostScreen()) {
-
-          if (debug_on) {
-            SAGE_SetTraceDebug(TRUE);
-            debug_on = FALSE;
-          } else {
-            SAGE_SetTraceDebug(FALSE);
-          }
 
           // Update the demo data
           _Update();
