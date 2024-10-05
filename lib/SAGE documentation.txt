@@ -23,11 +23,12 @@ demos : demos of SAGE in action
                       SMOD_INTERRUPTION   - Interruption module (Timer & IT)
                       SMOD_NETWORK        - Network module (UDP & TCP sockets)
                       SMOD_3D             - 3D render module (texture mapping)
+                      SMOD_ALL            - Activate all modules
 - BOOL SAGE_Exit(VOID) : exit SAGE library and release all resources, return TRUE on success, FALSE on error.
 - BOOL SAGE_LoadedModule(LONG module) : tell if a module has been loaded.
 - STRPTR SAGE_GetVersion(VOID) : return the library version string.
 - VOID SAGE_UseAMMX(BOOL activate) : activate/deactivate the AMMX acceleration.
-- VOID SAGE_Pause(ULONG ticks) : pause the program for ticks*1/50 of seconds.
+- VOID SAGE_Pause(ULONG ticks) : pause the program for ticks*1/50 seconds.
 
 
 2 - Error management functions
@@ -97,10 +98,8 @@ demos : demos of SAGE in action
 
 7 - Vampire functions
 
-- BOOL SAGE_ApolloPresence(VOID) : check if vampire card is present.
-- BOOL SAGE_AMMX2Available(VOID) : check if AMMX extension is available.
-- BOOL SAGE_SetVampireFrameBuffer(APTR adr) : set the vampire frame buffer address (prefer the system function), return FALSE on error.
-- APTR SAGE_GetVampireFrameBuffer(VOID) : get the vampire frame buffer address.
+- BOOL SAGE_ApolloCore(VOID) : check if Apollo core is available.
+- BOOL SAGE_VampireV4(VOID) : check for Vampire V4 card.
 
 
 8 - Configuration file functions
