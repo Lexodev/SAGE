@@ -79,7 +79,7 @@ demos : demos of SAGE in action
 
 5 - Timer functions
 
-- SAGE_Timer * SAGE_AllocTimer(VOID) : allocate a timer.
+- SAGE_Timer *SAGE_AllocTimer(VOID) : allocate a timer.
 - VOID SAGE_ReleaseTimer(SAGE_Timer *timer) : release a timer.
 - BOOL SAGE_GetSysTime(SAGE_Timer *timer) : get the system time (seconds & microseconds) in the timer structure, return FALSE on error.
 - ULONG SAGE_ElapsedTime(SAGE_Timer *timer) : get the elapsed time between two calls (12 bits for seconds & 20 bits for microseconds).
@@ -89,7 +89,7 @@ demos : demos of SAGE in action
 6 - Thread functions
 
 ** Warning : actually you can't use log functions in a thread.
-- SAGE_Thread * SAGE_CreateThread(LONG (*fn)(APTR), APTR userdata) : create a thread with the function fn and pass it the userdata, you can create up to 8 thread at a time.
+- SAGE_Thread *SAGE_CreateThread(LONG (*fn)(APTR), APTR userdata) : create a thread with the function fn and pass it the userdata, you can create up to 8 thread at a time.
 - VOID SAGE_WaitThread(SAGE_Thread *thread) : wait for a thread to finish.
 - VOID SAGE_KillThread(SAGE_Thread *thread) : send a break signal to a thread.
 - BOOL SAGE_RemoveThread(SAGE_Thread *thread) : remove a thread from the thread list.
@@ -125,8 +125,7 @@ demos : demos of SAGE in action
                      PIXFMT_ARGB32
                      PIXFMT_RGBA32
 - BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONG flags) : open a screen of width*height pixels in depth bits (8, 16, 24 or 32) with special flags.
-  Available flags : SSCR_DOUBLEBUF        - Activate double buffer (default choice)
-                    SSCR_TRIPLEBUF        - Activate triple buffer
+  Available flags : SSCR_NOFLAG           - Activate triple buffer (default choice)
                     SSCR_STRICTRES        - Open only the requested resolution
                     SSCR_NOWINDOWEVT      - Don't listen for window events
                     SSCR_TRACKMOUSE       - Track mouse movements
@@ -135,6 +134,7 @@ demos : demos of SAGE in action
 - SAGE_Screen *SAGE_GetScreen(VOID) : return the SAGE screen structure (don't use it directly)
 - BOOL SAGE_CloseScreen(VOID) : close the screen, return FALSE on error.
 - BOOL SAGE_ClearScreen(VOID) : clear the screen (fill with color 0), return FALSE on error.
+- BOOL SAGE_FillScreen(ULONG color) : fill full screen with a color.
 - BOOL SAGE_SetScreenClip(ULONG left, ULONG top, ULONG width, ULONG height) : set the clipping view, return FALSE on error.
 - BOOL SAGE_ClearView(VOID) : clear the current clipping view, return FALSE on error.
 - BOOL SAGE_ClearArea(ULONG left, ULONG top, ULONG width, ULONG height) : clear a part of the screen, return FALSE on error.
@@ -146,15 +146,23 @@ demos : demos of SAGE in action
 - BOOL SAGE_IsFrontMostScreen(VOID) : tell if our screen is in front.
 - SAGE_Bitmap *SAGE_GetFrontBitmap(VOID) : get the bitmap of the front screen buffer.
 - SAGE_Bitmap *SAGE_GetBackBitmap(VOID) : get the bitmap of the back screen buffer.
+- SAGE_Bitmap *SAGE_GetWaitBitmap(VOID) : get the bitmap of the third screen buffer.
+- struct BitMap *SAGE_GetSystemFrontBitmap(VOID) : get the system bitmap of the front screen buffer.
+- struct BitMap *SAGE_GetSystemBackBitmap(VOID) : get the system bitmap of the back screen buffer.
+- struct BitMap *SAGE_GetSystemWaitBitmap(VOID) : get the system bitmap of the third screen buffer.
 - ULONG SAGE_GetPixelFormat(VOID) : get the screen pixel format.
 - BOOL SAGE_RefreshColors(UWORD start, UWORD len) : refresh the screen colors from start color for len colors, return FALSE on error.
 - BOOL SAGE_SetColor(UWORD index, ULONG color) : set a screen color value, you should RefreshColors to see it, return FALSE on error.
 - BOOL SAGE_SetColorMap(ULONG *colors, UWORD start, UWORD len) : set multiple screen color values, you should RefreshColors to see them, return FALSE on error.
 - ULONG SAGE_GetColor(UWORD index) : get a screen color value (for CLUT pixel format).
+- ULONG SAGE_RemapColor(ULONG color) : remap a 32bits color into screen pixel color format.
 - BOOL SAGE_SetDrawColor(ULONG back, ULONG front) : set the back and front color, return FALSE on error.
+- BOOL SAGE_LoadFileColorMap(STRPTR filepath, UWORD start, UWORD nbcolor, UWORD format) : load a color map from a file.
 - BOOL SAGE_HideMouse(VOID) : hide the mouse pointer, return FALSE on error.
 - BOOL SAGE_ShowMouse(VOID) : show the mouse pointer, return FALSE on error.
 - BOOL SAGE_TrackMouse(BOOL activate) : activate/deactivate the mouse movement tracking.
+- BOOL SAGE_SetMouseCursor(UWORD *cursor, WORD height, WORD x_action, WORD y_action) : set a new cursor for the mouse.
+- BOOL SAGE_ResetMouse(VOID) : reset a custom mouse cursor.
 - BOOL SAGE_SetFont(STRPTR font, UWORD size) : set the active font of size, return FALSE on error.
 - BOOL SAGE_SetTextColor(UBYTE front, UBYTE back) : set the text colors, return FALSE on error.
 - BOOL SAGE_SetDrawingMode(UBYTE mode) : set the text drawing mode (SSCR_TXTTRANSP or SSCR_TXTREPLACE), return FALSE on error.
