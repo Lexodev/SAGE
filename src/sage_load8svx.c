@@ -5,7 +5,7 @@
  * 8SVX sound loading
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <stdlib.h>

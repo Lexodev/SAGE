@@ -5,7 +5,7 @@
  * Music management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <datatypes/datatypes.h>
@@ -250,10 +250,14 @@ BOOL SAGE_FreeMusic(UWORD index)
  */
 BOOL SAGE_ClearMusic()
 {
+  SAGE_Music *music;
   UWORD index;
 
   for (index = 0;index < SMUS_MAX_MUSICS;index++) {
-    SAGE_FreeMusic(index);
+    music = SAGE_RemoveMusic(index);
+    if (music != NULL) {
+      SAGE_ReleaseMusic(music);
+    }
   }
   return TRUE;
 }
@@ -332,8 +336,8 @@ BOOL SAGE_PlayMusic(UWORD index)
  */
 BOOL SAGE_StopMusic()
 {
-  SAGE_AudioDevice * audio;
-  SAGE_Music * music;
+  SAGE_AudioDevice *audio;
+  SAGE_Music *music;
 
   // Check for audio device
   audio = SageContext.SageAudio;
@@ -371,8 +375,8 @@ BOOL SAGE_StopMusic()
  */
 BOOL SAGE_PauseMusic()
 {
-  SAGE_AudioDevice * audio;
-  SAGE_Music * music;
+  SAGE_AudioDevice *audio;
+  SAGE_Music *music;
 
   // Check for audio device
   audio = SageContext.SageAudio;
@@ -405,8 +409,8 @@ BOOL SAGE_PauseMusic()
  */
 BOOL SAGE_ResumeMusic()
 {
-  SAGE_AudioDevice * audio;
-  SAGE_Music * music;
+  SAGE_AudioDevice *audio;
+  SAGE_Music *music;
 
   // Check for audio device
   audio = SageContext.SageAudio;

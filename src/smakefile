@@ -1,7 +1,7 @@
 #----------------------------------------------------------
 # SAGE library makefile
 # Fabrice Labrador <fabrice.labrador@gmail.com>
-# V2.5 August 2024
+# V3.0 February 2025
 #----------------------------------------------------------
 
 # Build options Debug mode
@@ -16,18 +16,18 @@ OPT=CPU=68060 IDIR=libinclude: MATH=68882 DATA=far nostackcheck
 SAGELIB=/lib/sage.lib
 
 # Objects
+ASMOBJ=sage_blitter.o sage_ammxblit.o sage_vblint.o sage_fastdraw.o sage_itserver.o sage_3dfastmap.o
 COREOBJ=sage.o sage_logger.o sage_error.o sage_memory.o sage_timer.o sage_thread.o sage_vampire.o sage_configfile.o sage_maths.o
 VIDEOOBJ=sage_video.o sage_bitmap.o sage_event.o sage_screen.o sage_layer.o sage_draw.o sage_sprite.o sage_tile.o sage_tilemap.o sage_picture.o
 INPUTOBJ=sage_input.o sage_keyboard.o sage_joyport.o
 AUDIOOBJ=sage_audio.o sage_loadwave.o sage_load8svx.o sage_sound.o sage_loadtracker.o sage_loadaiff.o sage_music.o
 INTOBJ=sage_interrupt.o
-S3DOBJ=sage_3d.o sage_3dtexture.o sage_3drender.o sage_3dtexmap.o
-S3EOBJ=sage_3dengine.o sage_3dentity.o sage_3dcamera.o sage_3dmaterial.o sage_3dskybox.o sage_3dterrain.o sage_loadlwo.o sage_loadobj.o
 NETOBJ=sage_network.o
-ASMOBJ=sage_blitter.o sage_ammxblit.o sage_vblint.o sage_fastdraw.o sage_itserver.o sage_3dfastmap.o
+R3DOBJ=sage_3d.o sage_3dtexture.o sage_3drender.o sage_3dtexmap.o
+E3DOBJ=sage_3dengine.o sage_3dentity.o sage_3dcamera.o sage_3dmaterial.o sage_3dskybox.o sage_3dterrain.o sage_loadlwo.o sage_loadobj.o
 
 # Build sage library
-dist: cleanlib asmcode external core module
+dist: cleanlib asmcode external core modules
   @list $(SAGELIB)
   @echo "**** SAGE libray build complete ****"
 
@@ -35,13 +35,13 @@ asmcode: $(ASMOBJ)
   oml $(SAGELIB) Add $(ASMOBJ)
   @echo "** ASM build complete **"
 
-core: $(LIBOBJ) $(COREOBJ)
+core: $(COREOBJ)
   oml $(SAGELIB) Add $(COREOBJ)
   @echo "** Core build complete **"
 
-module: $(INPUTOBJ) $(AUDIOOBJ) $(INTOBJ) $(NETOBJ) $(VIDEOOBJ) $(S3DOBJ) $(S3EOBJ)
-  oml $(SAGELIB) Add $(INPUTOBJ) $(AUDIOOBJ) $(INTOBJ) $(NETOBJ) $(VIDEOOBJ) $(S3DOBJ) $(S3EOBJ)
-  @echo "** Module build complete **"
+modules: $(INPUTOBJ) $(AUDIOOBJ) $(INTOBJ) $(NETOBJ) $(VIDEOOBJ) $(R3DOBJ) $(E3DOBJ)
+  oml $(SAGELIB) Add $(INPUTOBJ) $(AUDIOOBJ) $(INTOBJ) $(NETOBJ) $(VIDEOOBJ) $(R3DOBJ) $(E3DOBJ)
+  @echo "** Modules build complete **"
 
 #external: ext/PT-AHIPlay.o
 external:
@@ -52,22 +52,22 @@ external:
 buildasm: $(ASMOBJ)
 
 sage_blitter.o: sage_blitter.asm sage_blitter.h
-  vasm -m68040 -Fhunk -o sage_blitter.o sage_blitter.asm
+  vasm -m68060 -Fhunk -o sage_blitter.o sage_blitter.asm
 
 sage_ammxblit.o: sage_ammxblit.asm sage_blitter.h
   vasm -m68080 -Fhunk -o sage_ammxblit.o sage_ammxblit.asm
 
 sage_vblint.o: sage_vblint.asm sage_vblint.h
-  vasm -m68040 -Fhunk -o sage_vblint.o sage_vblint.asm
+  vasm -m68060 -Fhunk -o sage_vblint.o sage_vblint.asm
 
 sage_fastdraw.o: sage_fastdraw.asm sage_draw.h
-  vasm -m68040 -Fhunk -o sage_fastdraw.o sage_fastdraw.asm
+  vasm -m68060 -Fhunk -o sage_fastdraw.o sage_fastdraw.asm
 
 sage_itserver.o: sage_itserver.asm
-  vasm -m68040 -Fhunk -o sage_itserver.o sage_itserver.asm
+  vasm -m68060 -Fhunk -o sage_itserver.o sage_itserver.asm
 
 sage_3dfastmap.o: sage_3dfastmap.asm sage_3dtexmap.h
-  vasm -m68040 -Fhunk -o sage_3dfastmap.o sage_3dfastmap.asm
+  vasm -m68060 -Fhunk -o sage_3dfastmap.o sage_3dfastmap.asm
 
 # Build core module
 buildcore: $(COREOBJ)
@@ -101,7 +101,7 @@ sage_maths.o: sage_maths.c sage_maths.h
 
 # Build external lib
 PT-AHIPlay.o: ext/PT-AHIPlay.s ext/PT-AHIPlay.i
-  vasm -m68040 -Fhunk -IDevpac:include -o ext/PT-AHIPlay.o ext/PT-AHIPlay.s
+  vasm -m68060 -Fhunk -IDevpac:include -o ext/PT-AHIPlay.o ext/PT-AHIPlay.s
 
 # Build video module
 buildvideo: $(VIDEOOBJ)
@@ -178,8 +178,14 @@ buildinter: $(INTOBJ)
 sage_interrupt.o: sage_interrupt.c sage_interrupt.h
   sc sage_interrupt.c $(OPT)
 
-# Build 3D module
-build3d: $(S3DOBJ) $(S3EOBJ)
+# Build network module
+buildnet: $(NETOBJ)
+
+sage_network.o: sage_network.c sage_network.h
+  sc sage_network.c $(OPT)
+
+# Build render 3D module
+buildr3d: $(R3DOBJ)
 
 sage_3d.o: sage_3d.c sage_3d.h
   sc sage_3d.c $(OPT)
@@ -192,6 +198,9 @@ sage_3drender.o: sage_3drender.c sage_3drender.h
 
 sage_3dtexmap.o: sage_3dtexmap.c sage_3dtexmap.h
   sc sage_3dtexmap.c $(OPT)
+
+# Build engine 3D module
+builde3d: $(E3DOBJ)
 
 sage_3dengine.o: sage_3dengine.c sage_3dengine.h
   sc sage_3dengine.c $(OPT)
@@ -216,12 +225,6 @@ sage_loadlwo.o: sage_loadlwo.c sage_loadlwo.h
 
 sage_loadobj.o: sage_loadobj.c sage_loadobj.h
   sc sage_loadobj.c $(OPT)
-
-# Build network module
-buildnet: $(NETOBJ)
-
-sage_network.o: sage_network.c sage_network.h
-  sc sage_network.c $(OPT)
 
 # Clean files
 clean: cleanlib cleanobj

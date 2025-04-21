@@ -5,7 +5,7 @@
  * Memory allocation management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #include <sage/sage_debug.h>
@@ -107,7 +107,7 @@ APTR SAGE_AllocMemoryBloc(ULONG size, ULONG attributes, ULONG align)
     SAGE_SetError(SERR_NO_MEMORY);
     return NULL;
   }
-  SD(SAGE_DebugLog("Memory allocation 0x%X (0x%X) of %d bytes (align %d)", base, memory, size, align);)
+  SD(SAGE_TraceLog("Memory allocation 0x%X (0x%X) of %d bytes (align %d)", base, memory, size, align);)
   return memory;
 }
 
@@ -204,7 +204,7 @@ VOID SAGE_FreeMem(APTR address)
   }
   // Memory bloc found
   if (node != NULL) {
-    SD(SAGE_DebugLog("Memory release 0x%X of %d bytes", node->base_address, node->bloc_size);)
+    SD(SAGE_TraceLog("Memory release 0x%X of %d bytes", node->base_address, node->bloc_size);)
     FreeMem(node->base_address, node->bloc_size);
     if (SAGE_Memory.head == node) {
       SAGE_Memory.head = node->next;
@@ -231,7 +231,7 @@ VOID SAGE_ReleaseMem()
 
   node = SAGE_Memory.head;
   while (node != NULL) {
-    SD(SAGE_DebugLog("Releasing memory bloc 0x%X of %d bytes", node->base_address, node->bloc_size);)
+    SD(SAGE_TraceLog("Releasing memory bloc 0x%X of %d bytes", node->base_address, node->bloc_size);)
     FreeMem(node->base_address, node->bloc_size);
     SAGE_Memory.head = node->next;
     FreeMem(node, sizeof(SAGE_MemoryNode));

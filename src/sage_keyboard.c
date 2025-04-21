@@ -5,7 +5,7 @@
  * Keyboard input management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <exec/exec.h>
@@ -21,7 +21,7 @@
 #include <proto/lowlevel.h>
 
 /** @var Lowlevel library */
-extern struct Library * LowLevelBase;
+extern struct Library *LowLevelBase;
 
 /** SAGE context */
 extern SAGE_Context SageContext;
@@ -34,10 +34,10 @@ extern SAGE_Context SageContext;
  *
  * @return Operation success
  */
-BOOL SAGE_ScanKeyboard(SAGE_KeyScan * keys, UBYTE nbkey)
+BOOL SAGE_ScanKeyboard(SAGE_KeyScan *keys, UBYTE nbkey)
 {
   if (keys != NULL) {
-    QueryKeys((struct KeyQuery *) keys, nbkey);
+    QueryKeys((struct KeyQuery *)keys, nbkey);
     return TRUE;
   }
   SAGE_SetError(SERR_NULL_POINTER);
@@ -54,7 +54,7 @@ BOOL SAGE_ScanKeyboard(SAGE_KeyScan * keys, UBYTE nbkey)
  */
 BOOL SAGE_AddKeyboardHandler(UWORD key, VOID (*handler)(BOOL))
 {
-  SAGE_InputDevice * input;
+  SAGE_InputDevice *input;
 
   // Check for input device
   input = SageContext.SageInput;
@@ -79,7 +79,7 @@ BOOL SAGE_AddKeyboardHandler(UWORD key, VOID (*handler)(BOOL))
  */
 BOOL SAGE_RemoveKeyboardHandler(UWORD key)
 {
-  SAGE_InputDevice * input;
+  SAGE_InputDevice *input;
 
   // Check for input device
   input = SageContext.SageInput;
@@ -102,7 +102,7 @@ BOOL SAGE_RemoveKeyboardHandler(UWORD key)
  */
 BOOL SAGE_ClearKeyboardHandlers()
 {
-  SAGE_InputDevice * input;
+  SAGE_InputDevice *input;
   UWORD key;
 
   // Check for input device
@@ -124,7 +124,7 @@ BOOL SAGE_ClearKeyboardHandlers()
  */
 BOOL SAGE_InstallKeyboardHandlers()
 {
-  SAGE_InputDevice * input;
+  SAGE_InputDevice *input;
   UWORD key, handler;
   
   // Check for input device

@@ -5,7 +5,7 @@
  * Video module management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 /** @todo : add methods for queying video card and modes */
@@ -145,7 +145,7 @@ BOOL SAGE_AllocVideoModes(SAGE_VideoDevice *video)
   struct CyberModeNode *cgx_node;
   struct List *video_modes;
 
-  SD(SAGE_InfoLog("Gather video modes"));
+  SD(SAGE_DebugLog("Gather video modes"));
   video_modes = (struct List *)AllocCModeListTagList(NULL);
   if (video_modes == NULL) {
     SAGE_SetError(SERR_NO_MODE);
@@ -181,7 +181,7 @@ BOOL SAGE_AllocVideoDevice()
 {
   SAGE_VideoDevice *video;
 
-  SD(SAGE_InfoLog("Allocate video device");)
+  SD(SAGE_DebugLog("Allocate video device");)
   if ((video = SAGE_AllocMem(sizeof(SAGE_VideoDevice))) == NULL) {
     return FALSE;
   }
@@ -205,7 +205,7 @@ BOOL SAGE_FreeVideoDevice()
   SAGE_VideoDevice *video;
   UWORD index;
   
-  SD(SAGE_InfoLog("Release video device");)
+  SD(SAGE_DebugLog("Release video device");)
   video = SageContext.SageVideo;
   if (video == NULL) {
     SAGE_SetError(SERR_NO_VIDEODEVICE);

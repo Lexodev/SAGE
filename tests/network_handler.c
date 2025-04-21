@@ -5,7 +5,7 @@
  * Test network TCP socket handlers
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #include <sage/sage.h>
@@ -18,7 +18,7 @@ UBYTE data_buffer[DATA_BUFFER_SIZE];
 
 BOOL server_stop;
 
-VOID ReadFromClient(SAGE_BsdSocket * bsdsocket, APTR data)
+VOID ReadFromClient(SAGE_BsdSocket *bsdsocket, APTR data)
 {
   LONG response;
 
@@ -47,9 +47,9 @@ VOID ReadFromClient(SAGE_BsdSocket * bsdsocket, APTR data)
   }
 }
 
-VOID AcceptNewClient(SAGE_BsdSocket * bsdsocket, APTR data)
+VOID AcceptNewClient(SAGE_BsdSocket *bsdsocket, APTR data)
 {
-  SAGE_BsdSocket * cli_socket;
+  SAGE_BsdSocket *cli_socket;
   
   if ((cli_socket = SAGE_AcceptClient(bsdsocket)) != NULL) {
     SAGE_AppliLog("Accept a new client #%d", cli_socket->socket_id);
@@ -61,13 +61,13 @@ VOID AcceptNewClient(SAGE_BsdSocket * bsdsocket, APTR data)
   SAGE_DisplayError();
 }
 
-VOID ReadFromServer(SAGE_BsdSocket * bsdsocket, APTR data)
+VOID ReadFromServer(SAGE_BsdSocket *bsdsocket, APTR data)
 {
 }
 
 LONG manage_server(UWORD port)
 {
-  SAGE_BsdSocket * srv_socket;
+  SAGE_BsdSocket *srv_socket;
   
   if ((srv_socket = SAGE_OpenServer(SNET_TCP_PROTOCOL, port)) != NULL) {
     SAGE_AppliLog("Server socket ready #%d", srv_socket->socket_id);
@@ -91,7 +91,7 @@ LONG manage_server(UWORD port)
 
 LONG manage_client(STRPTR host, UWORD port, STRPTR message)
 {
-  SAGE_BsdSocket * cli_socket;
+  SAGE_BsdSocket *cli_socket;
   LONG response;
   
   if ((cli_socket = SAGE_OpenClient(SNET_TCP_PROTOCOL, host, port)) != NULL) {
@@ -126,9 +126,9 @@ LONG manage_client(STRPTR host, UWORD port, STRPTR message)
   return 0;
 }
 
-void main(int argc, char ** argv)
+void main(int argc, char **argv)
 {
-  char * message;
+  char *message;
 
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   SAGE_AppliLog("* SAGE library NETWORK test (TCPSOCKET) / %s", SAGE_GetVersion());

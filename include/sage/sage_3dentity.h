@@ -5,7 +5,7 @@
  * 3D entity management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 26/06/2024)
+ * @version 25.1 February 2025 (updated: 28/02/2025)
  */
 
 #ifndef _SAGE_3DENTITY_H_
@@ -41,6 +41,9 @@ SAGE_Entity *SAGE_CreateEntity(UWORD, UWORD);
 
 /** Initialize an entity */
 VOID SAGE_InitEntity(SAGE_Entity *);
+
+/** Optimize an entity */
+BOOL SAGE_OptimizeEntity(SAGE_Entity *);
 
 /** Clone an entity */
 SAGE_Entity *SAGE_CloneEntity(SAGE_Entity *);

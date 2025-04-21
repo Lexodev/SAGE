@@ -5,7 +5,7 @@
  * 3D rendering management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 26/06/2024)
+ * @version 25.1 February 2025 (updated: 10/03/2025)
  */
 
 #include <exec/types.h>
@@ -27,11 +27,15 @@
 
 #include <sage/sage_debug.h>
 
+/** External function for z buffer clear */
+extern BOOL ASM SAGE_FastClearZBuffer(
+  REG(a0, ULONG source),
+  REG(d0, UWORD lines),
+  REG(d1, UWORD bytes)
+);
+
 /** SAGE context */
 extern SAGE_Context SageContext;
-
-/** Texture mapping data */
-extern SAGE_TextureMapping s3dm_texmap;
 
 /** For debug purpose */
 extern BOOL engine_debug;
@@ -122,6 +126,7 @@ BOOL SAGE_Init3DRender()
  */
 BOOL SAGE_AllocateZBuffer()
 {
+  SD(SAGE_DebugLog("Allocate Z buffer");)
   SAFE(if (SageContext.SageVideo->screen == NULL) {
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
@@ -163,6 +168,7 @@ BOOL SAGE_AllocateZBuffer()
  */
 VOID SAGE_ReleaseZBuffer(VOID)
 {
+  SD(SAGE_DebugLog("Release Z buffer");)
   if (SageContext.Sage3D->render_system == S3DD_W3DRENDER) {
     // Release Warp3D ZBuffer
   } else if (SageContext.Sage3D->render_system == S3DD_M3DRENDER) {
@@ -191,10 +197,12 @@ BOOL SAGE_EnableZBuffer(BOOL status)
     return FALSE;
   })
   if (status) {
+    SD(SAGE_DebugLog("Enable Z buffer");)
     if (SAGE_AllocateZBuffer()) {
       SageContext.Sage3D->render.options |= S3DR_ZBUFFER;
     }
   } else {
+    SD(SAGE_DebugLog("Disable Z buffer");)
     SageContext.Sage3D->render.options &= ~S3DR_ZBUFFER;
   }
   return (BOOL)(SageContext.Sage3D->render.options & S3DR_ZBUFFER);
@@ -405,7 +413,7 @@ BOOL SAGE_Sort3DElements(BOOL ascending)
 {
   SAGE_Render *render;
 
-  SED(SAGE_DebugLog("SAGE_Sort3DElements(%s)", (ascending ? "TRUE" : "FALSE"));)
+  SD(SAGE_TraceLog("SAGE_Sort3DElements(%s)", (ascending ? "TRUE" : "FALSE"));)
   SAFE(if (SageContext.Sage3D == NULL) {
     SAGE_SetError(SERR_NO_3DDEVICE);
     return FALSE;
@@ -427,7 +435,7 @@ VOID SAGE_RenderWired3DElements(SAGE_SortedElement *elements, UWORD nb_elements)
   SAGE_3DElement *element;
   UWORD index;
 
-  SED(SAGE_DebugLog("** SAGE_RenderWiredElements(nb_elements %d)", nb_elements);)
+  SD(SAGE_TraceLog("** SAGE_RenderWired3DElements(nb_elements %d)", nb_elements);)
   for (index = 0;index < nb_elements;index++) {
     element = elements[index].element;
     if (element->type == S3DR_ELEM_LINE) {
@@ -458,30 +466,44 @@ VOID SAGE_RenderWired3DElements(SAGE_SortedElement *elements, UWORD nb_elements)
 /**
  * Render elements in flat mode
  */
-VOID SAGE_RenderFlatted3DElements(SAGE_SortedElement *elements, UWORD nb_elements)
+VOID SAGE_RenderFlatted3DElements(SAGE_Screen *screen, SAGE_SortedElement *elements, UWORD nb_elements)
 {
   SAGE_3DElement *element;
+  S3D_Triangle s3d_triangle;
   UWORD index;
 
-  SED(SAGE_DebugLog("** SAGE_RenderFlatted3DElements(nb_elements %d)", nb_elements);)
+  SD(SAGE_TraceLog("** SAGE_RenderFlatted3DElements(nb_elements %d)", nb_elements);)
   for (index = 0;index < nb_elements;index++) {
     element = elements[index].element;
     if (element->type == S3DR_ELEM_LINE) {
-      SAGE_DrawClippedLine((LONG)(element->x1), (LONG)(element->y1),
-        (LONG)(element->x2), (LONG)(element->y2), element->color);
-    }
-    if (element->type == S3DR_ELEM_TRIANGLE) {
-      SAGE_DrawClippedTriangle((LONG)(element->x1), (LONG)(element->y1),
-        (LONG)(element->x2), (LONG)(element->y2), (LONG)(element->x3),
-        (LONG)(element->y3), element->color);
-    }
-    if (element->type == S3DR_ELEM_QUAD) {
-      SAGE_DrawClippedTriangle((LONG)(element->x1), (LONG)(element->y1),
-        (LONG)(element->x2), (LONG)(element->y2), (LONG)(element->x3),
-        (LONG)(element->y3), element->color);
-      SAGE_DrawClippedTriangle((LONG)(element->x1), (LONG)(element->y1),
-        (LONG)(element->x3), (LONG)(element->y3), (LONG)(element->x4),
-        (LONG)(element->y4), element->color);
+      SAGE_DrawClippedLine(
+        (LONG)(element->x1), (LONG)(element->y1), (LONG)(element->x2), (LONG)(element->y2), element->color
+      );
+    } else if (element->type > S3DR_ELEM_LINE) {
+      s3d_triangle.x1 = element->x1;
+      s3d_triangle.y1 = element->y1;
+      s3d_triangle.z1 = element->z1;
+      s3d_triangle.x2 = element->x2;
+      s3d_triangle.y2 = element->y2;
+      s3d_triangle.z2 = element->z2;
+      s3d_triangle.x3 = element->x3;
+      s3d_triangle.y3 = element->y3;
+      s3d_triangle.z3 = element->z3;
+      s3d_triangle.color = SAGE_RemapColor(element->color);
+      s3d_triangle.tex = NULL;
+      SAGE_DrawColoredTriangle(&s3d_triangle, screen->back_bitmap, &(screen->clipping));
+      if (element->type == S3DR_ELEM_QUAD) {
+        s3d_triangle.x1 = element->x1;
+        s3d_triangle.y1 = element->y1;
+        s3d_triangle.z1 = element->z1;
+        s3d_triangle.x2 = element->x4;
+        s3d_triangle.y2 = element->y4;
+        s3d_triangle.z2 = element->z4;
+        s3d_triangle.x3 = element->x3;
+        s3d_triangle.y3 = element->y3;
+        s3d_triangle.z3 = element->z3;
+        SAGE_DrawColoredTriangle(&s3d_triangle, screen->back_bitmap, &(screen->clipping));
+      }
     }
   }
 }
@@ -495,14 +517,14 @@ VOID SAGE_RenderSage3DElements(SAGE_Screen *screen, SAGE_SortedElement *elements
   S3D_Triangle s3d_triangle;
   UWORD index;
   
-  SED(SAGE_DebugLog("** SAGE_RenderSage3DElements(nb_elements %d)", nb_elements);)
+  SD(SAGE_TraceLog("** SAGE_RenderSage3DElements(nb_elements %d)", nb_elements);)
   for (index = 0;index < nb_elements;index++) {
     element = elements[index].element;
     if (element->type == S3DR_ELEM_LINE) {
-      SAGE_DrawClippedLine((LONG)(element->x1), (LONG)(element->y1),
-        (LONG)(element->x2), (LONG)(element->y2), element->color);
-    }
-    if (element->type > S3DR_ELEM_LINE) {
+      SAGE_DrawClippedLine(
+        (LONG)(element->x1), (LONG)(element->y1), (LONG)(element->x2), (LONG)(element->y2), element->color
+      );
+    } else if (element->type > S3DR_ELEM_LINE) {
       s3d_triangle.x1 = element->x1;
       s3d_triangle.y1 = element->y1;
       s3d_triangle.z1 = element->z1;
@@ -518,7 +540,7 @@ VOID SAGE_RenderSage3DElements(SAGE_Screen *screen, SAGE_SortedElement *elements
       s3d_triangle.z3 = element->z3;
       s3d_triangle.u3 = element->u3;
       s3d_triangle.v3 = element->v3;
-      s3d_triangle.color = element->color;
+      s3d_triangle.color = SAGE_RemapColor(element->color);
       s3d_triangle.tex = SAGE_GetTexture(element->texture);
       if (s3d_triangle.tex == NULL) {
         SAGE_DrawColoredTriangle(&s3d_triangle, screen->back_bitmap, &(screen->clipping));
@@ -559,8 +581,10 @@ VOID SAGE_RenderWarp3DElements(SAGE_Screen *screen, W3D_Context *context, SAGE_S
   SAGE_3DElement *element;
   W3D_Scissor scissor;
   W3D_Triangle w3d_triangle;
+  FLOAT red, green, blue;
   UWORD index;
 
+  SD(SAGE_TraceLog("** SAGE_RenderWarp3DElements(nb_elements %d)", nb_elements);)
   // Set the W3D scissor
   scissor.left = screen->clipping.left;
   scissor.top = screen->clipping.top;
@@ -573,6 +597,9 @@ VOID SAGE_RenderWarp3DElements(SAGE_Screen *screen, W3D_Context *context, SAGE_S
     // Render elements
     for (index = 0;index < nb_elements;index++) {
       element = elements[index].element;
+      red = (FLOAT)((element->color >> 16) & 0xff) / 255.0;
+      green = (FLOAT)((element->color >> 8) & 0xff) / 255.0;
+      blue = (FLOAT)(element->color & 0xff) / 255.0;
       if (element->type > S3DR_ELEM_LINE) {
         w3d_triangle.v1.x = element->x1;
         w3d_triangle.v1.y = element->y1;
@@ -581,9 +608,9 @@ VOID SAGE_RenderWarp3DElements(SAGE_Screen *screen, W3D_Context *context, SAGE_S
         w3d_triangle.v1.u = element->u1;
         w3d_triangle.v1.v = element->v1;
         w3d_triangle.v1.color.a = 0.0;
-        w3d_triangle.v1.color.r = 1.0;
-        w3d_triangle.v1.color.g = 1.0;
-        w3d_triangle.v1.color.b = 1.0;
+        w3d_triangle.v1.color.r = red;
+        w3d_triangle.v1.color.g = green;
+        w3d_triangle.v1.color.b = blue;
         w3d_triangle.v2.x = element->x2;
         w3d_triangle.v2.y = element->y2;
         w3d_triangle.v2.z = element->z2;
@@ -591,9 +618,9 @@ VOID SAGE_RenderWarp3DElements(SAGE_Screen *screen, W3D_Context *context, SAGE_S
         w3d_triangle.v2.u = element->u2;
         w3d_triangle.v2.v = element->v2;
         w3d_triangle.v2.color.a = 0.0;
-        w3d_triangle.v2.color.r = 1.0;
-        w3d_triangle.v2.color.g = 1.0;
-        w3d_triangle.v2.color.b = 1.0;
+        w3d_triangle.v2.color.r = red;
+        w3d_triangle.v2.color.g = green;
+        w3d_triangle.v2.color.b = blue;
         w3d_triangle.v3.x = element->x3;
         w3d_triangle.v3.y = element->y3;
         w3d_triangle.v3.z = element->z3;
@@ -601,9 +628,9 @@ VOID SAGE_RenderWarp3DElements(SAGE_Screen *screen, W3D_Context *context, SAGE_S
         w3d_triangle.v3.u = element->u3;
         w3d_triangle.v3.v = element->v3;
         w3d_triangle.v3.color.a = 0.0;
-        w3d_triangle.v3.color.r = 1.0;
-        w3d_triangle.v3.color.g = 1.0;
-        w3d_triangle.v3.color.b = 1.0;
+        w3d_triangle.v3.color.r = red;
+        w3d_triangle.v3.color.g = green;
+        w3d_triangle.v3.color.b = blue;
         if (element->texture == STEX_USECOLOR) {
           w3d_triangle.tex = NULL;
           W3D_SetState(context, W3D_TEXMAPPING, W3D_DISABLE);
@@ -620,9 +647,9 @@ VOID SAGE_RenderWarp3DElements(SAGE_Screen *screen, W3D_Context *context, SAGE_S
           w3d_triangle.v2.u = element->u4;
           w3d_triangle.v2.v = element->v4;
           w3d_triangle.v2.color.a = 0.0;
-          w3d_triangle.v2.color.r = 1.0;
-          w3d_triangle.v2.color.g = 1.0;
-          w3d_triangle.v2.color.b = 1.0;
+          w3d_triangle.v3.color.r = red;
+          w3d_triangle.v3.color.g = green;
+          w3d_triangle.v3.color.b = blue;
           W3D_DrawTriangle(context, &w3d_triangle);
         }
       }
@@ -644,7 +671,7 @@ VOID SAGE_RenderMaggie3DElements(SAGE_Screen *screen, M3D_Context *context, SAGE
   M3D_Quad m3d_quad;
   UWORD index;
   
-  SED(SAGE_DebugLog("** SAGE_RenderMaggie3DElements(nb_elements %d)", nb_elements);)
+  SD(SAGE_TraceLog("** SAGE_RenderMaggie3DElements(nb_elements %d)", nb_elements);)
   // Set the M3D scissor
   scissor.left = screen->clipping.left;
   scissor.top = screen->clipping.top;
@@ -744,6 +771,7 @@ BOOL SAGE_Render3DElements()
   SAGE_Screen *screen;
   SAGE_3DDevice *device;
 
+  SD(SAGE_TraceLog("*** Render 3D elements ***");)
   SAFE(if (SageContext.SageVideo == NULL) {
     SAGE_SetError(SERR_NO_VIDEODEVICE);
     return FALSE;
@@ -760,20 +788,22 @@ BOOL SAGE_Render3DElements()
   })
   // Sort elements list
   if (!SAGE_Get3DRenderOption(S3DR_ZBUFFER)) {
+    SD(SAGE_TraceLog("** ZBuffer is disable");)
     SAGE_Sort3DElements(FALSE);  // Descending mode
-    SED(SAGE_DebugLog("*** Descending sort elements ***");)
+    SD(SAGE_TraceLog("** Descending sort elements");)
     SED(SAGE_DumpElementList(device->render.ordered_elements, device->render.render_elements);)
   } else {
+    SD(SAGE_TraceLog("** ZBuffer is enable");)
     SAGE_Sort3DElements(TRUE);  // Ascending mode
-    SED(SAGE_DebugLog("*** Ascending sort elements ***");)
+    SD(SAGE_TraceLog("** Ascending sort elements");)
     SED(SAGE_DumpElementList(device->render.ordered_elements, device->render.render_elements);)
-    SED(SAGE_DebugLog("*** Clearing Z buffer ***");)
+    SD(SAGE_TraceLog("** Clearing Z buffer");)
     SAGE_ClearZBuffer();
   }
   if (device->render.render_mode == S3DR_RENDER_WIRE) {
     SAGE_RenderWired3DElements(device->render.ordered_elements, device->render.render_elements);
   } else if (device->render.render_mode == S3DR_RENDER_FLAT) {
-    SAGE_RenderFlatted3DElements(device->render.ordered_elements, device->render.render_elements);
+    SAGE_RenderFlatted3DElements(screen, device->render.ordered_elements, device->render.render_elements);
   } else {
     if (device->render_system == S3DD_W3DRENDER) {
       SAGE_RenderWarp3DElements(screen, device->w3d_context, device->render.ordered_elements, device->render.render_elements);

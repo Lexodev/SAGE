@@ -5,7 +5,7 @@
  * Test text print
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage.h>
@@ -23,7 +23,7 @@ void fillbm(SAGE_Bitmap *bitmap)
   pixel = 0;
   for (height = 0;height < SCREEN_HEIGHT;height++) {
     for (width = 0;width < SCREEN_WIDTH;width++) {
-      *bitmap_data++ = pixel;
+      *bitmap_data++ = pixel++;
     }
   }
 }
@@ -32,12 +32,12 @@ void checkprint(void)
 {
   SAGE_Event *event = NULL;
   LONG buffer = 1;
-  BOOL finish;
+  BOOL finish = FALSE;
 
   SAGE_AppliLog("Opening screen");
   if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES)) {
     SAGE_AppliLog("Loading fonts");
-    if (!SAGE_SetFont("UFOLarge.font", 15)) {
+    if (!SAGE_SetFont("emerald.font", 17)) {
       SAGE_DisplayError();
     }
     SAGE_AppliLog("Clearing bitmaps");
@@ -46,8 +46,7 @@ void checkprint(void)
     fillbm(SAGE_GetWaitBitmap());
     SAGE_AppliLog("Run main loop");
     SAGE_HideMouse();
-    finish = FALSE;
-    SAGE_PrintText("I AM THE SCREEN BUFFER", 20, 20);
+    SAGE_PrintDirectText("I AM THE SCREEN BUFFER", 20, 20);
     while (!finish) {
       while ((event = SAGE_GetEvent()) != NULL) {
         SAGE_AppliLog(
@@ -70,9 +69,10 @@ void checkprint(void)
               if (!SAGE_RefreshScreen()) {
                 SAGE_DisplayError();
               }
-              SAGE_PrintText("I AM AN OTHER SCREEN BUFFER", 20, 20 + (buffer*20));
+              SAGE_PrintDirectText("I AM AN OTHER SCREEN BUFFER", 20, 20 + (buffer*20));
               buffer++;
-              SAGE_Pause(50);
+              SAGE_Pause(150);
+              finish = TRUE;
               break;
           }
         }

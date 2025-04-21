@@ -5,27 +5,35 @@
  * Test line drawing
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage.h>
 
-#define SCREEN_WIDTH          320L
-#define SCREEN_HEIGHT         240L
-#define SCREEN_DEPTH          8L
+#define SCREEN_WIDTH          320
+#define SCREEN_HEIGHT         240
 
-void main(void)
+void main(int argc, char **argv)
 {
   SAGE_Event *event = NULL;
-  LONG color, x1, y1, x2, y2, ix1, iy1, ix2, iy2;
+  LONG depth = 16, color, x1, y1, x2, y2, ix1, iy1, ix2, iy2;
   BOOL finish = FALSE;
 
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   SAGE_AppliLog("* SAGE library VIDEO test (LINE) / %s", SAGE_GetVersion());
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   if (SAGE_Init(SMOD_VIDEO)) {
+    if (argc >= 2) {
+      if (strcmp(argv[1], "8") == 0) {
+        depth = 8;
+      } else if (strcmp(argv[1], "24") == 0) {
+        depth = 24;
+      } else if (strcmp(argv[1], "32") == 0) {
+        depth = 32;
+      }
+    }
     SAGE_AppliLog("Opening screen");
-    if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES)) {
+    if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, depth, SSCR_STRICTRES)) {
       x1 = 0;
       ix1 = 1;
       y1 = 0;
@@ -57,39 +65,47 @@ void main(void)
         if (x1 >= SCREEN_WIDTH) {
           ix1 = 0;
           iy1 = 1;
+          x1 = SCREEN_WIDTH - 1;
         } else if (x1 < 0) {
           ix1 = 0;
           iy1 = -1;
+          x1 = 0;
         }
         y1 += iy1;
         if (y1 >= SCREEN_HEIGHT) {
           iy1 = 0;
           ix1 = -1;
+          y1 = SCREEN_HEIGHT - 1;
         } else if (y1 < 0) {
           iy1 = 0;
           ix1 = 1;
+          y1 = 0;
         }
         x2 += ix2;
         if (x2 >= SCREEN_WIDTH) {
           ix2 = 0;
           iy2 = 1;
+          x2 = SCREEN_WIDTH - 1;
         } else if (x2 < 0) {
           ix2 = 0;
           iy2 = -1;
+          x2 = 0;
         }
         y2 += iy2;
         if (y2 >= SCREEN_HEIGHT) {
           iy2 = 0;
           ix2 = -1;
+          y2 = SCREEN_HEIGHT - 1;
         } else if (y2 < 0) {
           iy2 = 0;
           ix2 = 1;
+          y2 = 0;
         }
-        if (SCREEN_DEPTH == 8) {
+        if (depth == 8) {
           color++;
           color %= 252;
         } else {
-          color = 0xffff;
+          color += 16;
         }
         SAGE_DrawLine(x1, y1, x2, y2, color + 2);
         if (!SAGE_RefreshScreen()) {

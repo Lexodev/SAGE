@@ -5,7 +5,7 @@
  * Demo of 3D dinosaurus (PSX demo)
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 January 2022
+ * @version 1.5 March 2025
  */
 
 /**
@@ -36,6 +36,7 @@
 /** Demo variables */
 WORD rotate = S3DE_ONEDEGREE * 180;
 FLOAT zoom = 50.0;
+LONG render = S3DD_S3DRENDER;
 BOOL finish = FALSE, textured = TRUE;
 
 // Controls
@@ -87,7 +88,7 @@ BOOL InitWorld(VOID)
   SAGE_SetCameraPlane(MAIN_CAMERA, (FLOAT)10.0, (FLOAT)1000.0);
   SAGE_AppliLog("Load entity");
   entity = SAGE_LoadEntity("data/dino.obj");
-  if (entity == NULL || !SAGE_AddEntity(ENTITY_DINO, entity)) {
+  if (entity == NULL || !SAGE_OptimizeEntity(entity) || !SAGE_AddEntity(ENTITY_DINO, entity)) {
     return FALSE;
   }
   SAGE_AppliLog("Load background picture");
@@ -109,8 +110,8 @@ BOOL _Init(VOID)
   if (!OpenScreen()) {
     return FALSE;
   }
-  if (SAGE_Set3DRenderSystem(S3DD_M3DRENDER)) {
-    SAGE_AppliLog("Maggie rendering enable");
+  if (SAGE_Set3DRenderSystem(render)) {
+    SAGE_AppliLog("Rendering system %d enable", render);
   }
   if (SAGE_EnableZBuffer(TRUE)) {
     SAGE_AppliLog("Z buffer enable");
@@ -224,12 +225,19 @@ VOID _Render(VOID)
   );
 }
 
-void main(void)
+void main(int argc, char **argv)
 {
   SAGE_SetLogLevel(SLOG_WARNING);
-  SAGE_AppliLog("SAGE library engine Dino demo V1.2");
+  SAGE_AppliLog("SAGE library engine Dino demo V1.5");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_INPUT|SMOD_3D|SMOD_INTERRUPTION)) {
+    if (argc >= 2) {
+      if (strcmp(argv[1], "M3D") == 0) {
+        render = S3DD_M3DRENDER;
+      } else if (strcmp(argv[1], "W3D") == 0) {
+        render = S3DD_W3DRENDER;
+      }
+    }
     // Init the demo data
     if (_Init()) {
 

@@ -5,7 +5,7 @@
  * Test zoom functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage.h>
@@ -14,14 +14,12 @@
 #define SCREEN_HEIGHT         480L
 #define SCREEN_DEPTH          16L
 
-#define SPR_TRANSP            0xF81F
+#define SPR_TRANSP            0xFF00FF
 #define SPR_BANK              0
 #define SPR_INDEX             0
 #define SPR_NUMBER            4
 
 #define BG_LAYER              0
-
-UBYTE string_buffer[256];
 
 void main(void)
 {
@@ -44,7 +42,7 @@ void main(void)
       SAGE_MaximumFPS(60);
       SAGE_VerticalSynchro(FALSE);
       SAGE_AppliLog("Load sprite picture and create sprite bank");
-      if ((picture = SAGE_LoadPicture("/data/vampire.bmp")) != NULL) {
+      if ((picture = SAGE_LoadPicture("data/vampire.bmp")) != NULL) {
         SAGE_LoadPictureColorMap(picture);
         if (SAGE_CreateSpriteBank(SPR_BANK, SPR_NUMBER, picture)) {
           SAGE_SetSpriteBankTransparency(SPR_BANK, SPR_TRANSP);
@@ -55,7 +53,7 @@ void main(void)
         SAGE_ReleasePicture(picture);
       }
       SAGE_AppliLog("Load a picture for the background");
-      if ((picture = SAGE_LoadPicture("/data/desert.bmp")) == NULL) {
+      if ((picture = SAGE_LoadPicture("data/desert.bmp")) == NULL) {
         finish = FALSE;
       }
       while (!finish) {
@@ -69,8 +67,7 @@ void main(void)
           SAGE_DisplayError();
         }
         // Draw the fps counter
-        //sSAGE_AppliLog(string_buffer, "%d fps", SAGE_GetFps());
-        //SAGE_PrintText(string_buffer, 10, 10);
+        SAGE_PrintFText(10, 10, "%d fps", SAGE_GetFps());
         SAGE_RefreshScreen();
         while ((event = SAGE_GetEvent()) != NULL) {
           if (event->type == SEVT_RAWKEY) {

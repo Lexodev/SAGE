@@ -5,7 +5,7 @@
  * Demo of 3D engine, terrain
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 February 2022
+ * @version 25.1 March 2025 (updated: 20/03/2025)
  */
 
 #include <sage/sage.h>
@@ -114,7 +114,7 @@ VOID _Restore(VOID)
 
 VOID StrafeLeft(VOID)
 {
-  SAGE_Camera * camera;
+  SAGE_Camera *camera;
   FLOAT x, z;
 
   camera = SAGE_GetCamera(MAIN_CAMERA);
@@ -130,7 +130,7 @@ VOID StrafeLeft(VOID)
 
 VOID StrafeRight(VOID)
 {
-  SAGE_Camera * camera;
+  SAGE_Camera *camera;
   FLOAT x, z;
 
   camera = SAGE_GetCamera(MAIN_CAMERA);
@@ -146,7 +146,7 @@ VOID StrafeRight(VOID)
 
 VOID Forward(VOID)
 {
-  SAGE_Camera * camera;
+  SAGE_Camera *camera;
   FLOAT x, z;
 
   camera = SAGE_GetCamera(MAIN_CAMERA);
@@ -162,7 +162,7 @@ VOID Forward(VOID)
 
 VOID Backward(VOID)
 {
-  SAGE_Camera * camera;
+  SAGE_Camera *camera;
   FLOAT x, z;
 
   camera = SAGE_GetCamera(MAIN_CAMERA);
@@ -192,7 +192,7 @@ VOID ScanKeyboard(VOID)
 
 VOID _Update(VOID)
 {
-  SAGE_Event * event = NULL;
+  SAGE_Event *event = NULL;
 
   SAGE_EngineDebug(FALSE);
   ScanKeyboard();
@@ -232,7 +232,7 @@ VOID _Update(VOID)
 
 VOID _Render(VOID)
 {
-  SAGE_EngineMetrics * metrics;
+  SAGE_EngineMetrics *metrics;
 
   SAGE_ClearScreen();
   SAGE_RenderWorld();

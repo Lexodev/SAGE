@@ -5,7 +5,7 @@
  * Demo of an out run clone
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.5 October 2021
+ * @version 2.0 March 2025
  */
 
 // Sound effect https://www.sfxbuzz.com/summary/20-cars-trucks/294-race-car-idle-and-rev-away-sound-effects
@@ -35,26 +35,27 @@
 #define VMAX                  300
 
 // Backgrounds
-#define BG_SKY_LEFT           0L
-#define BG_SKY_TOP            240L
-#define BG_SKY_WIDTH          640L
-#define BG_SKY_HEIGHT         240L
-#define BG_SKY_LAYER          1
-#define BG_SKY_POSY           0
+#define BG_WIDTH              932L
 
-#define BG_MOUNT_LEFT         0L
-#define BG_MOUNT_TOP          0L
-#define BG_MOUNT_WIDTH        640L
-#define BG_MOUNT_HEIGHT       240L
-#define BG_MOUNT_LAYER        2
-#define BG_MOUNT_POSY         40
+#define BG_CLOUDS_WIDTH       932L
+#define BG_CLOUDS_HEIGHT      196L
+#define BG_CLOUDS_LAYER       1
+#define BG_CLOUDS_POSY        0
 
-#define BG_TREE_LEFT          0L
-#define BG_TREE_TOP           480L
-#define BG_TREE_WIDTH         640L
-#define BG_TREE_HEIGHT        240L
-#define BG_TREE_LAYER         3
-#define BG_TREE_POSY          80
+#define BG_MOUNTAIN_WIDTH     932L
+#define BG_MOUNTAIN_HEIGHT    98L
+#define BG_MOUNTAIN_LAYER     2
+#define BG_MOUNTAIN_POSY      BG_CLOUDS_HEIGHT-BG_MOUNTAIN_HEIGHT
+
+#define BG_FOREST_WIDTH       932L
+#define BG_FOREST_HEIGHT      80L
+#define BG_FOREST_LAYER       3
+#define BG_FOREST_POSY        BG_CLOUDS_HEIGHT-24
+
+#define BG_GRASS_WIDTH        932L
+#define BG_GRASS_HEIGHT       76L
+#define BG_GRASS_LAYER        4
+#define BG_GRASS_POSY         BG_FOREST_POSY+BG_FOREST_HEIGHT
 
 // Road types
 #define ROAD_TYPE0            0       // Red/white rumble start line
@@ -313,6 +314,10 @@ BOOL OpenScreen(VOID)
   SAGE_AppliLog("Opening screen");
   if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES)) {
     screen = SAGE_GetScreen();
+    SAGE_SetColor(0, 0x0);
+    SAGE_SetColor(1, 0xffffff);
+    SAGE_RefreshColors(0, 2);
+    SAGE_SetTextColor(1, 0);
     segment_color[0] = SAGE_RemapColor(ROAD_GRASS1);
     segment_color[1] = SAGE_RemapColor(ROAD_GRASS2);
     segment_color[2] = SAGE_RemapColor(ROAD_RUMBLE1);
@@ -335,27 +340,50 @@ BOOL InitBackgroundLayer(VOID)
 {
   SAGE_Picture *picture;
 
-  SAGE_AppliLog("Load background picture");
-  if ((picture = SAGE_LoadPicture("data/runner_bg.png")) != NULL) {
-    SAGE_AppliLog("Create sky layer");
-    if (SAGE_CreateLayer(BG_SKY_LAYER, BG_SKY_WIDTH, BG_SKY_HEIGHT)) {
-      SAGE_BlitPictureToLayer(picture, BG_SKY_LEFT, BG_SKY_TOP, BG_SKY_WIDTH, BG_SKY_HEIGHT, BG_SKY_LAYER, 0, 0);
-    }
-    SAGE_AppliLog("Create mountain layer");
-    if (SAGE_CreateLayer(BG_MOUNT_LAYER, BG_MOUNT_WIDTH, BG_MOUNT_HEIGHT)) {
-      SAGE_BlitPictureToLayer(picture, BG_MOUNT_LEFT, BG_MOUNT_TOP, BG_MOUNT_WIDTH, BG_MOUNT_HEIGHT, BG_MOUNT_LAYER, 0, 0);
-      SAGE_SetLayerTransparency(BG_MOUNT_LAYER, TRANSP_COLOR);
-    }
-    SAGE_AppliLog("Create tree layer");
-    if (SAGE_CreateLayer(BG_TREE_LAYER, BG_TREE_WIDTH, BG_TREE_HEIGHT)) {
-      SAGE_BlitPictureToLayer(picture, BG_TREE_LEFT, BG_TREE_TOP, BG_TREE_WIDTH, BG_TREE_HEIGHT, BG_TREE_LAYER, 0, 0);
-      SAGE_SetLayerTransparency(BG_TREE_LAYER, TRANSP_COLOR);
+  SAGE_AppliLog("Load background pictures");
+  if ((picture = SAGE_LoadPicture("data/bg_clouds.png")) != NULL) {
+    SAGE_AppliLog("Create clouds layer");
+    if (SAGE_CreateLayer(BG_CLOUDS_LAYER, BG_CLOUDS_WIDTH, BG_CLOUDS_HEIGHT)) {
+      SAGE_BlitPictureToLayer(picture, 0, 0, BG_CLOUDS_WIDTH, BG_CLOUDS_HEIGHT, BG_CLOUDS_LAYER, 0, 0);
     }
     SAGE_ReleasePicture(picture);
-    return TRUE;
+  } else {
+    SAGE_DisplayError();
+    return FALSE;
   }
-  SAGE_DisplayError();
-  return FALSE;
+  if ((picture = SAGE_LoadPicture("data/bg_mountain.png")) != NULL) {
+    SAGE_AppliLog("Create mountain layer");
+    if (SAGE_CreateLayer(BG_MOUNTAIN_LAYER, BG_MOUNTAIN_WIDTH, BG_MOUNTAIN_HEIGHT)) {
+      SAGE_BlitPictureToLayer(picture, 0, 0, BG_MOUNTAIN_WIDTH, BG_MOUNTAIN_HEIGHT, BG_MOUNTAIN_LAYER, 0, 0);
+      SAGE_SetLayerTransparency(BG_MOUNTAIN_LAYER, TRANSP_COLOR);
+    }
+    SAGE_ReleasePicture(picture);
+  } else {
+    SAGE_DisplayError();
+    return FALSE;
+  }
+  if ((picture = SAGE_LoadPicture("data/bg_forest.png")) != NULL) {
+    SAGE_AppliLog("Create forest layer");
+    if (SAGE_CreateLayer(BG_FOREST_LAYER, BG_FOREST_WIDTH, BG_FOREST_HEIGHT)) {
+      SAGE_BlitPictureToLayer(picture, 0, 0, BG_FOREST_WIDTH, BG_FOREST_HEIGHT, BG_FOREST_LAYER, 0, 0);
+      SAGE_SetLayerTransparency(BG_FOREST_LAYER, TRANSP_COLOR);
+    }
+    SAGE_ReleasePicture(picture);
+  } else {
+    SAGE_DisplayError();
+    return FALSE;
+  }
+  if ((picture = SAGE_LoadPicture("data/bg_grass.png")) != NULL) {
+    SAGE_AppliLog("Create grass layer");
+    if (SAGE_CreateLayer(BG_GRASS_LAYER, BG_GRASS_WIDTH, BG_GRASS_HEIGHT)) {
+      SAGE_BlitPictureToLayer(picture, 0, 0, BG_GRASS_WIDTH, BG_GRASS_HEIGHT, BG_GRASS_LAYER, 0, 0);
+    }
+    SAGE_ReleasePicture(picture);
+  } else {
+    SAGE_DisplayError();
+    return FALSE;
+  }
+  return TRUE;
 }
 
 FLOAT Random(VOID)
@@ -560,9 +588,9 @@ VOID _Restore(VOID)
   SAGE_StopMusic();
   SAGE_ClearMusic();
   SAGE_AppliLog("Restore game");
-  SAGE_ReleaseLayer(BG_SKY_LAYER);
-  SAGE_ReleaseLayer(BG_MOUNT_LAYER);
-  SAGE_ReleaseLayer(BG_TREE_LAYER);
+  SAGE_ReleaseLayer(BG_CLOUDS_LAYER);
+  SAGE_ReleaseLayer(BG_MOUNTAIN_LAYER);
+  SAGE_ReleaseLayer(BG_FOREST_LAYER);
   SAGE_ShowMouse();
   SAGE_AppliLog("Closing screen");
   SAGE_CloseScreen();
@@ -658,13 +686,16 @@ VOID DrawBackground(VOID)
   if (playerSpeed > 0) {
     backX += (l->curve*(1.0+(playerSpeed/(VMAX/4))));
   }
-  if (backX < 0.0) backX += SCREEN_WIDTH;
-  if (backX >= SCREEN_WIDTH) backX -= SCREEN_WIDTH;
-  SAGE_BlitLayerToScreen(BG_SKY_LAYER, 0, BG_SKY_POSY);
-  SAGE_SetLayerView(BG_MOUNT_LAYER, (ULONG)backX, 0, BG_MOUNT_WIDTH, BG_MOUNT_HEIGHT);
-  SAGE_BlitLayerToScreen(BG_MOUNT_LAYER, 0, BG_MOUNT_POSY);
-  SAGE_SetLayerView(BG_TREE_LAYER, (ULONG)(backX*2), 0, BG_TREE_WIDTH, BG_TREE_HEIGHT);
-  SAGE_BlitLayerToScreen(BG_TREE_LAYER, 0, BG_TREE_POSY);
+  if (backX < 0.0) backX += BG_WIDTH;
+  if (backX >= BG_WIDTH) backX -= BG_WIDTH;
+  SAGE_SetLayerView(BG_CLOUDS_LAYER, (ULONG)backX, 0, SCREEN_WIDTH, BG_CLOUDS_HEIGHT);
+  SAGE_BlitLayerToScreen(BG_CLOUDS_LAYER, 0, BG_CLOUDS_POSY);
+  SAGE_SetLayerView(BG_MOUNTAIN_LAYER, (ULONG)(backX*2), 0, SCREEN_WIDTH, BG_MOUNTAIN_HEIGHT);
+  SAGE_BlitLayerToScreen(BG_MOUNTAIN_LAYER, 0, BG_MOUNTAIN_POSY);
+  SAGE_SetLayerView(BG_FOREST_LAYER, (ULONG)(backX*3), 0, SCREEN_WIDTH, BG_FOREST_HEIGHT);
+  SAGE_BlitLayerToScreen(BG_FOREST_LAYER, 0, BG_FOREST_POSY);
+  SAGE_SetLayerView(BG_GRASS_LAYER, (ULONG)(backX*4), 0, SCREEN_WIDTH, BG_GRASS_HEIGHT);
+  SAGE_BlitLayerToScreen(BG_GRASS_LAYER, 0, BG_GRASS_POSY);
 }
 
 VOID DrawRoadType0(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
@@ -677,21 +708,21 @@ VOID DrawRoadType0(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y
   if (start >= SCREEN_HEIGHT) return;
   rendered_segment++;         // DEBUG !!!!
   end = (LONG) y2;
-  row = SAGE_FastClippedLeftEdgeCalc(left_grass_crd, 0, start, 0, end, &clip);
-  SAGE_FastClippedLeftEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, &clip);
-  SAGE_FastClippedLeftEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, &clip);
+  row = SAGE_ClippedEdgeCalc(left_grass_crd, 0, start, 0, end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, clip.top, clip.bottom);
   gcolor = (segment>>2)%2 ? segment_color[0]:segment_color[1];
   bcolor = (segment>>3)%2 ? segment_color[2]:segment_color[3];
   rcolor = segment_color[6];
   buffer = screen_buffer + (start*SCREEN_WIDTH);
-  SAGE_DrawFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor, clip.left, clip.right);
 }
 
 VOID DrawRoadType1(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
@@ -704,21 +735,21 @@ VOID DrawRoadType1(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y
   if (start >= SCREEN_HEIGHT) return;
   rendered_segment++;         // DEBUG !!!!
   end = (LONG) y2;
-  row = SAGE_FastClippedLeftEdgeCalc(left_grass_crd, 0, start, 0, end, &clip);
-  SAGE_FastClippedLeftEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, &clip);
-  SAGE_FastClippedLeftEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, &clip);
+  row = SAGE_ClippedEdgeCalc(left_grass_crd, 0, start, 0, end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, clip.top, clip.bottom);
   gcolor = (segment>>2)%2 ? segment_color[0]:segment_color[1];
   bcolor = (segment>>3)%2 ? segment_color[2]:segment_color[3];
   rcolor = (segment>>2)%2 ? segment_color[4]:segment_color[5];
   buffer = screen_buffer + (start*SCREEN_WIDTH);
-  SAGE_DrawFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor, clip.left, clip.right);
 }
 
 VOID DrawRoadType2(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
@@ -731,27 +762,27 @@ VOID DrawRoadType2(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y
   if (start >= SCREEN_HEIGHT) return;
   rendered_segment++;         // DEBUG !!!!
   end = (LONG) y2;
-  row = SAGE_FastClippedLeftEdgeCalc(left_grass_crd, 0, start, 0, end, &clip);
-  SAGE_FastClippedLeftEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, &clip);
-  SAGE_FastClippedLeftEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, &clip);
+  row = SAGE_ClippedEdgeCalc(left_grass_crd, 0, start, 0, end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, clip.top, clip.bottom);
   gcolor = (segment>>2)%2 ? segment_color[0]:segment_color[1];
   bcolor = (segment>>3)%2 ? segment_color[2]:segment_color[3];
   rcolor = (segment>>2)%2 ? segment_color[4]:segment_color[5];
   buffer = screen_buffer + (start*SCREEN_WIDTH);
-  SAGE_DrawFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor, clip.left, clip.right);
   // Add middle line
   if ((segment>>3)%2 == 0) {
     lcolor = segment_color[6];
-    SAGE_FastClippedLeftEdgeCalc(left_line_crd, (LONG)(x1 - (w1*0.05)), start, (LONG)(x2 - (w2*0.05)), end, &clip);
-    SAGE_FastClippedRightEdgeCalc(right_line_crd, (LONG)(x1 + (w1*0.05)), start, (LONG)(x2 + (w2*0.05)), end, &clip);
-    SAGE_DrawFlatQuad16Bits(buffer, left_line_crd, right_line_crd, row, screen_bpr, lcolor);
+    SAGE_ClippedEdgeCalc(left_line_crd, (LONG)(x1 - (w1*0.05)), start, (LONG)(x2 - (w2*0.05)), end, clip.top, clip.bottom);
+    SAGE_ClippedEdgeCalc(right_line_crd, (LONG)(x1 + (w1*0.05)), start, (LONG)(x2 + (w2*0.05)), end, clip.top, clip.bottom);
+    SAGE_DrawClippedFlatQuad16Bits(buffer, left_line_crd, right_line_crd, row, screen_bpr, lcolor, clip.left, clip.right);
   }
 }
 
@@ -765,30 +796,30 @@ VOID DrawRoadType3(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y
   if (start >= SCREEN_HEIGHT) return;
   rendered_segment++;         // DEBUG !!!!
   end = (LONG) y2;
-  row = SAGE_FastClippedLeftEdgeCalc(left_grass_crd, 0, start, 0, end, &clip);
-  SAGE_FastClippedLeftEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, &clip);
-  SAGE_FastClippedLeftEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, &clip);
+  row = SAGE_ClippedEdgeCalc(left_grass_crd, 0, start, 0, end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, clip.top, clip.bottom);
   gcolor = (segment>>2)%2 ? segment_color[0]:segment_color[1];
   bcolor = (segment>>3)%2 ? segment_color[2]:segment_color[3];
   rcolor = (segment>>2)%2 ? segment_color[4]:segment_color[5];
   buffer = screen_buffer + (start*SCREEN_WIDTH);
-  SAGE_DrawFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor, clip.left, clip.right);
   // Add two lines
   if ((segment>>3)%2 == 0) {
     lcolor = segment_color[6];
-    SAGE_FastClippedLeftEdgeCalc(left_line_crd, (LONG)(x1 - (w1*0.4)), start, (LONG)(x2 - (w2*0.4)), end, &clip);
-    SAGE_FastClippedRightEdgeCalc(right_line_crd, (LONG)(x1 - (w1*0.35)), start, (LONG)(x2 - (w2*0.35)), end, &clip);
-    SAGE_DrawFlatQuad16Bits(buffer, left_line_crd, right_line_crd, row, screen_bpr, lcolor);
-    SAGE_FastClippedLeftEdgeCalc(left_line_crd, (LONG)(x1 + (w1*0.35)), start, (LONG)(x2 + (w2*0.35)), end, &clip);
-    SAGE_FastClippedRightEdgeCalc(right_line_crd, (LONG)(x1 + (w1*0.4)), start, (LONG)(x2 + (w2*0.4)), end, &clip);
-    SAGE_DrawFlatQuad16Bits(buffer, left_line_crd, right_line_crd, row, screen_bpr, lcolor);
+    SAGE_ClippedEdgeCalc(left_line_crd, (LONG)(x1 - (w1*0.4)), start, (LONG)(x2 - (w2*0.4)), end, clip.top, clip.bottom);
+    SAGE_ClippedEdgeCalc(right_line_crd, (LONG)(x1 - (w1*0.35)), start, (LONG)(x2 - (w2*0.35)), end, clip.top, clip.bottom);
+    SAGE_DrawClippedFlatQuad16Bits(buffer, left_line_crd, right_line_crd, row, screen_bpr, lcolor, clip.left, clip.right);
+    SAGE_ClippedEdgeCalc(left_line_crd, (LONG)(x1 + (w1*0.35)), start, (LONG)(x2 + (w2*0.35)), end, clip.top, clip.bottom);
+    SAGE_ClippedEdgeCalc(right_line_crd, (LONG)(x1 + (w1*0.4)), start, (LONG)(x2 + (w2*0.4)), end, clip.top, clip.bottom);
+    SAGE_DrawClippedFlatQuad16Bits(buffer, left_line_crd, right_line_crd, row, screen_bpr, lcolor, clip.left, clip.right);
   }
 }
 
@@ -802,21 +833,21 @@ VOID DrawRoadType4(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y
   if (start >= SCREEN_HEIGHT) return;
   rendered_segment++;         // DEBUG !!!!
   end = (LONG) y2;
-  row = SAGE_FastClippedLeftEdgeCalc(left_grass_crd, 0, start, 0, end, &clip);
-  SAGE_FastClippedLeftEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, &clip);
-  SAGE_FastClippedLeftEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, &clip);
+  row = SAGE_ClippedEdgeCalc(left_grass_crd, 0, start, 0, end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, clip.top, clip.bottom);
   gcolor = (segment>>2)%2 ? segment_color[0]:segment_color[1];
   rcolor = (segment>>2)%2 ? segment_color[4]:segment_color[5];
   bcolor = (segment>>3)%2 ? segment_color[8]:rcolor;
   buffer = screen_buffer + (start*SCREEN_WIDTH);
-  SAGE_DrawFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor, clip.left, clip.right);
 }
 
 VOID DrawRoadType5(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y2, FLOAT w2)
@@ -829,27 +860,27 @@ VOID DrawRoadType5(LONG segment, FLOAT x1, FLOAT y1, FLOAT w1, FLOAT x2, FLOAT y
   if (start >= SCREEN_HEIGHT) return;
   rendered_segment++;         // DEBUG !!!!
   end = (LONG) y2;
-  row = SAGE_FastClippedLeftEdgeCalc(left_grass_crd, 0, start, 0, end, &clip);
-  SAGE_FastClippedLeftEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, &clip);
-  SAGE_FastClippedLeftEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, &clip);
-  SAGE_FastClippedRightEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, &clip);
+  row = SAGE_ClippedEdgeCalc(left_grass_crd, 0, start, 0, end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(left_rumble_crd, (LONG)(x1 - (w1*1.2)), start, (LONG)(x2 - (w2*1.2)), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(left_road_crd, (LONG)(x1 - w1), start, (LONG)(x2 - w2), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_road_crd, (LONG)(x1 + w1), start, (LONG)(x2 + w2), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_rumble_crd, (LONG)(x1 + (w1*1.2)), start, (LONG)(x2 + (w2*1.2)), end, clip.top, clip.bottom);
+  SAGE_ClippedEdgeCalc(right_grass_crd, SCREEN_WIDTH-1, start, SCREEN_WIDTH-1, end, clip.top, clip.bottom);
   gcolor = (segment>>2)%2 ? segment_color[10]:segment_color[11];
   rcolor = segment_color[9];
   bcolor = (segment>>3)%2 ? segment_color[8]:rcolor;
   buffer = screen_buffer + (start*SCREEN_WIDTH);
-  SAGE_DrawFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor);
-  SAGE_DrawFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_grass_crd, left_rumble_crd, row, screen_bpr, gcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_rumble_crd, left_road_crd, row, screen_bpr, bcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, left_road_crd, right_road_crd, row, screen_bpr, rcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, right_road_crd, right_rumble_crd, row, screen_bpr, bcolor, clip.left, clip.right);
+  SAGE_DrawClippedFlatQuad16Bits(buffer, right_rumble_crd, right_grass_crd, row, screen_bpr, gcolor, clip.left, clip.right);
   // Add middle line
   if ((segment>>3)%2 == 0) {
     lcolor = segment_color[7];
-    SAGE_FastClippedLeftEdgeCalc(left_line_crd, (LONG)(x1 - (w1*0.05)), start, (LONG)(x2 - (w2*0.05)), end, &clip);
-    SAGE_FastClippedRightEdgeCalc(right_line_crd, (LONG)(x1 + (w1*0.05)), start, (LONG)(x2 + (w2*0.05)), end, &clip);
-    SAGE_DrawFlatQuad16Bits(buffer, left_line_crd, right_line_crd, row, screen_bpr, lcolor);
+    SAGE_ClippedEdgeCalc(left_line_crd, (LONG)(x1 - (w1*0.05)), start, (LONG)(x2 - (w2*0.05)), end, clip.top, clip.bottom);
+    SAGE_ClippedEdgeCalc(right_line_crd, (LONG)(x1 + (w1*0.05)), start, (LONG)(x2 + (w2*0.05)), end, clip.top, clip.bottom);
+    SAGE_DrawClippedFlatQuad16Bits(buffer, left_line_crd, right_line_crd, row, screen_bpr, lcolor, clip.left, clip.right);
   }
 }
 
@@ -1002,16 +1033,16 @@ VOID _Render(VOID)
   DrawSprites();
   // Draw the car sprite
   DrawPlayer();
-  // Draw the fps counter
-  SAGE_PrintFText(10, 10, "%d fps", SAGE_GetFps());
   // Draw the car speed
-  SAGE_PrintFText(500, 10, "Speed %d", playerSpeed);
+  SAGE_PrintFText(10, 10, "Speed %d", playerSpeed);
+  // Draw the fps counter
+  SAGE_PrintFText(580, 10, "%d fps", SAGE_GetFps());
   if (keyboard_state[KEY_D]) DumpDebugInfos();
 }
 
 void main(void)
 {
-  SAGE_SetLogLevel(SLOG_WARNING);
+//  SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("** SAGE library Runner demo V1.5 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_AUDIO|SMOD_INPUT|SMOD_INTERRUPTION)) {

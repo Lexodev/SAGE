@@ -1,0 +1,39 @@
+#----------------------------------------------------------
+# SAGE cube demos makefile
+# Fabrice Labrador <fabrice.labrador@gmail.com>
+# V2.0 August 2024
+#----------------------------------------------------------
+
+# Build options
+OPT=CPU=68060 IDIR=libinclude: MATH=68882 NOICONS DATA=far
+LIB=//lib/sage.lib
+
+# Files
+EXE=mapcube maggiecube speed maggie3dcube
+
+# Build all demos
+all: $(EXE) clean
+  @echo "** Build complete **"
+
+mapcube: mapcube.c $(LIB)
+  sc LINK mapcube.c $(OPT) $(LIB)
+
+maggiecube: maggiecube.c $(LIB)
+  sc LINK maggiecube.c $(OPT) $(LIB)
+
+maggie3dcube: maggie3dcube.c $(LIB)
+  sc LINK maggie3dcube.c $(OPT) $(LIB)
+
+speed: speed.c $(LIB)
+  sc LINK speed.c $(OPT) $(LIB)
+
+# Clean files
+cleanall: clean cleanexe
+  @echo "** Clean complete **"
+
+cleanexe :
+  -@delete $(EXE)
+
+clean:
+  -@delete \#?.o
+  -@delete \#?.lnk

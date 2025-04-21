@@ -5,7 +5,7 @@
  * Graphics primitive drawing
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 April 2025 (updated: 01/04/2025)
  */
 
 #include <exec/exec.h>
@@ -20,150 +20,26 @@
 /** SAGE context */
 extern SAGE_Context SageContext;
 
-/********************************** DEBUG ONLY ********************************/
-
-/**
- * Dump coordinates
- */
-VOID SAGE_DumpCoords(STRPTR type, LONG *crd, ULONG nb)
+VOID SAGE_DumpEdgeCoords(LONG starty, LONG *left_crd, LONG *right_crd, ULONG nb)
 {
   LONG index;
   
-  SAGE_DebugLog("** Dump '%s' line coords (%d) **", type, nb);
+  SAGE_TraceLog("***   Dump %d edge coords   ***", nb);
   index = 0;
-  nb++;
-  while (nb--) {
-    SAGE_DebugLog("- point %d = %d", index, crd[index]);
+  while (index < nb) {
+    SAGE_TraceLog("- point %d = %d, %d => %d, %d", index, left_crd[index], starty, right_crd[index], starty);
     index++;
+    starty++;
   }
-  SAGE_DebugLog("***************************");
+  SAGE_TraceLog("***************************");
 }
-
-/**
- * Dump line coords
- */
-VOID SAGE_DumpLineCoords(LONG x1, LONG y1, LONG x2, LONG y2)
-{
-  LONG dx, dy, len, e;
-  
-  // Always draw from top to bottom
-  if (y1 > y2) {
-    dx = x2;
-    dy = y2;
-    x2 = x1;
-    y2 = y1;
-    x1 = dx;
-    y1 = dy;
-  }
-  SAGE_DebugLog("** Dump line coords %d,%d to %d,%d", x1, y1, x2, y2);
-  // Calculate delta
-  dx = x2 - x1;
-  dy = y2 - y1;
-  // Let's draw
-  if (dx > 0) {
-    if (dy == 0) {
-      SAGE_DebugLog("- HORIZONTAL + => DX(%d) > 0 & DY(%d) = 0", dx, dy);
-      len = dx + 1;
-      while (len--) {
-        SAGE_DebugLog("- point %d = %d,%d", len, x1, y1);
-        x1++;
-      }
-    } else {
-      if (dx >= dy) {
-        SAGE_DebugLog("- SOFT SLOPE + => DX(%d) > 0 & DX >= DY(%d)", dx, dy);
-        len = dx + 1;
-        e = dx;
-        dx *= 2;
-        dy *= 2;
-        while (len--) {
-          SAGE_DebugLog("- point %d = %d,%d", len, x1, y1);
-          x1++;
-          e -= dy;
-          if (e < 0) {
-            y1++;
-            e += dx;
-          }
-        }
-      } else {
-        SAGE_DebugLog("- HARD SLOPE + => DX(%d) > 0 & DX <= DY(%d)", dx, dy);
-        len = dy + 1;
-        e = dy;
-        dx *= 2;
-        dy *= 2;
-        while (len--) {
-          SAGE_DebugLog("- point %d = %d,%d", len, x1, y1);
-          y1++;
-          e -= dx;
-          if (e < 0) {
-            x1++;
-            e += dy;
-          }
-        }
-      }
-    }
-  } else if (dx < 0) {
-    dx *= -1;
-    if (dy == 0) {
-      SAGE_DebugLog("- HORIZONTAL - => DX(%d) < 0 & DY(%d) = 0", dx, dy);
-      len = dx + 1;
-      while (len--) {
-        SAGE_DebugLog("- point %d = %d,%d", len, x1, y1);
-        x1--;
-      }
-    } else {
-      if (dx >= dy) {
-        SAGE_DebugLog("- SOFT SLOPE - => DX(%d) < 0 & -DX >= DY(%d)", -dx, dy);
-        len = dx + 1;
-        e = dx;
-        dx *= 2;
-        dy *= 2;
-        while (len--) {
-          SAGE_DebugLog("- point %d = %d,%d", len, x1, y1);
-          x1--;
-          e -= dy;
-          if (e < 0) {
-            y1++;
-            e += dx;
-          }
-        }
-      } else {
-        SAGE_DebugLog("- HARD SLOPE - => DX(%d) < 0 & -DX <= DY(%d)", -dx, dy);
-        len = dy + 1;
-        e = dy;
-        dx *= 2;
-        dy *= 2;
-        while (len--) {
-          SAGE_DebugLog("- point %d = %d,%d", len, x1, y1);
-          y1++;
-          e -= dx;
-          if (e < 0) {
-            x1--;
-            e += dy;
-          }
-        }
-      }
-    }
-  } else {
-    if (dy > 0) {
-      SAGE_DebugLog("- VERTICAL => DX(%d) = 0 & DY(%d) > 0", dx, dy);
-      len = dy + 1;
-      while (len--) {
-        SAGE_DebugLog("- point %d = %d,%d", len, x1, y1);
-        y1++;
-      }
-    }
-  }
-  SAGE_DebugLog("********************************************************************");
-}
-
-/********************************** DEBUG ONLY ********************************/
 
 /**
  * Draw a pixel with clipping
  *
  * @param x     Pixel X coord
  * @param y     Pixel Y coord
- * @param color Pixel color
+ * @param color Pixel color (in the same format as the bitmap)
  *
  * @return Operation success
  */
@@ -218,7 +94,7 @@ BOOL SAGE_DrawClippedPixel(LONG x, LONG y, LONG color)
  *
  * @param x     Pixel X coord
  * @param y     Pixel Y coord
- * @param color Pixel color
+ * @param color Pixel color (in the same format as the bitmap)
  *
  * @return Operation success
  */
@@ -314,7 +190,7 @@ BOOL SAGE_DrawPixelArray(SAGE_Pixel *pixels, ULONG nbpixels)
  * @param y1    Start line Y coord
  * @param x2    End line X coord
  * @param y2    End line Y coord
- * @param color Line color
+ * @param color Line color in ARGB/CLUT format
  *
  * @return Operation success
  */
@@ -397,6 +273,7 @@ BOOL SAGE_DrawClippedLine(LONG x1, LONG y1, LONG x2, LONG y2, LONG color)
   dx = x2 - x1;
   dy = y2 - y1;
   // Let's draw
+  color = SAGE_RemapColorToPixFormat(color, bitmap->pixformat);
   if (bitmap->depth == SBMP_DEPTH8) {
     buffer8 = (UBYTE *)bitmap->bitmap_buffer;
     buffer8 += (y1 * bitmap->width) + x1;
@@ -423,7 +300,7 @@ BOOL SAGE_DrawClippedLine(LONG x1, LONG y1, LONG x2, LONG y2, LONG color)
  * @param y1    Start line Y coord
  * @param x2    End line X coord
  * @param y2    End line Y coord
- * @param color Line color
+ * @param color Line color in ARGB/CLUT format
  *
  * @return Operation success
  */
@@ -453,6 +330,7 @@ BOOL SAGE_DrawLine(LONG x1, LONG y1, LONG x2, LONG y2, LONG color)
   dx = x2 - x1;
   dy = y2 - y1;
   // Let's draw
+  color = SAGE_RemapColorToPixFormat(color, bitmap->pixformat);
   if (bitmap->depth == SBMP_DEPTH8) {
     buffer8 = (UBYTE *)bitmap->bitmap_buffer;
     buffer8 += (y1 * bitmap->width) + x1;
@@ -508,7 +386,7 @@ BOOL SAGE_DrawLineArray(SAGE_Line *lines, ULONG nblines)
  * @param y2    Second point Y
  * @param x3    Third point X
  * @param y3    Third point Y
- * @param color Triangle color
+ * @param color Triangle color in CLUT/ARGB format
  *
  * @return Operation success
  */
@@ -518,7 +396,7 @@ BOOL SAGE_DrawTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG y3, LON
   UBYTE *buffer8;
   UWORD *buffer16;
   ULONG *buffer32;
-  LONG swapx, swapy, *leftcoord, *rightcoord, *tempcoord;
+  LONG swap, *leftcoord, *rightcoord, nb_lines;
 
   bitmap = SAGE_GetBackBitmap();
   SAFE(if (bitmap == NULL) {
@@ -533,73 +411,57 @@ BOOL SAGE_DrawTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG y3, LON
   })
   // Always draw from top to bottom
   if (y1 > y2) {
-    swapx = x1;
-    swapy = y1;
-    x1 = x2;
-    y1 = y2;
-    x2 = swapx;
-    y2 = swapy;
+    swap = x1; x1 = x2; x2 = swap;
+    swap = y1; y1 = y2; y2 = swap;
   }
   if (y2 > y3) {
-    swapx = x2;
-    swapy = y2;
-    x2 = x3;
-    y2 = y3;
-    x3 = swapx;
-    y3 = swapy;
+    swap = x2; x2 = x3; x3 = swap;
+    swap = y2; y2 = y3; y3 = swap;
   }
   if (y1 > y2) {
-    swapx = x1;
-    swapy = y1;
-    x1 = x2;
-    y1 = y2;
-    x2 = swapx;
-    y2 = swapy;
+    swap = x1; x1 = x2; x2 = swap;
+    swap = y1; y1 = y2; y2 = swap;
   }
   // Calculate the triangle's edge
   if (y1 == y2) {
     if (x1 > x2) {
-      swapx = x1;
-      x1 = x2;
-      x2 = swapx;
+      swap = x1; x1 = x2; x2 = swap;
     }
-    SAGE_FastLeftEdgeCalculation(leftcoord, x1, y1, x3, y3);
-    SAGE_FastRightEdgeCalculation(rightcoord, x2, y2, x3, y3);
+    SAGE_EdgeCalc(leftcoord, x1, y1, x3, y3);
+    SAGE_EdgeCalc(rightcoord, x2, y2, x3, y3);
   } else if (y2 == y3) {
     if (x2 > x3) {
-      swapx = x2;
-      x2 = x3;
-      x3 = swapx;
+      swap = x2; x2 = x3; x3 = swap;
     }
-    SAGE_FastLeftEdgeCalculation(leftcoord, x1, y1, x2, y2);
-    SAGE_FastRightEdgeCalculation(rightcoord, x1, y1, x3, y3);
+    SAGE_EdgeCalc(leftcoord, x1, y1, x2, y2);
+    SAGE_EdgeCalc(rightcoord, x1, y1, x3, y3);
   } else {
     if (((x1 - x2) * (y1 - y3)) > ((x1 - x3) * (y1 - y2))) {
-      SAGE_FastLeftEdgeCalculation(leftcoord, x1, y1, x3, y3);
-      SAGE_FastRightEdgeCalculation(rightcoord, x1, y1, x2, y2);
-      tempcoord = rightcoord + (y2 - y1);
-      SAGE_FastRightEdgeCalculation(tempcoord, x2, y2, x3, y3);
+      SAGE_EdgeCalc(leftcoord, x1, y1, x3, y3);
+      SAGE_EdgeCalc(rightcoord, x1, y1, x2, y2);
+      SAGE_EdgeCalc(rightcoord + (y2 - y1), x2, y2, x3, y3);
     } else {
-      SAGE_FastRightEdgeCalculation(rightcoord, x1, y1, x3, y3);
-      SAGE_FastLeftEdgeCalculation(leftcoord, x1, y1, x2, y2);
-      tempcoord = leftcoord + (y2 - y1);
-      SAGE_FastLeftEdgeCalculation(tempcoord, x2, y2, x3, y3);
+      SAGE_EdgeCalc(rightcoord, x1, y1, x3, y3);
+      SAGE_EdgeCalc(leftcoord, x1, y1, x2, y2);
+      SAGE_EdgeCalc(leftcoord + (y2 - y1), x2, y2, x3, y3);
     }
   }
   // Let's draw
-  if ((y3 - y1) > 0) {
+  nb_lines = y3 - y1;
+  if (nb_lines > 0) {
+    color = SAGE_RemapColorToPixFormat(color, bitmap->pixformat);
     if (bitmap->depth == SBMP_DEPTH8) {
       buffer8 = (UBYTE *)bitmap->bitmap_buffer;
       buffer8 += y1 * bitmap->width;
-      SAGE_DrawFlatQuad8Bits(buffer8, leftcoord, rightcoord, y3 - y1, bitmap->bpr, color);
+      SAGE_DrawFlatQuad8Bits(buffer8, leftcoord, rightcoord, nb_lines, bitmap->bpr, color);
     } else if (bitmap->depth == SBMP_DEPTH16) {
       buffer16 = (UWORD *)bitmap->bitmap_buffer;
       buffer16 += y1 * bitmap->width;
-      SAGE_DrawFlatQuad16Bits(buffer16, leftcoord, rightcoord, y3 - y1, bitmap->bpr, color);
+      SAGE_DrawFlatQuad16Bits(buffer16, leftcoord, rightcoord, nb_lines, bitmap->bpr, color);
     } else if (bitmap->depth == SBMP_DEPTH32) {
       buffer32 = (ULONG *)bitmap->bitmap_buffer;
       buffer32 += y1 * bitmap->width;
-      SAGE_DrawFlatQuad32Bits(buffer32, leftcoord, rightcoord, y3 - y1, bitmap->bpr, color);
+      SAGE_DrawFlatQuad32Bits(buffer32, leftcoord, rightcoord, nb_lines, bitmap->bpr, color);
     }
   }
   return TRUE;
@@ -614,7 +476,7 @@ BOOL SAGE_DrawTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG y3, LON
  * @param y2    Second point Y
  * @param x3    Third point X
  * @param y3    Third point Y
- * @param color Triangle color
+ * @param color Triangle color in CLUT/ARGB format
  *
  * @return Operation success
  */
@@ -625,7 +487,7 @@ BOOL SAGE_DrawClippedTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG 
   UBYTE *buffer8;
   UWORD *buffer16;
   ULONG *buffer32;
-  LONG swapx, swapy, *leftcoord, *rightcoord, *tempcoord, left_points, right_points;
+  LONG swap, *leftcoord, *rightcoord, long_points, short_points, tclip, bclip;
 
   screen = SAGE_GetScreen();
   SAFE(if (screen == NULL) {
@@ -645,81 +507,203 @@ BOOL SAGE_DrawClippedTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG 
   })
   // Always draw from top to bottom
   if (y1 > y2) {
-    swapx = x1;
-    swapy = y1;
-    x1 = x2;
-    y1 = y2;
-    x2 = swapx;
-    y2 = swapy;
+    swap = x1; x1 = x2; x2 = swap;
+    swap = y1; y1 = y2; y2 = swap;
   }
   if (y2 > y3) {
-    swapx = x2;
-    swapy = y2;
-    x2 = x3;
-    y2 = y3;
-    x3 = swapx;
-    y3 = swapy;
+    swap = x2; x2 = x3; x3 = swap;
+    swap = y2; y2 = y3; y3 = swap;
   }
   if (y1 > y2) {
-    swapx = x1;
-    swapy = y1;
-    x1 = x2;
-    y1 = y2;
-    x2 = swapx;
-    y2 = swapy;
+    swap = x1; x1 = x2; x2 = swap;
+    swap = y1; y1 = y2; y2 = swap;
   }
+  SD(SAGE_TraceLog("SAGE_DrawClippedTriangle %d, %d, %d, %d, %d, %d", x1, y1, x2, y2, x3, y3);)
+  tclip = screen->clipping.top;
+  bclip = screen->clipping.bottom;
   // Calculate the triangle's edge
   if (y1 == y2) {
     if (x1 > x2) {
-      swapx = x1;
-      x1 = x2;
-      x2 = swapx;
+      swap = x1; x1 = x2; x2 = swap;
     }
-    left_points = SAGE_FastClippedLeftEdgeCalc(leftcoord, x1, y1, x3, y3, &screen->clipping);
-    right_points = SAGE_FastClippedRightEdgeCalc(rightcoord, x2, y2, x3, y3, &screen->clipping);
+    long_points = SAGE_ClippedEdgeCalc(leftcoord, x1, y1, x3, y3, tclip, bclip);
+    SAGE_ClippedEdgeCalc(rightcoord, x2, y2, x3, y3, tclip, bclip);
   } else if (y2 == y3) {
     if (x2 > x3) {
-      swapx = x2;
-      x2 = x3;
-      x3 = swapx;
+      swap = x2; x2 = x3; x3 = swap;
     }
-    left_points = SAGE_FastClippedLeftEdgeCalc(leftcoord, x1, y1, x2, y2, &screen->clipping);
-    right_points = SAGE_FastClippedRightEdgeCalc(rightcoord, x1, y1, x3, y3, &screen->clipping);
+    long_points = SAGE_ClippedEdgeCalc(leftcoord, x1, y1, x2, y2, tclip, bclip);
+    SAGE_ClippedEdgeCalc(rightcoord, x1, y1, x3, y3, tclip, bclip);
   } else {
     if (((x1 - x2) * (y1 - y3)) > ((x1 - x3) * (y1 - y2))) {
-      left_points = SAGE_FastClippedLeftEdgeCalc(leftcoord, x1, y1, x3, y3, &screen->clipping);
-      right_points = SAGE_FastClippedRightEdgeCalc(rightcoord, x1, y1, x2, y2, &screen->clipping);
-      tempcoord = rightcoord + right_points;
-      right_points += SAGE_FastClippedRightEdgeCalc(tempcoord, x2, y2, x3, y3, &screen->clipping);
+      long_points = SAGE_ClippedEdgeCalc(leftcoord, x1, y1, x3, y3, tclip, bclip);
+      short_points = SAGE_ClippedEdgeCalc(rightcoord, x1, y1, x2, y2, tclip, bclip);
+      SAGE_ClippedEdgeCalc((rightcoord + short_points), x2, y2, x3, y3, tclip, bclip);
     } else {
-      right_points = SAGE_FastClippedRightEdgeCalc(rightcoord, x1, y1, x3, y3, &screen->clipping);
-      left_points = SAGE_FastClippedLeftEdgeCalc(leftcoord, x1, y1, x2, y2, &screen->clipping);
-      tempcoord = leftcoord + left_points;
-      left_points += SAGE_FastClippedLeftEdgeCalc(tempcoord, x2, y2, x3, y3, &screen->clipping);
+      long_points = SAGE_ClippedEdgeCalc(rightcoord, x1, y1, x3, y3, tclip, bclip);
+      short_points = SAGE_ClippedEdgeCalc(leftcoord, x1, y1, x2, y2, tclip, bclip);
+      SAGE_ClippedEdgeCalc((leftcoord + short_points), x2, y2, x3, y3, tclip, bclip);
     }
   }
-  if (left_points > 0) {
+  if (long_points > 0) {
+    color = SAGE_RemapColorToPixFormat(color, bitmap->pixformat);
     // Get first line y coord
-    if (y1 < screen->clipping.top) {
-      y1 = screen->clipping.top;
+    if (y1 < tclip) {
+      y1 = tclip;
     }
+    SD(SAGE_DumpEdgeCoords(y1, leftcoord, rightcoord, long_points);)
     // Draw and fill the polygon
     if (bitmap->depth == SBMP_DEPTH8) {
       buffer8 = (UBYTE *)bitmap->bitmap_buffer;
       buffer8 += y1 * bitmap->width;
-      color &= 0xFF;
-      color = (color << 24) + (color << 16) + (color << 8) + color;
-      SAGE_DrawFlatQuad8Bits(buffer8, leftcoord, rightcoord, left_points, bitmap->bpr, color);
+      SAGE_DrawClippedFlatQuad8Bits(
+          buffer8, leftcoord, rightcoord, long_points, bitmap->bpr, color, screen->clipping.left, screen->clipping.right
+      );
     } else if (bitmap->depth == SBMP_DEPTH16) {
       buffer16 = (UWORD *)bitmap->bitmap_buffer;
       buffer16 += y1 * bitmap->width;
-      color &= 0xFFFF;
-      color = (color << 16) + color;
-      SAGE_DrawFlatQuad16Bits(buffer16, leftcoord, rightcoord, left_points, bitmap->bpr, color);
+      SAGE_DrawClippedFlatQuad16Bits(
+          buffer16, leftcoord, rightcoord, long_points, bitmap->bpr, color, screen->clipping.left, screen->clipping.right
+      );
     } else if (bitmap->depth == SBMP_DEPTH32) {
       buffer32 = (ULONG *)bitmap->bitmap_buffer;
       buffer32 += y1 * bitmap->width;
-      SAGE_DrawFlatQuad32Bits(buffer32, leftcoord, rightcoord, left_points, bitmap->bpr, color);
+      SAGE_DrawClippedFlatQuad32Bits(
+          buffer32, leftcoord, rightcoord, long_points, bitmap->bpr, color, screen->clipping.left, screen->clipping.right
+      );
+    }
+  }
+  return TRUE;
+}
+
+/**
+ * Draw a quad with flat top and flat bottom
+ *
+ * @param x1    Top left point X
+ * @param x2    Top right point X
+ * @param yt    Top coord
+ * @param x3    Top right point X
+ * @param x4    Bottom right point X
+ * @param yb    Bottom coord
+ * @param color Quad color in CLUT/ARGB format
+ *
+ * @return Operation success
+ */
+BOOL SAGE_DrawFlatQuad(LONG x1, LONG x2, LONG yt, LONG x3, LONG x4, LONG yb, LONG color)
+{
+  SAGE_Screen *screen;
+  SAGE_Bitmap *bitmap;
+  UBYTE *buffer8;
+  UWORD *buffer16;
+  ULONG *buffer32;
+  LONG *leftcoord, *rightcoord, nb_lines;
+
+  screen = SAGE_GetScreen();
+  SAFE(if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return FALSE;
+  })
+  bitmap = SAGE_GetBackBitmap();
+  SAFE(if (bitmap == NULL) {
+    SAGE_SetError(SERR_NO_BITMAP);
+    return FALSE;
+  })
+  leftcoord = bitmap->first_buffer;
+  rightcoord = bitmap->second_buffer;
+  SAFE(if (leftcoord == NULL || rightcoord == NULL) {
+    SAGE_SetError(SERR_NULL_POINTER);
+    return FALSE;
+  })
+  SAGE_EdgeCalc(leftcoord, x1, yt, x3, yb);
+  SAGE_EdgeCalc(rightcoord, x2, yt, x4, yb);
+  // Let's draw
+  nb_lines = yb - yt;
+  if (nb_lines > 0) {
+    color = SAGE_RemapColorToPixFormat(color, bitmap->pixformat);
+    if (bitmap->depth == SBMP_DEPTH8) {
+      buffer8 = (UBYTE *)bitmap->bitmap_buffer;
+      buffer8 += yt * bitmap->width;
+      SAGE_DrawFlatQuad8Bits(buffer8, leftcoord, rightcoord, nb_lines, bitmap->bpr, color);
+    } else if (bitmap->depth == SBMP_DEPTH16) {
+      buffer16 = (UWORD *)bitmap->bitmap_buffer;
+      buffer16 += yt * bitmap->width;
+      SAGE_DrawFlatQuad16Bits(buffer16, leftcoord, rightcoord, nb_lines, bitmap->bpr, color);
+    } else if (bitmap->depth == SBMP_DEPTH32) {
+      buffer32 = (ULONG *)bitmap->bitmap_buffer;
+      buffer32 += yt * bitmap->width;
+      SAGE_DrawFlatQuad32Bits(buffer32, leftcoord, rightcoord, nb_lines, bitmap->bpr, color);
+    }
+  }
+  return TRUE;
+}
+
+/**
+ * Draw a clipped quad with flat top and flat bottom
+ *
+ * @param x1    Top left point X
+ * @param x2    Top right point X
+ * @param yt    Top coord
+ * @param x3    Top right point X
+ * @param x4    Bottom right point X
+ * @param yb    Bottom coord
+ * @param color Quad CLUT/ARGB color
+ *
+ * @return Operation success
+ */
+BOOL SAGE_DrawClippedFlatQuad(LONG x1, LONG x2, LONG yt, LONG x3, LONG x4, LONG yb, LONG color)
+{
+  SAGE_Screen *screen;
+  SAGE_Bitmap *bitmap;
+  UBYTE *buffer8;
+  UWORD *buffer16;
+  ULONG *buffer32;
+  LONG *leftcoord, *rightcoord, nb_lines, tclip, bclip;
+
+  screen = SAGE_GetScreen();
+  SAFE(if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return FALSE;
+  })
+  bitmap = SAGE_GetBackBitmap();
+  SAFE(if (bitmap == NULL) {
+    SAGE_SetError(SERR_NO_BITMAP);
+    return FALSE;
+  })
+  leftcoord = bitmap->first_buffer;
+  rightcoord = bitmap->second_buffer;
+  SAFE(if (leftcoord == NULL || rightcoord == NULL) {
+    SAGE_SetError(SERR_NULL_POINTER);
+    return FALSE;
+  })
+  tclip = screen->clipping.top;
+  bclip = screen->clipping.bottom;
+  nb_lines = SAGE_ClippedEdgeCalc(leftcoord, x1, yt, x3, yb, tclip, bclip);
+  SAGE_ClippedEdgeCalc(rightcoord, x2, yt, x4, yb, tclip, bclip);
+  // Let's draw
+  if (nb_lines > 0) {
+    color = SAGE_RemapColorToPixFormat(color, bitmap->pixformat);
+    // Get first line y coord
+    if (yt < tclip) {
+      yt = tclip;
+    }
+    if (bitmap->depth == SBMP_DEPTH8) {
+      buffer8 = (UBYTE *)bitmap->bitmap_buffer;
+      buffer8 += yt * bitmap->width;
+      SAGE_DrawClippedFlatQuad8Bits(
+          buffer8, leftcoord, rightcoord, nb_lines, bitmap->bpr, color, screen->clipping.left, screen->clipping.right
+      );
+    } else if (bitmap->depth == SBMP_DEPTH16) {
+      buffer16 = (UWORD *)bitmap->bitmap_buffer;
+      buffer16 += yt * bitmap->width;
+      SAGE_DrawClippedFlatQuad16Bits(
+          buffer16, leftcoord, rightcoord, nb_lines, bitmap->bpr, color, screen->clipping.left, screen->clipping.right
+      );
+    } else if (bitmap->depth == SBMP_DEPTH32) {
+      buffer32 = (ULONG *)bitmap->bitmap_buffer;
+      buffer32 += yt * bitmap->width;
+      SAGE_DrawClippedFlatQuad32Bits(
+          buffer32, leftcoord, rightcoord, nb_lines, bitmap->bpr, color, screen->clipping.left, screen->clipping.right
+      );
     }
   }
   return TRUE;

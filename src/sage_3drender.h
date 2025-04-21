@@ -5,7 +5,7 @@
  * 3D rendering management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 26/06/2024)
+ * @version 25.1 February 2025 (updated: 10/03/2025)
  */
 
 #ifndef _SAGE_3DRENDER_H_
@@ -73,9 +73,6 @@ BOOL SAGE_Get3DRenderOption(LONGBITS);
 
 /** Set the rendering mode */
 BOOL SAGE_Set3DRenderMode(UWORD);
-
-/** Set the Z buffer type */
-BOOL SAGE_SetZBufferType(UWORD);
 
 /** Allocate Z buffer */
 BOOL SAGE_AllocateZBuffer(VOID);

@@ -5,7 +5,7 @@
  * Test input joyport
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <libraries/lowlevel.h>
@@ -15,7 +15,7 @@
 void main(void)
 {
   SAGE_PortScan port1, port2;
-  BOOL finish;
+  BOOL finish = FALSE;
 
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   SAGE_AppliLog("* SAGE library INPUT test (JOYPORT) / %s", SAGE_GetVersion());
@@ -23,7 +23,6 @@ void main(void)
   if (SAGE_Init(SMOD_INPUT)) {
     SAGE_AppliLog("Get port 1 type = %d", SAGE_GetPortType(SINP_JOYPORT1));
     SAGE_AppliLog("Get port 2 type = %d", SAGE_GetPortType(SINP_JOYPORT2));
-    finish = FALSE;
     while (!finish) {
       if (SAGE_ScanPort(&port1, SINP_JOYPORT1)) {
         SAGE_AppliLog(" Port 1 event 0x%X", port1.scan);

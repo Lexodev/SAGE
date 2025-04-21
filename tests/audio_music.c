@@ -5,7 +5,7 @@
  * Test music player
  *
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <exec/interrupts.h>
@@ -85,7 +85,7 @@ void main(void)
 {
   SAGE_Event * event = NULL;
   SAGE_Music * music1 = NULL, * music2 = NULL;
-  BOOL finish = FALSE, ok = TRUE;
+  BOOL finish = FALSE;
 
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   SAGE_AppliLog("* SAGE library AUDIO test (MUSIC) / %s", SAGE_GetVersion());
@@ -98,67 +98,62 @@ void main(void)
     SAGE_AppliLog("Opening screen");
     if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_NOFLAG)) {
       SAGE_AppliLog("Loading modules");
-      if ((music1 = SAGE_LoadMusic("/data/bubble.mod")) != NULL
-          && (music2 = SAGE_LoadMusic("/data/mando.aiff")) != NULL) {
+      if ((music1 = SAGE_LoadMusic("data/bubble.mod")) != NULL
+          && (music2 = SAGE_LoadMusic("data/mando.aiff")) != NULL) {
         SAGE_AppliLog("Adding musics");
         if (!SAGE_AddMusic(MUSIC_BUBBLE, music1)) {
           SAGE_AppliLog("Add bubble module error !");
           SAGE_DisplayError();
           finish = TRUE;
-          ok = FALSE;
         }
         if (!SAGE_AddMusic(MUSIC_MANDO, music2)) {
           SAGE_AppliLog("Add mando music error !");
           SAGE_DisplayError();
           finish = TRUE;
-          ok = FALSE;
         }
       } else {
         SAGE_DisplayError();
         finish = TRUE;
-        ok = FALSE;
       }
-      if (ok) {
-        SAGE_PrintText("PRESS F1 FOR MUSIC 1", 20, 20);
-        SAGE_PrintText("      F2 FOR MUSIC 2", 20, 40);
-        SAGE_PrintText("      F5 FOR MUSIC PAUSE", 20, 60);
-        SAGE_PrintText("      F6 FOR MUSIC RESUME", 20, 80);
-        SAGE_PrintText("      MOUSE FOR EXIT", 20, 100);
-        SAGE_RefreshScreen();
-        SAGE_AppliLog("Playing runner");
-        if (!SAGE_PlayMusic(MUSIC_BUBBLE)) {
-          SAGE_DisplayError();
-          finish = TRUE;
-        }
-        while (!finish) {
-          while ((event = SAGE_GetEvent()) != NULL) {
-            SAGE_AppliLog(
-              "Event polled type %d, code %d, mouse %d,%d",
-              event->type,
-              event->code,
-              event->mousex,
-              event->mousey
-            );
-            if (event->type == SEVT_MOUSEBT) {
-              SAGE_AppliLog("Exit loop");
-              finish = TRUE;
-            } else if (event->type == SEVT_RAWKEY) {
-              if (event->code == SKEY_FR_F1) {
-                SAGE_AppliLog("Playing bubble");
-                SAGE_PlayMusic(MUSIC_BUBBLE);
-              }
-              if (event->code == SKEY_FR_F2) {
-                SAGE_AppliLog("Playing mando");
-                SAGE_PlayMusic(MUSIC_MANDO);
-              }
-              if (event->code == SKEY_FR_F5) {
-                SAGE_AppliLog("Pause music");
-                SAGE_PauseMusic();
-              }
-              if (event->code == SKEY_FR_F6) {
-                SAGE_AppliLog("Resume music");
-                SAGE_ResumeMusic();
-              }
+      SAGE_PrintText("PRESS F1 FOR MUSIC 1", 20, 20);
+      SAGE_PrintText("      F2 FOR MUSIC 2", 20, 40);
+      SAGE_PrintText("      F5 FOR MUSIC PAUSE", 20, 60);
+      SAGE_PrintText("      F6 FOR MUSIC RESUME", 20, 80);
+      SAGE_PrintText("      MOUSE FOR EXIT", 20, 100);
+      SAGE_RefreshScreen();
+      SAGE_AppliLog("Playing runner");
+      if (!SAGE_PlayMusic(MUSIC_BUBBLE)) {
+        SAGE_DisplayError();
+        finish = TRUE;
+      }
+      while (!finish) {
+        while ((event = SAGE_GetEvent()) != NULL) {
+          SAGE_AppliLog(
+            "Event polled type %d, code %d, mouse %d,%d",
+            event->type,
+            event->code,
+            event->mousex,
+            event->mousey
+          );
+          if (event->type == SEVT_MOUSEBT) {
+            SAGE_AppliLog("Exit loop");
+            finish = TRUE;
+          } else if (event->type == SEVT_RAWKEY) {
+            if (event->code == SKEY_FR_F1) {
+              SAGE_AppliLog("Playing bubble");
+              SAGE_PlayMusic(MUSIC_BUBBLE);
+            }
+            if (event->code == SKEY_FR_F2) {
+              SAGE_AppliLog("Playing mando");
+              SAGE_PlayMusic(MUSIC_MANDO);
+            }
+            if (event->code == SKEY_FR_F5) {
+              SAGE_AppliLog("Pause music");
+              SAGE_PauseMusic();
+            }
+            if (event->code == SKEY_FR_F6) {
+              SAGE_AppliLog("Resume music");
+              SAGE_ResumeMusic();
             }
           }
         }

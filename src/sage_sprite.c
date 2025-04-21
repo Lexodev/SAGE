@@ -5,7 +5,7 @@
  * Sprite management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage_debug.h>
@@ -126,7 +126,7 @@ BOOL SAGE_ReleaseSpriteBank(UWORD index)
  * Define the sprite bank transparency color
  *
  * @param index Sprite bank index
- * @param color Transparent color
+ * @param color Transparent color in ARGB/CLUT format
  *
  * @return Operation success
  */
@@ -139,7 +139,7 @@ BOOL SAGE_SetSpriteBankTransparency(UWORD index, ULONG color)
     SAGE_SetError(SERR_NULL_POINTER);
     return FALSE;
   })
-  return SAGE_SetBitmapTransparency(bank->bitmap, color);
+  return SAGE_SetBitmapTransparency(bank->bitmap, SAGE_RemapColor(color));
 }
 
 /**

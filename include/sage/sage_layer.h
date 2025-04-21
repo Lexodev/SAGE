@@ -5,7 +5,7 @@
  * Layer management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #ifndef _SAGE_LAYER_H_
@@ -50,6 +50,12 @@ SAGE_Layer *SAGE_GetLayer(UWORD);
 
 /** Release a layer resources */
 BOOL SAGE_ReleaseLayer(UWORD);
+
+/** Clear a layer */
+BOOL SAGE_ClearLayer(UWORD);
+
+/** Fill a layer with a color */
+BOOL SAGE_FillLayer(UWORD, ULONG);
 
 /** Set the layer view */
 BOOL SAGE_SetLayerView(UWORD, ULONG, ULONG, ULONG, ULONG);

@@ -1,7 +1,7 @@
 ***************************************
-** SAGE library V1.2408
+** SAGE library V2025.1
 ** Functions reference
-** August 2024
+** March 2025
 *****************************************
 
 WARNING !!! SAGE library is still in a development phase, some functions can change in future versions.
@@ -23,13 +23,12 @@ demos : demos of SAGE in action
                       SMOD_INTERRUPTION   - Interruption module (Timer & IT)
                       SMOD_NETWORK        - Network module (UDP & TCP sockets)
                       SMOD_3D             - 3D render module (texture mapping)
-                      SMOD_ALL            - Activate all modules
-- BOOL SAGE_Exit(VOID) : exit SAGE library and release all resources, return TRUE on success, FALSE on error.
+- VOID SAGE_Exit(VOID) : exit SAGE library and release all resources.
 - BOOL SAGE_LoadedModule(LONG module) : tell if a module has been loaded.
 - STRPTR SAGE_GetVersion(VOID) : return the library version string.
 - VOID SAGE_UseAMMX(BOOL activate) : activate/deactivate the AMMX acceleration.
-- VOID SAGE_Pause(ULONG ticks) : pause the program for ticks*1/50 seconds.
-
+- VOID SAGE_Pause(ULONG ticks) : pause the program for ticks*1/50 of seconds.
+- VOID SAGE_SetTraceDebug(BOOL flag) : activate/deactivate the global trace log
 
 2 - Error management functions
 
@@ -51,13 +50,13 @@ demos : demos of SAGE in action
                      SLOG_FATAL        - Fatal level
                      SLOG_OFF          - Desactivate all level
                      SLOG_APPLICATION  - Application level is not maskable
-- VOID SAGE_AppliLog(char *format, args...) : Display application log in console.
-- VOID SAGE_FatalLog(char *format, args...);
-- VOID SAGE_ErrorLog(char *format, args...);
-- VOID SAGE_WarningLog(char *format, args...);
-- VOID SAGE_InfoLog(char *format, args...);
-- VOID SAGE_DebugLog(char *format, args...);
-- VOID SAGE_TraceLog(char *format, args...);
+- VOID SAGE_AppliLog(char *format, args...) : display application log in console.
+- VOID SAGE_FatalLog(char *format, args...) : display fatal log in console.
+- VOID SAGE_ErrorLog(char *format, args...) : display error log in console.
+- VOID SAGE_WarningLog(char *format, args...) : display warning log in console.
+- VOID SAGE_InfoLog(char *format, args...) : display info log in console.
+- VOID SAGE_DebugLog(char *format, args...) : display debug log in console.
+- VOID SAGE_TraceLog(char *format, args...) : display trace log in console (the global trace log should also be activate).
 - BOOL SAGE_HasLogLevel(LONG level) : tell if the log level is active.
 
 
@@ -79,7 +78,7 @@ demos : demos of SAGE in action
 
 5 - Timer functions
 
-- SAGE_Timer *SAGE_AllocTimer(VOID) : allocate a timer.
+- SAGE_Timer * SAGE_AllocTimer(VOID) : allocate a timer.
 - VOID SAGE_ReleaseTimer(SAGE_Timer *timer) : release a timer.
 - BOOL SAGE_GetSysTime(SAGE_Timer *timer) : get the system time (seconds & microseconds) in the timer structure, return FALSE on error.
 - ULONG SAGE_ElapsedTime(SAGE_Timer *timer) : get the elapsed time between two calls (12 bits for seconds & 20 bits for microseconds).
@@ -89,7 +88,7 @@ demos : demos of SAGE in action
 6 - Thread functions
 
 ** Warning : actually you can't use log functions in a thread.
-- SAGE_Thread *SAGE_CreateThread(LONG (*fn)(APTR), APTR userdata) : create a thread with the function fn and pass it the userdata, you can create up to 8 thread at a time.
+- SAGE_Thread * SAGE_CreateThread(LONG (*fn)(APTR), APTR userdata) : create a thread with the function fn and pass it the userdata, you can create up to 8 thread at a time.
 - VOID SAGE_WaitThread(SAGE_Thread *thread) : wait for a thread to finish.
 - VOID SAGE_KillThread(SAGE_Thread *thread) : send a break signal to a thread.
 - BOOL SAGE_RemoveThread(SAGE_Thread *thread) : remove a thread from the thread list.
@@ -98,8 +97,8 @@ demos : demos of SAGE in action
 
 7 - Vampire functions
 
-- BOOL SAGE_ApolloCore(VOID) : check if Apollo core is available.
-- BOOL SAGE_VampireV4(VOID) : check for Vampire V4 card.
+- BOOL SAGE_ApolloCore(VOID) : check if a 68080 is present.
+- BOOL SAGE_VampireV4(VOID) : check if a V4 card is available.
 
 
 8 - Configuration file functions
@@ -125,44 +124,47 @@ demos : demos of SAGE in action
                      PIXFMT_ARGB32
                      PIXFMT_RGBA32
 - BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONG flags) : open a screen of width*height pixels in depth bits (8, 16, 24 or 32) with special flags.
-  Available flags : SSCR_NOFLAG           - Activate triple buffer (default choice)
+  Available flags : SSCR_NOFLAG	          - No flag required
                     SSCR_STRICTRES        - Open only the requested resolution
                     SSCR_NOWINDOWEVT      - Don't listen for window events
                     SSCR_TRACKMOUSE       - Track mouse movements
                     SSCR_DELTAMOUSE       - Report delta mouse move instead of absolute coordinates
-                    SSCR_INDIRECT         - Activate indirect rendering (experimental)
+                    SSCR_INDIRECT         - Activate indirect rendering
 - SAGE_Screen *SAGE_GetScreen(VOID) : return the SAGE screen structure (don't use it directly)
 - BOOL SAGE_CloseScreen(VOID) : close the screen, return FALSE on error.
 - BOOL SAGE_ClearScreen(VOID) : clear the screen (fill with color 0), return FALSE on error.
-- BOOL SAGE_FillScreen(ULONG color) : fill full screen with a color.
+- BOOL SAGE_FillScreen(ULONG color) : fill the screen with a color.
 - BOOL SAGE_SetScreenClip(ULONG left, ULONG top, ULONG width, ULONG height) : set the clipping view, return FALSE on error.
 - BOOL SAGE_ClearView(VOID) : clear the current clipping view, return FALSE on error.
+- BOOL SAGE_FillView(ULONG color) : fill the current clipping view with a color.
 - BOOL SAGE_ClearArea(ULONG left, ULONG top, ULONG width, ULONG height) : clear a part of the screen, return FALSE on error.
+- BOOL SAGE_FillArea(ULONG left, ULONG top, ULONG width, ULONG height, ULONG color) : fill a part of the screen with a color.
 - BOOL SAGE_VerticalSynchro(BOOL sync) : activate/deactivate the vertical synchronization, return FALSE on error.
 - BOOL SAGE_MaximumFPS(ULONG fps) : set the maximum frame per second if vertical synchro is deactivate (default 30), return FALSE on error.
 - BOOL SAGE_RefreshScreen(VOID) : refresh the screen view, switch the screen buffers, return FALSE on error.
-- VOID SAGE_WaitVbl(VOID) : wait for vertical blank.
 - SAGE_Event *SAGE_GetEvent(VOID) : get the screen's window events (non blocking).
 - BOOL SAGE_IsFrontMostScreen(VOID) : tell if our screen is in front.
 - SAGE_Bitmap *SAGE_GetFrontBitmap(VOID) : get the bitmap of the front screen buffer.
-- SAGE_Bitmap *SAGE_GetBackBitmap(VOID) : get the bitmap of the back screen buffer.
-- SAGE_Bitmap *SAGE_GetWaitBitmap(VOID) : get the bitmap of the third screen buffer.
 - struct BitMap *SAGE_GetSystemFrontBitmap(VOID) : get the system bitmap of the front screen buffer.
+- SAGE_Bitmap *SAGE_GetBackBitmap(VOID) : get the bitmap of the back screen buffer.
 - struct BitMap *SAGE_GetSystemBackBitmap(VOID) : get the system bitmap of the back screen buffer.
-- struct BitMap *SAGE_GetSystemWaitBitmap(VOID) : get the system bitmap of the third screen buffer.
+- SAGE_Bitmap *SAGE_GetWaitBitmap(VOID) : get the bitmap of the wait screen buffer.
+- struct BitMap *SAGE_GetSystemWaitBitmap(VOID) : get the system bitmap of the waitscreen buffer.
+- APTR *SAGE_GetBitmapBuffer(SAGE_Bitmap *bitmap) : get the bitmap buffer address.
 - ULONG SAGE_GetPixelFormat(VOID) : get the screen pixel format.
 - BOOL SAGE_RefreshColors(UWORD start, UWORD len) : refresh the screen colors from start color for len colors, return FALSE on error.
 - BOOL SAGE_SetColor(UWORD index, ULONG color) : set a screen color value, you should RefreshColors to see it, return FALSE on error.
 - BOOL SAGE_SetColorMap(ULONG *colors, UWORD start, UWORD len) : set multiple screen color values, you should RefreshColors to see them, return FALSE on error.
+- ULONG *SAGE_GetColorMap(VOID) : get the screen color map.
 - ULONG SAGE_GetColor(UWORD index) : get a screen color value (for CLUT pixel format).
-- ULONG SAGE_RemapColor(ULONG color) : remap a 32bits color into screen pixel color format.
+- ULONG SAGE_RemapColor(ULONG color) : remap a 32 bits color into the screen pixel color format.
 - BOOL SAGE_SetDrawColor(ULONG back, ULONG front) : set the back and front color, return FALSE on error.
-- BOOL SAGE_LoadFileColorMap(STRPTR filepath, UWORD start, UWORD nbcolor, UWORD format) : load a color map from a file.
+- BOOL SAGE_LoadFileColorMap(STRPTR file, UWORD start, UWORD nbcolor, UWORD format) : load colors from a file.
 - BOOL SAGE_HideMouse(VOID) : hide the mouse pointer, return FALSE on error.
 - BOOL SAGE_ShowMouse(VOID) : show the mouse pointer, return FALSE on error.
-- BOOL SAGE_TrackMouse(BOOL activate) : activate/deactivate the mouse movement tracking.
 - BOOL SAGE_SetMouseCursor(UWORD *cursor, WORD height, WORD x_action, WORD y_action) : set a new cursor for the mouse.
-- BOOL SAGE_ResetMouse(VOID) : reset a custom mouse cursor.
+- BOOL SAGE_ResetMouse(VOID) : reset the mouse cursor.
+- BOOL SAGE_TrackMouse(BOOL activate) : activate/deactivate the mouse movement tracking.
 - BOOL SAGE_SetFont(STRPTR font, UWORD size) : set the active font of size, return FALSE on error.
 - BOOL SAGE_SetTextColor(UBYTE front, UBYTE back) : set the text colors, return FALSE on error.
 - BOOL SAGE_SetDrawingMode(UBYTE mode) : set the text drawing mode (SSCR_TXTTRANSP or SSCR_TXTREPLACE), return FALSE on error.
@@ -172,19 +174,27 @@ demos : demos of SAGE in action
 - BOOL SAGE_PrintDirectFText(UWORD left, UWORD top, STRPTR ftext, ...) : print a formatted text at screen position (on front buffer), return FALSE on error.
 - BOOL SAGE_EnableFrameCount(BOOL flag) : enabale the frame rate counter (module SMOD_INTERRUPTION should be activated), return FALSE on error.
 - UWORD SAGE_GetFps(VOID) : get the frame rate value (frame per second).
+- SAGE_WaitVbl(VOID) : wait for the VBL.
 
  b) Pictures
-- VOID SAGE_AutoRemapPicture(BOOL flag) : enable/disable the picture auto remap feature (enable by default)
+- VOID SAGE_AutoRemapPicture(BOOL flag) : enable/disable the picture auto remap feature (enable by default).
 - SAGE_Picture *SAGE_LoadPicture(STRPTR picture) : load a picture and remap it to screen pixel format (use datatypes), return NULL on error.
+- VOID SAGE_ReleasePicture(SAGE_Picture *picture) : free picture resources.
+- BOOL SAGE_RemapPicture(SAGE_Picture *picture) : remap a picture to the screen pixel format
 - BOOL SAGE_SetPictureTransparency(SAGE_Picture *picture, ULONG color) : set the transparent color of a picture, return FALSE on error.
 - BOOL SAGE_LoadPictureColorMap(SAGE_Picture *picture) : load picture colormap into screen colors, return FALSE on error.
+- BOOL SAGE_BlitPictureToBitmap(SAGE_Picture *picture, ULONG left, ULONG top, ULONG width, ULONG height, SAGE_Bitmap *bitmap, ULONG x, ULONG y) : blit a picture part to a bitmap.
 - BOOL SAGE_BlitPictureToScreen(SAGE_Picture *picture, ULONG left, ULONG top, ULONG width, ULONG height, ULONG x, ULONG y) : copy a part of a picture to a screen position, return FALSE on error.
  
  c) Layers
-** A layer is a buffer that support wrap technic, imagine you have a layer of 300*300, you can set a view like 100,100,300,300 and library will automatically clip on the right side and copy the missing pixels from the left side
+** A layer is a buffer that support wrap technic, imagine you have a layer of 300*300, you can set a view like 100,100,350,350 and library will automatically clip on the right side and copy the missing pixels from the left side
 - BOOL SAGE_CreateLayer(UWORD index, ULONG width, ULONG height) : create a new layer of width*height at index (you have 32 available layers), return FALSE on error.
 - BOOL SAGE_CreateLayerFromPicture(UWORD index, SAGE_Picture *picture) : create a layer directly from a picture, return FALSE on error.
+- SAGE_Layer *SAGE_GetLayer(UWORD index) : get a layer by his index.
 - BOOL SAGE_ReleaseLayer(UWORD index) : release layer resources, return FALSE on error.
+- BOOL SAGE_ClearLayer(UWORD index) : clear a layer.
+- BOOL SAGE_FillLayer(UWORD index, ULONG color) : fill a layer with a color (color is ARGB or CLUT format).
+- SAGE_Bitmap *SAGE_GetLayerBitmap(UWORD index) : get the layer bitmap.
 - BOOL SAGE_SetLayerView(UWORD index, ULONG left, ULONG top, ULONG width, ULONG height) : set the active view of the layer, return FALSE on error.
 - BOOL SAGE_SetLayerTransparency(UWORD index, ULONG color) : set the transparent color of the layer, return FALSE on error.
 - BOOL SAGE_BlitPictureToLayer(SAGE_Picture * picture, ULONG left, ULONG top, ULONG width, ULONG height, UWORD index, ULONG x, ULONG y) : copy a part of a picture to a layer position, return FALSE on error.
@@ -192,40 +202,65 @@ demos : demos of SAGE in action
 
  d) Sprites
 - BOOL SAGE_CreateSpriteBank(UWORD index, UWORD nb, SAGE_Picture *picture) : create the sprite bank at index (you have 64 available banks) of nb sprites from picture, return FALSE on error.
+- SAGE_SpriteBank *SAGE_GetSpriteBank(UWORD index) : get a sprite bank by his index.
 - BOOL SAGE_ReleaseSpriteBank(UWORD index) : release a sprite bank and all the resources, return FALSE on error.
 - BOOL SAGE_SetSpriteBankTransparency(UWORD index, ULONG color) : set the sprite bank transparent color, return FALSE on error.
 - BOOL SAGE_AddSpriteToBank(UWORD index, UWORD sprite, ULONG left, ULONG top, ULONG width, ULONG height, UWORD hotspot) : add a sprite to the sprite bank, return FALSE on error.
+- SAGE_Sprite *SAGE_GetSprite(UWORD index, UWORD sprite) : get a sprite from a sprite bank.
 - BOOL SAGE_SetSpriteHotspot(UWORD index, UWORD sprite, UWORD hotspot) : set the sprite hotspot, return FALSE on error.
-- BOOL SAGE_BlitSpriteToScreen(UWORD index, UWORD sprite, LONG x, LONG y) : copy the sprite of a sprite bank to a screen position, return FALSE on error.
+- BOOL SAGE_SetSpriteFlipping(UWORD index, UWORD sprite, BOOL horizontal, BOOL vertical) : set the sprite flip flags (not yet supported).
 - BOOL SAGE_SetSpriteZoom(UWORD index, UWORD sprite, FLOAT zoom_x, FLOAT zoom_y) : set the sprite X & Y zoom factors, return FALSE on error.
+- BOOL SAGE_SpriteCollide(UWORD index1, UWORD sprite1, LONG x1, LONG x2, UWORD index2, UWORD sprite2, LONG x2, LONG y2) : check for collision between two sprites.
+- BOOL SAGE_BlitSpriteToScreen(UWORD index, UWORD sprite, LONG x, LONG y) : copy the sprite of a sprite bank to a screen position, return FALSE on error.
 
  e) Primitives
 - BOOL SAGE_DrawClippedPixel(LONG x, LONG y, LONG color) : draw a clipped pixel at x,y with color on the back bitmap, return FALSE on error.
 - BOOL SAGE_DrawPixel(LONG x, LONG y, LONG color) : draw a pixel at x,y with color on the back bitmap, return FALSE on error.
 - BOOL SAGE_DrawPixelArray(SAGE_Pixel *pixels, ULONG nbpixels) : draw an array of nbpixels pixels on the back bitmap, return FALSE on error.
-- BOOL SAGE_DrawClippedLine(LONG x1, LONG y1, LONG x2, LONG y2, LONG color) : not yet available
+- BOOL SAGE_DrawClippedLine(LONG x1, LONG y1, LONG x2, LONG y2, LONG color) : draw a line from x1,y1 to x2,y2 with color and clipping.
 - BOOL SAGE_DrawLine(LONG x1, LONG y1, LONG x2, LONG y2, LONG color) : draw a line from x1,y1 to x2,y2 with color on the back bitmap, return FALSE on error.
-- BOOL SAGE_DrawLineStrip(SAGE_Pixel *lines, ULONG nblines) : not yet available
-- BOOL SAGE_DrawLineArray(SAGE_Line *lines, ULONG nblines) : not yet available
+- BOOL SAGE_DrawLineStrip(SAGE_Pixel *lines, ULONG nblines) : draw a line strip (not yet available).
+- BOOL SAGE_DrawLineArray(SAGE_Line *lines, ULONG nblines) : draw an array of lines (not yet available).
 - BOOL SAGE_DrawTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG y3, LONG color) : draw a triangle with color on the back bitmap, return FALSE on error.
 - BOOL SAGE_DrawClippedTriangle(LONG x1, LONG y1, LONG x2, LONG y2, LONG x3, LONG y3, LONG color) : draw a clipped triangle with color on the back bitmap, return FALSE on error.
+- BOOL SAGE_DrawFlatQuad(LONG x1, LONG x2, LONG yt, LONG x3, LONG x4, LONG yb, LONG color) : draw a quad with flat top and flat bottom.
+- BOOL SAGE_DrawClippedFlatQuad(LONG x1, LONG x2, LONG yt, LONG x3, LONG x4, LONG yb, LONG color) : draw a clipped quad with flat top and flat bottom.
 
  f) Tiles
+* Tile bank is limited to 16 slots.
 - BOOL SAGE_CreateTileBank(UWORD index, UWORD tilewidth, UWORD tileheight, UWORD size, SAGE_Picture *picture) : create a tilebank at index from a picture with size tiles of tilewidth*tileheight, return FALSE on error.
 - BOOL SAGE_ReleaseTileBank(UWORD index) : release a tile bank and all resources, return FALSE on error.
+- BOOL SAGE_AddTileToBank(UWORD index, UWORD tile, ULONG left, ULONG top, LONGBITS flags, APTR userdata) : add a tile to the tilebank.
+- BOOL SAGE_AddTilesToBank(UWORD index) : add multiple tiles to the tilebank.
+- BOOL SAGE_SetTileFlags(UWORD index, UWORD tile, LONGBITS flags) : set flags for a tile.
+- LONGBITS SAGE_GetTileFlags(UWORD index, UWORD tile) : get flags of a tile.
+- BOOL SAGE_HasTileFlag(UWORD index, UWORD tile, LONGBITS flags) : tell if tile has flag on.
+- BOOL SAGE_SetTileUserData(UWORD index, UWORD tile, APTR userdata) : set the tile user data.
+- APTR SAGE_GetTileUserData(UWORD index, UWORD tile) : get the tile user data.
+- BOOL SAGE_BlitTileToLayer(UWORD index, UWORD tile, UWORD layer, ULONG x, ULONG y) : blit a tile to a layer.
+- BOOL SAGE_BlitTileToScreen(UWORD index, UWORD tile, ULONG x, ULONG y) : blit a tile to the screen.
 
  g) Tilemap
-* Still in progress
-
+* Tilemap is limited to 16 slots.
+- BOOL SAGE_CreateTileMap(UWORD index, UWORD cols, UWORD rows, UBYTE bpt) : create a tilemap of columns by rows, each tile is encoded on bpt bytes.
+- SAGE_TileMap *SAGE_GetTileMap(UWORD index) : get a tile map his index.
+- BOOL SAGE_ReleaseTileMap(UWORD index) : release a tilemap resources.
+- BOOL SAGE_LoadTileMap(UWORD index, STRPTR mapfile) :load a tile map file.
+- UBYTE *SAGE_GetTileMapB(UWORD index) : get tile map as UBYTE array.
+- UWORD *SAGE_GetTileMapW(UWORD index) : get tile map as UWORD array.
+- UBYTE SAGE_GetTileValueB(UWORD index, UWORD col, UWORD row) : get tile UBYTE value at map position (not yet available).
+- BOOL SAGE_UpdateTileValueB(UWORD index, UWORD col, UWORD row, UBYTE value) : update a tile UBYTE value at map position (not yet available).
+- UWORD SAGE_GetTileValueW(UWORD index, UWORD col, UWORD row) : get tile UWORD value at map position (not yet available).
+- BOOL SAGE_UpdateTileValueW(UWORD index, UWORD col, UWORD row, UWORD value) : update a tile UWORD value at map position (not yet available).
 
 10 - Audio functions
 
  a) Music
-** Music functions support trackmod and aiff files.
+** Music functions support trackmod and aiff files, you have 32 slots for music.
 - SAGE_Music *SAGE_LoadMusic(STRPTR filename) : load a music file, return NULL on error.
 - VOID SAGE_ReleaseMusic(SAGE_Music *music) : release the music resource.
 - BOOL SAGE_AddMusic(UWORD index, SAGE_Music *music) : add a music to the music bank (you have 32 music slots available), return FALSE on error.
-- SAGE_Music * SAGE_RemoveMusic(UWORD index) : remove the music from the music bank slot, return the music structure.
+- SAGE_Music *SAGE_RemoveMusic(UWORD index) : remove the music from the music bank slot, return the music structure.
 - BOOL SAGE_FreeMusic(UWORD index) : remove the music from the bank slot and release the music resource, return FALSE on error.
 - BOOL SAGE_ClearMusic(VOID) : remove and release all musics from music banks, return FALSE on error.
 - BOOL SAGE_PlayMusic(UWORD index) : play the music of the bank slot, return FALSE on error.
@@ -234,7 +269,7 @@ demos : demos of SAGE in action
 - BOOL SAGE_ResumeMusic(VOID) : resume the current music (only available for mod files), return FALSE on error.
 
  b) Sound
-** Sound functions support 8svx, aiff and wave files.
+** Sound functions support 8svx, aiff and wave files, you have 128 slots for sound.
 - SAGE_Sound *SAGE_LoadSound(STRPTR filename) : load a sound sample, return NULL on error.
 - VOID SAGE_ReleaseSound(SAGE_Sound *sound) : release the sound resource.
 - BOOL SAGE_AddSound(UWORD index, SAGE_Sound *sound) : add the sound in the sound bank (you have 128 sound slots available), return FALSE on error.
@@ -242,6 +277,7 @@ demos : demos of SAGE in action
 - BOOL SAGE_FreeSound(UWORD index) : remove the sound from the bank slot and release the sound resource, return FALSE on error.
 - BOOL SAGE_ClearSound(VOID) : remove and release all sounds from sound bank, return FALSE on error.
 - BOOL SAGE_PlaySound(UWORD index, UWORD channel) : play the sound of the bank slot on the channel, return FALSE on error.
+- BOOL SAGE_StopSound(UWORD index, UWORD channel) : stop a sound on a channel.
 
 
 11 - Input functions
@@ -275,7 +311,7 @@ demos : demos of SAGE in action
 - BOOL SAGE_StopAllInterruptions(VOID) : stop all running interruptions, return FALSE on error.
 
 
-13 - Network functions
+13 - Network functions (experimental, some issue with TCP, prefer UDP)
 
 - SAGE_BsdSocket *SAGE_OpenServer(UWORD protocol, UWORD port) : create a server of protocol (SNET_TCP_PROTOCOL or SNET_UDP_PROTOCOL) on port, return NULL on error.
 - SAGE_BsdSocket *SAGE_OpenClient(UWORD protocol, STRPTR ip, UWORD port) : create a client of protocol to ip and port, return NULL on error.
@@ -290,88 +326,93 @@ demos : demos of SAGE in action
 - LONG SAGE_GetLastSocketError(SAGE_BsdSocket *socket) : get the last socket error.
 
 
-14 - 3D functions
+14 - 3D render functions
 
  a) Rendering
-- BOOL SAGE_EnableZBuffer(BOOL flag) : enable or disable the z-buffering support
-- BOOL SAGE_Get3DRenderOption(LONGBITS option) : get the status of a render option
-- BOOL SAGE_Set3DRenderMode(UWORD mode) : set the rendering mode between internal (S3DD_S3DRENDER), Maggie (S3DD_M3DRENDER) or Warp3D (S3DD_W3DRENDER)
-- UWORD SAGE_Get3DRenderSystem() : return the current 3D render system
+- BOOL SAGE_Set3DRenderSystem(UWORD mode) : set the rendering mode between internal (S3DD_S3DRENDER), Maggie (S3DD_M3DRENDER) or Warp3D (S3DD_W3DRENDER).
+- UWORD SAGE_Get3DRenderSystem(VOID) : return the current 3D render system.
+- BOOL SAGE_EnableZBuffer(BOOL flag) : enable or disable the z-buffering support.
+- BOOL SAGE_EnableFiltering(BOOL status) : Enable/disable bilinear filtering.
+- BOOL SAGE_Get3DRenderOption(LONGBITS option) : get the status of a render option.
+- BOOL SAGE_Set3DRenderMode(UWORD mode) : set the rendering mode between S3DR_RENDER_WIRE, S3DR_RENDER_FLAT and S3DR_RENDER_TEXT.
+- BOOL SAGE_ClearZBuffer(VOID) : clear Z buffer.
 - BOOL SAGE_Push3DElement(SAGE_3DElement *element) : push an element to the rendering queue
-- VOID SAGE_Sort3DElements(VOID) : sort the elements in the rendering queue (automatically called if z-buffer is disabled)
 - BOOL SAGE_Render3DElements(VOID) : render all elements in the rendering queue
+- W3D_Context *SAGE_GetW3DContext(VOID) : get current Warp3D context.
+- M3D_Context *SAGE_GetM3DContext(VOID) : get current Maggie3D context.
 
  b) Texture management
-- BOOL SAGE_CreateTextureFromFile(UWORD index, STRPTR file_name) : create a texture directly from a file
-- BOOL SAGE_CreateTextureFromPicture(UWORD index, UWORD left, UWORD top, UWORD size, SAGE_Picture *picture) : create a texture from a picture
-- SAGE_3DTexture *SAGE_GetTexture(UWORD index) : get a texture from her index
-- W3D_Texture *SAGE_GetW3DTexture(UWORD index) : get a Warp3D texture from her index
-- M3D_Texture *SAGE_GetM3DTexture(WORD index) : get a Maggie3D texture from her index
-- WORD SAGE_GetFreeTextureIndex(VOID) : get the next free index in texture bank
-- UWORD SAGE_GetTextureSize(UWORD index) : return the size of a texture
-- APTR SAGE_GetTextureBuffer(UWORD index) : get the texture buffer
-- BOOL SAGE_ReleaseTexture(UWORD index) : release a texture
-- BOOL SAGE_AddTexture(UWORD index) : add a texture to the card memory (W3D feature)
-- BOOL SAGE_RemoveTexture(UWORD index) : remove a texture from the card memory (W3D feature)
-- BOOL SAGE_FlushTextures(VOID) : flush all textures from card (W3D feature)
-- BOOL SAGE_SetTextureTransparency(UWORD index, ULONG color) : set the color transparency of a texture
+- BOOL SAGE_CreateTextureFromFile(UWORD index, STRPTR file_name) : create a texture directly from a file.
+- BOOL SAGE_CreateTextureFromPicture(UWORD index, UWORD left, UWORD top, UWORD size, SAGE_Picture *picture) : create a texture from a picture.
+- SAGE_3DTexture *SAGE_GetTexture(UWORD index) : get a texture from her index.
+- W3D_Texture *SAGE_GetW3DTexture(UWORD index) : get a Warp3D texture from her index.
+- M3D_Texture *SAGE_GetM3DTexture(WORD index) : get a Maggie3D texture from her index.
+- WORD SAGE_GetFreeTextureIndex(VOID) : get the next free index in texture bank.
+- UWORD SAGE_GetTextureSize(UWORD index) : return the size of a texture.
+- APTR SAGE_GetTextureBuffer(UWORD index) : get the texture buffer.
+- BOOL SAGE_ReleaseTexture(UWORD index) : release a texture.
+- BOOL SAGE_ClearTextures(VOID) : remove all textures from memory.
+- BOOL SAGE_AddTexture(UWORD index) : add a texture to the card memory (W3D feature).
+- BOOL SAGE_RemoveTexture(UWORD index) : remove a texture from the card memory (W3D feature).
+- BOOL SAGE_FlushTextures(VOID) : flush all textures from card (W3D feature).
+- BOOL SAGE_SetTextureTransparency(UWORD index, ULONG color) : set the color transparency of a texture.
 
 
-15 - 3D engine (work in progress)
+15 - 3D engine functions (work in progress)
 
   a) Core
-- BOOL SAGE_InitEngine(VOID) : init the 3D engine
-- VOID SAGE_Release3DEngine(VOID) : release 3D engine resources
-- VOID SAGE_RenderWorld(VOID) : render the 3D world
-- SAGE_EngineMetrics *SAGE_GetEngineMetrics(VOID) : get the engine metrics
+- BOOL SAGE_InitEngine(VOID) : init the 3D engine.
+- VOID SAGE_Release3DEngine(VOID) : release 3D engine resources.
+- VOID SAGE_RenderWorld(VOID) : render the 3D world.
+- SAGE_EngineMetrics *SAGE_GetEngineMetrics(VOID) : get the engine metrics.
 
   b) Camera management
-- BOOL SAGE_AddCamera(ULONG index, LONG left, LONG top, LONG width, LONG height) : add a camera to the world
-- VOID SAGE_RemoveCamera(ULONG index) : remove the camera from the world
-- SAGE_Camera *SAGE_GetCamera(ULONG index) : get the camera from her index
-- BOOL SAGE_SetActiveCamera(ULONG index) : set the active camera
-- BOOL SAGE_SetCameraAngle(ULONG index, WORD ax, WORD ay, WORD az) : set the camera angles
-- BOOL SAGE_RotateCamera(ULONG index, WORD dax, WORD day, WORD daz) : rotate the camera
-- BOOL SAGE_SetCameraPosition(ULONG index, FLOAT px, FLOAT py, FLOAT pz) : set the camera position
-- BOOL SAGE_MoveCamera(ULONG index, FLOAT dpx, FLOAT dpy, FLOAT dpz) : move the camera 
-- BOOL SAGE_SetCameraView(ULONG index, LONG left, LONG top, LONG widht, LONG height, WORD fov) : set the camera view
-- BOOL SAGE_SetCameraPlane(ULONG index, FLOAT np, FLOAT fp) : set the camera planes
+- BOOL SAGE_AddCamera(ULONG index, LONG left, LONG top, LONG width, LONG height) : add a camera to the world.
+- VOID SAGE_RemoveCamera(ULONG index) : remove the camera from the world.
+- SAGE_Camera *SAGE_GetCamera(ULONG index) : get the camera byt its index.
+- BOOL SAGE_SetActiveCamera(ULONG index) : set the active camera.
+- BOOL SAGE_SetCameraAngle(ULONG index, WORD ax, WORD ay, WORD az) : set the camera angles.
+- BOOL SAGE_RotateCamera(ULONG index, WORD dax, WORD day, WORD daz) : rotate the camera.
+- BOOL SAGE_SetCameraPosition(ULONG index, FLOAT px, FLOAT py, FLOAT pz) : set the camera position to x,y and z coordinates.
+- BOOL SAGE_MoveCamera(ULONG index, FLOAT dpx, FLOAT dpy, FLOAT dpz) : move the camera to x,y and z units.
+- BOOL SAGE_SetCameraView(ULONG index, LONG left, LONG top, LONG widht, LONG height, WORD fov) : set the camera view.
+- BOOL SAGE_SetCameraPlane(ULONG index, FLOAT np, FLOAT fp) : set the camera planes?
 
   c) Entity management
-- SAGE_Entity *SAGE_CreateEntity(UWORD nv, UWORD nf) : create an empty entity with nv vertices and nf faces
-- VOID SAGE_InitEntity(SAGE_Entity *entity) : initialize the entity (calcul normals, radius, etc...)
-- SAGE_Entity *SAGE_CloneEntity(SAGE_Entity *entity) : clone and existing entity
-- VOID SAGE_ReleaseEntity(SAGE_Entity *entity) : Release an entity
-- SAGE_Entity *SAGE_LoadEntity(STRPTR filename) : Load an entity from a file (support OBJ and LWO type)
-- VOID SAGE_SetEntityRadius(SAGE_Entity *entity) : calculate the entity radius
-- VOID SAGE_SetEntityNormals(SAGE_Entity *entity) : calculate the entity faces normals
-- BOOL SAGE_AddEntity(UWORD index, SAGE_Entity *entity) : add an entity to the world, you can add up to 1024 entities to the world
-- VOID SAGE_RemoveEntity(UWORD index) : remove entity from the world
-- VOID SAGE_FlushEntities(VOID) : remove all entities from the worl
-- SAGE_Entity *SAGE_GetEntity(UWORD index) : get an entity from her index
-- BOOL SAGE_SetEntityAngle(UWORD index, WORD ax, WORD ay, WORD az) : set the entity angle
-- BOOL SAGE_RotateEntity(UWORD index, WORD dax, WORD day, WORD daz) : rotate the entity
-- BOOL SAGE_SetEntityPosition(UWORD index, FLOAT px, FLOAT py, FLOAT pz) : set the entity position
-- BOOL SAGE_MoveEntity(UWORD index, FLOAT dpx, FLOAT dpy, FLOAT dpz) : move the entity 
-- BOOL SAGE_HideEntity(UWORD index) : hide the entity, remove it from the rendering pipeline
-- BOOL SAGE_ShowEntity(UWORD index) : show the entity, add it to the rendering pipeline
-- BOOL SAGE_SetEntityTexture(UWORD index, UWORD mat, UWORD tex, UWORD mode) : update entity textures (used by entity loader)
+- SAGE_Entity *SAGE_CreateEntity(UWORD nv, UWORD nf) : create an empty entity with nv vertices and nf faces.
+- VOID SAGE_InitEntity(SAGE_Entity *entity) : initialize the entity (calcul normals, radius, etc...).
+- SAGE_Entity *SAGE_CloneEntity(SAGE_Entity *entity) : clone and existing entity.
+- VOID SAGE_ReleaseEntity(SAGE_Entity *entity) : release an entity.
+- SAGE_Entity *SAGE_LoadEntity(STRPTR filename) : load an entity from a file (support OBJ and LWO type).
+- VOID SAGE_SetEntityRadius(SAGE_Entity *entity) : calculate the entity radius.
+- VOID SAGE_SetEntityNormals(SAGE_Entity *entity) : calculate the entity faces normals.
+- BOOL SAGE_AddEntity(UWORD index, SAGE_Entity *entity) : add an entity to the world, you can add up to 1024 entities to the world.
+- VOID SAGE_RemoveEntity(UWORD index) : remove entity from the world.
+- VOID SAGE_FlushEntities(VOID) : remove all entities from the world.
+- SAGE_Entity *SAGE_GetEntity(UWORD index) : get an entity byt its index.
+- BOOL SAGE_SetEntityAngle(UWORD index, WORD ax, WORD ay, WORD az) : set the entity angle.
+- BOOL SAGE_RotateEntity(UWORD index, WORD dax, WORD day, WORD daz) : rotate the entity.
+- BOOL SAGE_SetEntityPosition(UWORD index, FLOAT px, FLOAT py, FLOAT pz) : set the entity position.
+- BOOL SAGE_MoveEntity(UWORD index, FLOAT dpx, FLOAT dpy, FLOAT dpz) : move the entity.
+- BOOL SAGE_HideEntity(UWORD index) : hide the entity, remove it from the rendering pipeline.
+- BOOL SAGE_ShowEntity(UWORD index) : show the entity, add it to the rendering pipeline.
+- BOOL SAGE_SetEntityTexture(UWORD index, UWORD mat, UWORD tex, UWORD mode) : update entity textures (use by entity loader).
 
   d) Material management
-- VOID SAGE_ReleaseMaterial(SAGE_Material *material) : release a material
-- BOOL SAGE_AddMaterial(STRPTR file, STRPTR name, LONG left, LONG top, LONG size, LONG index) : add a single material to the world
-- BOOL SAGE_AddMaterials(SAGE_Material *materials, LONG nb)  : add multiple (nb) materials to the world
-- BOOL SAGE_LoadMaterials(VOID) : load all materials to the card memory if needed
-- VOID SAGE_FlushMaterials(VOID) : flush all materials from the card memory if needed
+- VOID SAGE_ReleaseMaterial(SAGE_Material *material) : release a material.
+- BOOL SAGE_AddMaterial(STRPTR file, STRPTR name, LONG left, LONG top, LONG size, LONG index) : add a single material to the world.
+- BOOL SAGE_AddMaterials(SAGE_Material *materials, LONG nb)  : add multiple (nb) materials to the world.
+- BOOL SAGE_LoadMaterials(VOID) : load all materials to the card memory if needed.
+- VOID SAGE_FlushMaterials(VOID) : flush all materials from the card memory if needed.
   
   e) Skybox management
-- VOID SAGE_SetSkyboxTextures(ULONG front, ULONG back, ULONG left, ULONG right, ULONG top, ULONG bottom) : set the skybox textures for each plane
-- VOID SAGE_EnableSkybox(BOOL flag) : enable or disable the skybox rendering
+- VOID SAGE_SetSkyboxTextures(ULONG front, ULONG back, ULONG left, ULONG right, ULONG top, ULONG bottom) : set the skybox textures for each plane.
+- VOID SAGE_EnableSkybox(BOOL flag) : enable or disable the skybox rendering.
   
   f) Terrain management (still in dev, lot's of bugs)
-- VOID SAGE_SetZoneRadius(SAGE_Zone *zone) : calculate the zone radius
-- VOID SAGE_SetZoneNormals(SAGE_Zone *zone) : calculate the zone faces normals
-- BOOL SAGE_LoadHeightmapTerrain(STRPTR hm, STRPTR cm, STRPTR tm) : load a heightmap terrain with optionally a color map file and texture map file
-- VOID SAGE_SetHeighmapCellSize(FLOAT size) : set the size of a zone cell (default is 4.0)
-- VOID SAGE_SetHeightmapZoom(FLOAT zoom) : set the zoom Y value of a heightmap (default is 1.0)
-- VOID SAGE_ReleaseTerrain(VOID) : release a terrain and free all resources
+- VOID SAGE_SetZoneRadius(SAGE_Zone *zone) : calculate the zone radius.
+- VOID SAGE_SetZoneNormals(SAGE_Zone *zone) : calculate the zone faces normals.
+- BOOL SAGE_LoadHeightmapTerrain(STRPTR hm, STRPTR cm, STRPTR tm) : load a heightmap terrain with optionally a color map file and texture map file.
+- VOID SAGE_SetHeighmapCellSize(FLOAT size) : set the size of a zone cell (default is 4.0).
+- VOID SAGE_SetHeightmapZoom(FLOAT zoom) : set the zoom Y value of a heightmap (default is 1.0).
+- VOID SAGE_ReleaseTerrain(VOID) : release a terrain and free all resources.

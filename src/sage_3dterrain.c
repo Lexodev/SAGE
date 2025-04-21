@@ -5,7 +5,7 @@
  * 3D terrain management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 26/06/2024)
+ * @version 25.1 February 2025 (updated: 28/02/2025)
  */
 
 /**
@@ -51,7 +51,7 @@ VOID SAGE_DumpZone(SAGE_Zone *zone)
   faces = zone->faces;
   normals = zone->normals;
   for (index = 0;index < zone->nb_faces;index++) {
-    SAGE_DebugLog("  . face %d : p1=%d  p2=%d  p3=%d  color=0x%06X  tex=%d  culled=%d  clipped=%d",
+    SAGE_DebugLog("  . face %d : p1=%d  p2=%d  p3=%d  color=0x%X  tex=%d  culled=%d  clipped=%d",
       index, faces[index].p1, faces[index].p2, faces[index].p3, faces[index].color,
       faces[index].texture, (faces[index].culled ? 1 : 0), faces[index].clipped
     );
@@ -90,14 +90,7 @@ VOID SAGE_DumpTerrain(WORD mode)
       }
       SAGE_DebugLog("-- Colormap");
       for (index = 0;index < SPIC_MAXCOLORS;index++) {
-        printf("0x%08X ", sage_world.terrain.color_map[index]);
-        if ((index % 16) == 15) {
-          printf("\n");
-        }
-      }
-      SAGE_DebugLog("-- Remapcolor");
-      for (index = 0;index < SPIC_MAXCOLORS;index++) {
-        printf("0x%08X ", sage_world.terrain.remapped_cmap[index]);
+        printf("0x%08X ", sage_world.terrain.colors[index]);
         if ((index % 16) == 15) {
           printf("\n");
         }
@@ -233,15 +226,14 @@ BOOL SAGE_PrepareHeightmap(SAGE_Picture *hmpic, SAGE_Picture *cmpic, SAGE_Pictur
   }
   sage_world.terrain.size = size;
   SD(SAGE_DebugLog(" map is %dx%d", size, size);)
-  SD(SAGE_DebugLog("Prepare the color map");)
+  SD(SAGE_DebugLog("Prepare the terrain colors");)
   if (cmpic != NULL) {
     cmap = cmpic->color_map;
   } else {
     cmap = hmpic->color_map;
   }
   for (color = 0;color < SPIC_MAXCOLORS;color++) {
-    sage_world.terrain.color_map[color] = cmap[color];
-    sage_world.terrain.remapped_cmap[color] = SAGE_RemapColor(cmap[color]);
+    sage_world.terrain.colors[color] = cmap[color];
   }
   return TRUE;
 }
@@ -372,9 +364,9 @@ SAGE_Zone *SAGE_CreateHeightmapZone(UWORD startx, UWORD starty, UBYTE *hmap, UBY
   for (y = 0;y < S3DT_CELLS_ZONE;y++) {
     for (x = 0;x < S3DT_CELLS_ZONE;x++) {
       if (cmap != NULL) {
-        color = sage_world.terrain.remapped_cmap[cmap[(startx + x) + ((starty + y) * size)]];
+        color = sage_world.terrain.colors[cmap[(startx + x) + ((starty + y) * size)]];
       } else {
-        color = sage_world.terrain.remapped_cmap[hmap[(startx + x) + ((starty + y) * width)]];
+        color = sage_world.terrain.colors[hmap[(startx + x) + ((starty + y) * width)]];
       }
       if (tmap != NULL) {
         texture = tmap[(startx + x) + ((starty + y) * size)];
@@ -509,8 +501,8 @@ BOOL SAGE_LoadHeightmapTerrain(STRPTR heightmap, STRPTR colormap, STRPTR texmap)
   SAGE_ReleasePicture(cmpic);
   SAGE_ReleasePicture(hmpic);
   sage_world.active_terrain = TRUE;
-//  SD(SAGE_DumpTerrain(S3DE_DEBUG_THMAP|S3DE_DEBUG_TVERTS|S3DE_DEBUG_TZONES);)
-  SD(SAGE_DumpTerrain(S3DE_DEBUG_TMIN);)
+  SD(SAGE_DumpTerrain(S3DE_DEBUG_THMAP|S3DE_DEBUG_TVERTS|S3DE_DEBUG_TZONES);)
+//  SD(SAGE_DumpTerrain(S3DE_DEBUG_TMIN);)
   return TRUE;
 }
 

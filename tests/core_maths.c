@@ -5,7 +5,7 @@
  * Test logger functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #include <sage/sage.h>
@@ -26,6 +26,19 @@ SAGE_Vector points[NB_POINTS] = {
 
 SAGE_Vector trpoints[NB_POINTS];
 
+void DumpVector(SAGE_Vector *v)
+{
+  SAGE_DebugLog("Vector is %f, %f, %f", v->x, v->y, v->z);
+}
+
+void DumpMatrix(SAGE_Matrix *m)
+{
+  SAGE_DebugLog("Matrix is :");
+  SAGE_DebugLog(". %f, %f, %f", m->m11, m-> m12, m->m13);
+  SAGE_DebugLog(". %f, %f, %f", m->m21, m-> m22, m->m23);
+  SAGE_DebugLog(". %f, %f, %f", m->m31, m-> m32, m->m33);
+}
+
 void DumpPoints(VOID)
 {
   WORD idx;
@@ -37,7 +50,7 @@ void DumpPoints(VOID)
   SAGE_DebugLog("---------------------------------------------------");
 }
 
-void TransformPoints(SAGE_Matrix * matrix, SAGE_Vector * points)
+void TransformPoints(SAGE_Matrix *matrix, SAGE_Vector *points)
 {
   WORD idx;
   FLOAT x, y, z;
@@ -97,10 +110,22 @@ void RotateXY(WORD ax, WORD ay)
 
 void main(void)
 {
+  SAGE_Vector u = {15.23, -5.45, 44.8}, v = { -9.24, 12.7, 27.9}, res;
+
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   SAGE_AppliLog("* SAGE library CORE test (MATHS) / %s", SAGE_GetVersion());
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   if (SAGE_Init(SMOD_NONE)) {
+    SAGE_AppliLog("DotProduct");
+    DumpVector(&u);
+    DumpVector(&v);
+    SAGE_AppliLog("result = %f", SAGE_DotProduct(&u, &v));
+    SAGE_AppliLog("CrossProduct");
+    SAGE_CrossProduct(&res, &u, &v);
+    DumpVector(&res);
+    SAGE_AppliLog("Normalize");
+    SAGE_Normalize(&u);
+    DumpVector(&u);
     SAGE_AppliLog("Rotate points on X");
     RotateX(15);
     SAGE_AppliLog("Rotate points on Y");

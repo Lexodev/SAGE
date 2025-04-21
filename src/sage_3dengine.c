@@ -5,7 +5,7 @@
  * 3D engine functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 26/06/2024)
+ * @version 25.1 February 2025 (updated: 28/02/2025)
  */
 
 #include <string.h>
@@ -1328,7 +1328,6 @@ VOID SAGE_RenderWorld(VOID)
 #endif
 #if SAGE_ENABLE_TERRAIN == 1
     if (sage_world.active_terrain) {
-      SED(SAGE_DumpTerrain(S3DE_DEBUG_TZONES);)
       SAGE_TransformTerrain(camera);
     }
 #endif
@@ -1351,7 +1350,7 @@ SAGE_EngineMetrics *SAGE_GetEngineMetrics()
   return &(sage_world.metrics);
 }
 
-/** Enable/Disable debug */
+/** Enable/Disable engine debug */
 VOID SAGE_EngineDebug(BOOL flag)
 {
   engine_debug = flag;

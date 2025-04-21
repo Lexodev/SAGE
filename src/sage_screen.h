@@ -5,7 +5,7 @@
  * Screen management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #ifndef _SAGE_SCREEN_H_
@@ -123,14 +123,23 @@ BOOL SAGE_CloseScreen(VOID);
 /** Clear full screen */
 BOOL SAGE_ClearScreen(VOID);
 
+/** Fill full screen with a color */
+BOOL SAGE_FillScreen(ULONG);
+
 /** Set screen clipping */
 BOOL SAGE_SetScreenClip(ULONG, ULONG, ULONG, ULONG);
 
 /** Clear the active view clipping */
 BOOL SAGE_ClearView(VOID);
 
+/** Fill the active view clipping with a color */
+BOOL SAGE_FillView(ULONG);
+
 /** Clear only a part of the screen */
 BOOL SAGE_ClearArea(ULONG, ULONG, ULONG, ULONG);
+
+/** Fill only a part of the screen with a color */
+BOOL SAGE_FillArea(ULONG, ULONG, ULONG, ULONG, ULONG);
 
 /** Enable vertical synchro */
 BOOL SAGE_VerticalSynchro(BOOL);

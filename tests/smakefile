@@ -1,7 +1,7 @@
 #----------------------------------------------------------
 # SAGE tests makefile
 # Fabrice Labrador <fabrice.labrador@gmail.com>
-# V2.1 August 2024
+# V3.0 February 2025
 #----------------------------------------------------------
 
 # Build options
@@ -14,11 +14,12 @@ VIDEOEXE=video_video video_screen video_event video_bitmap video_layer video_spr
 INPUTEXE=input_input input_keyboard input_joyport input_handler
 AUDIOEXE=audio_audio audio_sound audio_music audio_mix
 INTEXE=interrupt_interrupt interrupt_handler
-3DEEXE=render3d_3ddevice render3d_3dtexture render3d_3dtriangle render3d_3dzbuffer render3d_3dskybox render3d_3dentity render3d_3deload  render3d_3dterrain render3d_3dmaggie
 NETEXE=network_network network_tcpsocket network_udpsocket network_handler
+R3DEEXE=render3d_3ddevice render3d_3dtexture render3d_3dtriangle render3d_3dzbuffer
+E3DEEXE=engine3d_3dentity engine3d_3deload engine3d_3deoptimize engine3d_3dskybox engine3d_3dterrain
 
 # Build all tests
-build: core video input audio interrupt render3d network
+build: core video input audio interrupt network render3d engine3d
   -@delete \#?.o
   -@delete \#?.lnk
   @echo "** Tests build complete **"
@@ -139,37 +140,6 @@ interrupt_interrupt: interrupt_interrupt.c $(LIB)
 interrupt_handler: interrupt_handler.c $(LIB)
   sc LINK interrupt_handler.c $(OPT) $(LIB)
 
-# Build 3D render tests
-render3d: $(3DEEXE) cleanobj
-  @echo "** Render 3D build complete **"
-
-render3d_3dzbuffer: render3d_3dzbuffer.c $(LIB)
-  sc LINK render3d_3dzbuffer.c $(OPT) $(LIB)
-
-render3d_3deload: render3d_3deload.c $(LIB)
-  sc LINK render3d_3deload.c $(OPT) $(LIB)
-
-render3d_3dentity: render3d_3dentity.c $(LIB)
-  sc LINK render3d_3dentity.c $(OPT) $(LIB)
-
-render3d_3dskybox: render3d_3dskybox.c $(LIB)
-  sc LINK render3d_3dskybox.c $(OPT) $(LIB)
-
-render3d_3dterrain: render3d_3dterrain.c $(LIB)
-  sc LINK render3d_3dterrain.c $(OPT) $(LIB)
-
-render3d_3dtriangle: render3d_3dtriangle.c $(LIB)
-  sc LINK render3d_3dtriangle.c $(OPT) $(LIB)
-
-render3d_3dtexture: render3d_3dtexture.c $(LIB)
-  sc LINK render3d_3dtexture.c $(OPT) $(LIB)
-
-render3d_3ddevice: render3d_3ddevice.c $(LIB)
-  sc LINK render3d_3ddevice.c $(OPT) $(LIB)
-
-render3d_3dmaggie: render3d_3dmaggie.c $(LIB)
-  sc LINK render3d_3dmaggie.c $(OPT) $(LIB)
-
 # Build network tests
 network: $(NETEXE) cleanobj
   @echo "** Network build complete **"
@@ -185,6 +155,42 @@ network_udpsocket: network_udpsocket.c $(LIB)
 
 network_handler: network_handler.c $(LIB)
   sc LINK network_handler.c $(OPT) $(LIB)
+
+# Build 3D render tests
+render3d: $(R3DEEXE) cleanobj
+  @echo "** Render 3D build complete **"
+
+render3d_3ddevice: render3d_3ddevice.c $(LIB)
+  sc LINK render3d_3ddevice.c $(OPT) $(LIB)
+
+render3d_3dtexture: render3d_3dtexture.c $(LIB)
+  sc LINK render3d_3dtexture.c $(OPT) $(LIB)
+
+render3d_3dzbuffer: render3d_3dzbuffer.c $(LIB)
+  sc LINK render3d_3dzbuffer.c $(OPT) $(LIB)
+
+render3d_3dtriangle: render3d_3dtriangle.c $(LIB)
+  sc LINK render3d_3dtriangle.c $(OPT) $(LIB)
+
+# Build 3D engine tests
+
+engine3d: $(E3DEEXE) cleanobj
+  @echo "** Engine 3D build complete **"
+
+engine3d_3dentity: engine3d_3dentity.c $(LIB)
+  sc LINK engine3d_3dentity.c $(OPT) $(LIB)
+
+engine3d_3deload: engine3d_3deload.c $(LIB)
+  sc LINK engine3d_3deload.c $(OPT) $(LIB)
+
+engine3d_3deoptimize: engine3d_3deoptimize.c $(LIB)
+  sc LINK engine3d_3deoptimize.c $(OPT) $(LIB)
+
+engine3d_3dskybox: engine3d_3dskybox.c $(LIB)
+  sc LINK engine3d_3dskybox.c $(OPT) $(LIB)
+
+engine3d_3dterrain: engine3d_3dterrain.c $(LIB)
+  sc LINK engine3d_3dterrain.c $(OPT) $(LIB)
 
 # Force all builds
 force : clean
@@ -221,17 +227,17 @@ force : clean
   sc LINK audio_mix.c $(OPT) $(LIB)
   sc LINK interrupt_interrupt.c $(OPT) $(LIB)
   sc LINK interrupt_handler.c $(OPT) $(LIB)
-  sc LINK render3d_3deload.c $(OPT) $(LIB)
-  sc LINK render3d_3dentity.c $(OPT) $(LIB)
-  sc LINK render3d_3dskybox.c $(OPT) $(LIB)
-  sc LINK render3d_3dterrain.c $(OPT) $(LIB)
-  sc LINK render3d_3dtriangle.c $(OPT) $(LIB)
-  sc LINK render3d_3dtexture.c $(OPT) $(LIB)
-  sc LINK render3d_3ddevice.c $(OPT) $(LIB)
   sc LINK network_network.c $(OPT) $(LIB)
   sc LINK network_tcpsocket.c $(OPT) $(LIB)
   sc LINK network_udpsocket.c $(OPT) $(LIB)
   sc LINK network_handler.c $(OPT) $(LIB)
+  sc LINK render3d_3ddevice.c $(OPT) $(LIB)
+  sc LINK render3d_3dtexture.c $(OPT) $(LIB)
+  sc LINK render3d_3dtriangle.c $(OPT) $(LIB)
+  sc LINK engine3d_3deload.c $(OPT) $(LIB)
+  sc LINK engine3d_3dentity.c $(OPT) $(LIB)
+  sc LINK engine3d_3dskybox.c $(OPT) $(LIB)
+  sc LINK engine3d_3dterrain.c $(OPT) $(LIB)
 
 # Clean files
 clean: cleanobj cleanexe
@@ -243,8 +249,9 @@ cleanexe:
   -@delete $(INPUTEXE)
   -@delete $(AUDIOEXE)
   -@delete $(INTEXE)
-  -@delete $(3DEEXE)
   -@delete $(NETEXE)
+  -@delete $(R3DEEXE)
+  -@delete $(E3DEEXE)
 
 cleanobj:
   -@delete \#?.o

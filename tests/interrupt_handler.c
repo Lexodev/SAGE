@@ -5,7 +5,7 @@
  * Test interruption functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage.h>
@@ -21,14 +21,12 @@ struct _my_data {
 /**
  * this is our interrupt handler
  */
-ASM INTERRUPT SAVEDS void MyHandler(
-  REG(a5, APTR UserData)
-)
+ASM INTERRUPT SAVEDS void MyHandler(REG(a5, APTR UserData))
 {
-  struct _my_data * data;
+  struct _my_data *data;
   
   count++;
-  data = (struct _my_data *) UserData;
+  data = (struct _my_data *)UserData;
   data->value += 2;
   return;
 }

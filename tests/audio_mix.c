@@ -5,7 +5,7 @@
  * Test mix sound/music
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage.h>
@@ -31,7 +31,7 @@ void main(void)
     SAGE_AppliLog("Opening screen");
     if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_NOFLAG)) {
       SAGE_AppliLog("Loading module");
-      if ((music = SAGE_LoadMusic("/data/bubble.mod")) == NULL) {
+      if ((music = SAGE_LoadMusic("data/bubble.mod")) == NULL) {
         finish = TRUE;
         SAGE_DisplayError();
       } else {
@@ -43,7 +43,7 @@ void main(void)
         }
       }
       SAGE_AppliLog("Loading sound\n");
-      sound = SAGE_LoadSound("/data/evil.wav");
+      sound = SAGE_LoadSound("data/evil.wav");
       if (sound == NULL) {
         finish = TRUE;
         SAGE_DisplayError();

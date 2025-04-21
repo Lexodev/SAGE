@@ -4,7 +4,7 @@
  * SAGE (Simple Amiga Game Engine) project
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.8 August 2024 (updated: 12/08/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #include <exec/exec.h>
@@ -17,7 +17,7 @@
 #include <sage/sage.h>
 
 /** @var Library version */
-STRPTR SAGE_Version = "$VER: SAGE V24.8 August 2024";
+STRPTR SAGE_Version = "$VER: SAGE V25.1 February 2025";
 
 /** @var Application context */
 SAGE_Context SageContext;

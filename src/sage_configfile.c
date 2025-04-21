@@ -5,7 +5,7 @@
  * Configuration file management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #include <stdio.h>
@@ -101,8 +101,7 @@ BOOL SAGE_FindParameter(STRPTR parameter, STRPTR buffer, ULONG size, BPTR fdesc)
 {
   UWORD index, debut;
 
-  while (FGets(fdesc, line_buffer, SCFG_BUFFER_SIZE))
-  {
+  while (FGets(fdesc, line_buffer, SCFG_BUFFER_SIZE)) {
     // New section, param is not here
     if (line_buffer[0] == '[') {
       return FALSE;

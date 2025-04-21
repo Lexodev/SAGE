@@ -5,7 +5,7 @@
  * 3D module management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 26/06/2024)
+ * @version 25.1 February 2025 (updated: 26/02/2025)
  */
 
 #include <exec/execbase.h>
@@ -137,7 +137,7 @@ BOOL SAGE_Alloc3DDevice(VOID)
 {
   SAGE_3DDevice *device;
 
-  SD(SAGE_InfoLog("Allocate 3D device");)
+  SD(SAGE_DebugLog("Allocate 3D device");)
   if (SageContext.SageVideo == NULL) {
     SAGE_SetError(SERR_NO_VIDEODEVICE);
     return FALSE;
@@ -159,21 +159,17 @@ BOOL SAGE_Alloc3DDevice(VOID)
 BOOL SAGE_Free3DDevice(VOID)
 {
   SAGE_3DDevice *device;
-  UWORD index;
   
-  SD(SAGE_InfoLog("Release 3D device");)
+  SD(SAGE_DebugLog("Release 3D device");)
   device = SageContext.Sage3D;
   if (device == NULL) {
     SAGE_SetError(SERR_NO_3DDEVICE);
     return FALSE;
   }
   // Release all textures
-  for (index = 0;index < STEX_MAX_TEXTURES;index++) {
-    if (device->textures[index] != NULL) {
-      SAGE_ReleaseTexture(index);
-      device->textures[index] = NULL;
-    }
-  }
+  SAGE_ClearTextures();
+  // Release Z buffer
+  SAGE_ReleaseZBuffer();
   // Release Warp3D context
   if (device->w3d_context != NULL) {
     W3D_DestroyContext(device->w3d_context);
@@ -182,8 +178,6 @@ BOOL SAGE_Free3DDevice(VOID)
   if (device->m3d_context != NULL) {
     M3D_DestroyContext(device->m3d_context);
   }
-  // Release Z buffer
-  SAGE_ReleaseZBuffer();
   // Free device
   SAGE_FreeMem(device);
   SageContext.Sage3D = NULL;
@@ -193,27 +187,14 @@ BOOL SAGE_Free3DDevice(VOID)
 /**
  * Allocate the Warp3D context for rendering
  *
+ * @param device Sage 3D device
+ * @param window System window
+ *
  * @return Operation success
  */
-BOOL SAGE_AllocateW3DContext(VOID)
+BOOL SAGE_AllocateW3DContext(SAGE_3DDevice *device, struct Window *window)
 {
-  struct Window *window;
-  SAGE_3DDevice *device;
-  
-  SD(SAGE_InfoLog("Allocate Warp3D context");)
-  device = SageContext.Sage3D;
-  if (device == NULL) {
-    SAGE_SetError(SERR_NO_3DDEVICE);
-    return FALSE;
-  }
-  if (SageContext.SageVideo == NULL || SageContext.SageVideo->screen == NULL) {
-    SAGE_SetError(SERR_NO_VIDEODEVICE);
-    return FALSE;
-  }
-  if (device->m3d_context != NULL) {
-    M3D_DestroyContext(device->m3d_context);
-  }
-  window = SageContext.SageVideo->screen->system_window;
+  SD(SAGE_DebugLog("Allocate Warp3D context");)
   device->w3d_context = W3D_CreateContextTags(
     &(device->warp3d_error),
     W3D_CC_BITMAP, window->RPort->BitMap,
@@ -223,12 +204,12 @@ BOOL SAGE_AllocateW3DContext(VOID)
     TAG_DONE
   );
   if (device->w3d_context == NULL) {
-    SD(SAGE_InfoLog("Error : %s", SAGE_GetLast3DDeviceError());)
+    SD(SAGE_ErrorLog("Warp3D context creation error : %s", SAGE_GetLast3DDeviceError());)
     SAGE_FreeMem(device);
     SAGE_SetError(SERR_NO_3DCONTEXT);
     return FALSE;
   }
-  SD(SAGE_InfoLog("Set context states");)
+  SD(SAGE_DebugLog("Set Warp3D context states");)
   W3D_SetState(device->w3d_context, W3D_TEXMAPPING, W3D_ENABLE);
   W3D_SetState(device->w3d_context, W3D_AUTOTEXMANAGEMENT, W3D_ENABLE);
   W3D_SetState(device->w3d_context, W3D_INDIRECT, W3D_DISABLE);
@@ -244,35 +225,22 @@ BOOL SAGE_AllocateW3DContext(VOID)
 /**
  * Allocate the Maggie3D context for rendering
  *
+ * @param device Sage 3D device
+ * @param window System window
+ *
  * @return Operation success
  */
-BOOL SAGE_AllocateM3DContext(VOID)
+BOOL SAGE_AllocateM3DContext(SAGE_3DDevice *device, struct Window *window)
 {
-  struct Window *window;
-  SAGE_3DDevice *device;
-  
-  SD(SAGE_InfoLog("Allocate Maggie3D context");)
-  device = SageContext.Sage3D;
-  if (device == NULL) {
-    SAGE_SetError(SERR_NO_3DDEVICE);
-    return FALSE;
-  }
-  if (SageContext.SageVideo == NULL || SageContext.SageVideo->screen == NULL) {
-    SAGE_SetError(SERR_NO_VIDEODEVICE);
-    return FALSE;
-  }
-  if (device->w3d_context != NULL) {
-    W3D_DestroyContext(device->w3d_context);
-  }
-  window = SageContext.SageVideo->screen->system_window;
+  SD(SAGE_DebugLog("Allocate Maggie3D context");)
   device->m3d_context = M3D_CreateContext(&(device->maggie3d_error), window->RPort->BitMap);
   if (device->m3d_context == NULL) {
-    SD(SAGE_ErrorLog("Create context error : %d", device->maggie3d_error);)
+    SD(SAGE_ErrorLog("Maggie3D context creation error : %d", device->maggie3d_error);)
     SAGE_FreeMem(device);
     SAGE_SetError(SERR_NO_3DCONTEXT);
     return FALSE;
   }
-  SD(SAGE_InfoLog("Set context states");)
+  SD(SAGE_InfoLog("Set Maggie3D context states");)
   M3D_SetState(device->m3d_context, M3D_FAST, M3D_ENABLE);
   return TRUE;
 }
@@ -287,12 +255,37 @@ BOOL SAGE_AllocateM3DContext(VOID)
 BOOL SAGE_Set3DRenderSystem(UWORD system)
 {
   SAGE_3DDevice *device;
+  struct Window *window;
 
   device = SageContext.Sage3D;
   SAFE(if (device == NULL) {
     SAGE_SetError(SERR_NO_3DDEVICE);
     return FALSE;
   })
+  if (device->render_system == system) {
+    return TRUE;
+  }
+  SAFE(if (SageContext.SageVideo == NULL || SageContext.SageVideo->screen == NULL) {
+    SAGE_SetError(SERR_NO_VIDEODEVICE);
+    return FALSE;
+  })
+  window = SageContext.SageVideo->screen->system_window;
+  SAFE(if (window == NULL) {
+    SAGE_SetError(SERR_NO_WINDOW);
+    return FALSE;
+  });
+  // Release all existing resources
+  SAGE_FlushTextures();
+  SAGE_ReleaseZBuffer();
+  if (device->w3d_context != NULL && Warp3DBase != NULL) {
+    W3D_DestroyContext(device->w3d_context);
+    device->w3d_context = NULL;
+  }
+  if (device->m3d_context != NULL && Maggie3DBase != NULL) {
+    M3D_DestroyContext(device->m3d_context);
+    device->m3d_context = NULL;
+  }
+  // Set the new rendering system
   if (system == S3DD_W3DRENDER) {
     if (Warp3DBase == NULL) {
       SAGE_SetError(SERR_WARP3D_LIB);
@@ -306,10 +299,10 @@ BOOL SAGE_Set3DRenderSystem(UWORD system)
       SAGE_SetError(SERR_NO_3DDRIVER);
       return FALSE;
     }
-    if (!SAGE_AllocateW3DContext()) {
+    if (!SAGE_AllocateW3DContext(device, window)) {
       return FALSE;
     }
-    SD(SAGE_InfoLog("Warp3D rendering activated");)
+    SD(SAGE_DebugLog("Warp3D rendering activated");)
   } else if (system == S3DD_M3DRENDER) {
     if (!SageContext.SageVideo->SAGAReady) {
       SAGE_SetError(SERR_NO_MAGGIE);
@@ -319,18 +312,14 @@ BOOL SAGE_Set3DRenderSystem(UWORD system)
       SAGE_SetError(SERR_MAGGIE3D_LIB);
       return FALSE;
     }
-    if (!SAGE_AllocateM3DContext()) {
+    if (!SAGE_AllocateM3DContext(device, window)) {
       return FALSE;
     }
-    SD(SAGE_InfoLog("Maggie3D rendering activated");)
+    SD(SAGE_DebugLog("Maggie3D rendering activated");)
   } else {
-    if (device->w3d_context != NULL) {
-      W3D_DestroyContext(device->w3d_context);
-    }
-    if (device->m3d_context != NULL) {
-      M3D_DestroyContext(device->m3d_context);
-    }
-    SD(SAGE_InfoLog("Sage rendering activated");)
+    device->warp3d_error = 0;
+    device->maggie3d_error = 0;
+    SD(SAGE_DebugLog("Sage rendering activated");)
   }
   device->render_system = system;
   SAGE_Init3DRender();

@@ -5,7 +5,7 @@
  * Test picture loading & rendering
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage.h>
@@ -18,14 +18,14 @@
  * Usage : video_picture TYPE DEPTH SCREEN
  *  with TYPE = BMP or PNG
  *  and DEPTH = 8 or 16
- *  and SCREEN = 8 or 16
+ *  and SCREEN = 8, 16, 24 or 32
  */
 void main(int argc, char **argv)
 {
   SAGE_Event * event = NULL;
   SAGE_Picture * picture = NULL;
-  LONG depth;
-  BOOL bmp = FALSE, clut = FALSE, finish;
+  LONG depth = 32;
+  BOOL bmp = FALSE, clut = FALSE, finish = FALSE;
 
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   SAGE_AppliLog("* SAGE library VIDEO test (PICTURE) / %s", SAGE_GetVersion());
@@ -37,8 +37,7 @@ void main(int argc, char **argv)
     if (argc >= 3 && strcmp(argv[2], "8") == 0) {
       clut = TRUE;
     }
-    depth = 32;
-    if (argc == 4) {
+    if (argc >= 4) {
       if (strcmp(argv[3], "8") == 0) {
         depth = 8;
       } else if (strcmp(argv[3], "16") == 0) {
@@ -47,19 +46,19 @@ void main(int argc, char **argv)
         depth = 24;
       }
     }
+    SAGE_AppliLog("User parameters DEPTH=%d , BMP=%d , CLUT=%d", depth, bmp, clut);
     SAGE_AppliLog("Loading picture");
     if (bmp && clut) {
-      picture = SAGE_LoadPicture("/data/desert256.bmp");
+      picture = SAGE_LoadPicture("data/desert256.bmp");
     } else if (bmp && !clut) { 
-      picture = SAGE_LoadPicture("/data/desert.bmp");
+      picture = SAGE_LoadPicture("data/desert.bmp");
     } else if (!bmp && clut) {
-      picture = SAGE_LoadPicture("/data/desert256.png");
+      picture = SAGE_LoadPicture("data/desert256.png");
     } else {
-      picture = SAGE_LoadPicture("/data/desert.png");
+      picture = SAGE_LoadPicture("data/desert.png");
     }
     SAGE_DisplayError();
     SAGE_AppliLog("Opening screen");
-    SAGE_DumpVideoModes();
     if (picture != NULL && SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, depth, SSCR_STRICTRES)) {
       SAGE_AppliLog("Remapping picture");
       SAGE_RemapPicture(picture);
@@ -74,7 +73,6 @@ void main(int argc, char **argv)
       if (!SAGE_RefreshScreen()) {
         SAGE_DisplayError();
       }
-      finish = FALSE;
       while (!finish) {
         while ((event = SAGE_GetEvent()) != NULL) {
           SAGE_AppliLog("Event polled type %d, code %d, mouse %d,%d", event->type, event->code, event->mousex, event->mousey);
@@ -83,7 +81,7 @@ void main(int argc, char **argv)
             finish = TRUE;
           } else if (event->type == SEVT_RAWKEY) {
             if (picture->bitmap->depth == SBMP_DEPTH8) {
-              if (SAGE_LoadFileColorMap("/data/flame.rgb32", 0, 256, SSCR_RGB32COLOR)) {
+              if (SAGE_LoadFileColorMap("data/flame.rgb32", 0, 256, SSCR_RGB32COLOR)) {
                 SAGE_RefreshColors(0, 256);
               } else {
                 SAGE_DisplayError();

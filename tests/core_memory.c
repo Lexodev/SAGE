@@ -5,14 +5,18 @@
  * Test memory management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #include <sage/sage.h>
 
 void main(void)
 {
-  APTR bloc1, bloc2, bloc3, bloc4, bloc5;
+  APTR bloc1;
+  APTR bloc2;
+  APTR bloc3;
+  APTR bloc4;
+  APTR bloc5;
 
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   SAGE_AppliLog("* SAGE library CORE test (MEMORY) / %s", SAGE_GetVersion());

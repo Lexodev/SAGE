@@ -5,7 +5,7 @@
  * Wavefront object loading
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 28/02/2025)
  */
 
 #include <stdlib.h>
@@ -33,6 +33,11 @@ UBYTE obj_line_buffer[1024];
 WORD obj_nb_tokens;
 STRPTR obj_line_token[16];
 
+/*****************************************************************************
+ *                   START DEBUG
+ *****************************************************************************/
+
+#if _SAGE_DEBUG_MODE_ == 1
 /**
  * Dump an object (DEBUG)
  */
@@ -92,6 +97,11 @@ VOID SAGE_DumpTokens(VOID)
     SAGE_DebugLog(" => token %d : %s", idx, obj_line_token[idx]);
   }
 }
+#endif
+
+/*****************************************************************************
+ *                   END DEBUG
+ *****************************************************************************/
 
 /**
  * Release a OBJ object

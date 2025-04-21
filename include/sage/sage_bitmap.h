@@ -5,7 +5,7 @@
  * Bitmap management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #ifndef _SAGE_BITMAP_H_
@@ -90,6 +90,9 @@ APTR *SAGE_GetBitmapBuffer(SAGE_Bitmap *);
 
 /** Release a bitmap structure */
 VOID SAGE_ReleaseBitmap(SAGE_Bitmap *);
+
+/** Remap an ARGB/CLUT color into pixel format */
+ULONG SAGE_RemapColorToPixFormat(ULONG, ULONG);
 
 /** Set the bitmap transparency */
 BOOL SAGE_SetBitmapTransparency(SAGE_Bitmap *, ULONG);

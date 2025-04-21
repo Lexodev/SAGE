@@ -5,7 +5,7 @@
  * Test 3D texture management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 26/02/2025)
  */
 
 #include <sage/sage.h>
@@ -28,7 +28,7 @@ void main(void)
     SAGE_AppliLog("Opening screen");
     if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES)) {
       SAGE_AppliLog("Load texture picture");
-      if ((picture = SAGE_LoadPicture("/data/vampire.bmp")) != NULL) {
+      if ((picture = SAGE_LoadPicture("data/vampire.bmp")) != NULL) {
         SAGE_AppliLog("Create texture from picture");
         if (SAGE_CreateTextureFromPicture(TEX_VAMPIRE, 0, 0, STEX_SIZE256, picture)) {
           SAGE_AppliLog("Add texture to card memory");
@@ -46,7 +46,7 @@ void main(void)
         SAGE_DisplayError();
       }
       SAGE_AppliLog("Load DDS texture");
-      if (SAGE_CreateTextureFromFile(TEX_VAMPIRE, "/data/testtex.dds")) {
+      if (SAGE_CreateTextureFromFile(TEX_VAMPIRE, "data/testtex.dds")) {
         SAGE_AppliLog("OK");
         SAGE_ReleaseTexture(TEX_VAMPIRE);
       } else {

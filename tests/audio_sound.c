@@ -5,7 +5,7 @@
  * Test sound loading
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage.h>
@@ -31,9 +31,9 @@ void main(void)
     SAGE_AppliLog("Opening screen");
     if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_NOFLAG)) {
       SAGE_AppliLog("Loading sounds");
-      sound1 = SAGE_LoadSound("/data/evil.wav");
-      sound2 = SAGE_LoadSound("/data/hiya.8svx");
-      sound3 = SAGE_LoadSound("/data/blabla.aiff");
+      sound1 = SAGE_LoadSound("data/evil.wav");
+      sound2 = SAGE_LoadSound("data/hiya.8svx");
+      sound3 = SAGE_LoadSound("data/blabla.aiff");
       if (sound1 == NULL || sound2 == NULL || sound3 == NULL) {
         finish = TRUE;
         SAGE_DisplayError();

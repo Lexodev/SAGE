@@ -5,7 +5,7 @@
  * Test tiles
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage.h>
@@ -51,7 +51,7 @@ void main(void)
     if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_STRICTRES)) {
       SAGE_HideMouse();
       SAGE_AppliLog("Load tile picture and create tile bank");
-      if ((picture = SAGE_LoadPicture("/data/Odysseus_Tiles.bmp")) != NULL) {
+      if ((picture = SAGE_LoadPicture("data/Odysseus_Tiles.bmp")) != NULL) {
         SAGE_LoadPictureColorMap(picture);
         SAGE_RefreshColors(0, 256);
         if (SAGE_CreateTileBank(TILE_BANK, TILE_WIDTH, TILE_HEIGHT, NB_TILES, picture)) {

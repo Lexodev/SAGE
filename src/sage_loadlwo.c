@@ -5,7 +5,7 @@
  * Ligthwave object loading
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 28/02/2025)
  */
 
 #include <stdlib.h>
@@ -24,6 +24,11 @@
 #include <proto/dos.h>
 #include <proto/exec.h>
 
+/*****************************************************************************
+ *                   START DEBUG
+ *****************************************************************************/
+
+#if _SAGE_DEBUG_MODE_ == 1
 /**
  * Dump an object (DEBUG)
  */
@@ -46,6 +51,11 @@ VOID SAGE_DumpLWOB(SAGE_LightwaveObject *object)
     );
   }
 }
+#endif
+
+/*****************************************************************************
+ *                   END DEBUG
+ *****************************************************************************/
 
 /**
  * Release a LWO object

@@ -5,7 +5,7 @@
  * Test thread functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #include <sage/sage.h>
@@ -16,7 +16,7 @@ struct Crd {
 
 LONG my_thread(APTR data)
 {
-  struct Crd * crd;
+  struct Crd *crd;
   
   crd = (struct Crd *) data;
   crd->x = 42;
@@ -37,7 +37,7 @@ LONG other_thread(APTR data)
 
 void main(void)
 {
-  SAGE_Thread * thread = NULL;
+  SAGE_Thread *thread = NULL;
   struct Crd crd;
 
   SAGE_AppliLog("--------------------------------------------------------------------------------");

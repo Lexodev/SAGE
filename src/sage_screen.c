@@ -5,7 +5,7 @@
  * Screen management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #include <string.h>
@@ -17,9 +17,9 @@
 #include <sage/sage_error.h>
 #include <sage/sage_memory.h>
 #include <sage/sage_vampire.h>
-#include <sage/sage_blitter.h>
 #include <sage/sage_interrupt.h>
 #include <sage/sage_context.h>
+#include <sage/sage_blitter.h>
 #include <sage/sage_3d.h>
 #include <sage/sage_screen.h>
 
@@ -61,19 +61,20 @@ ULONG SAGE_GetBestdisplayID(LONG width, LONG height, LONG depth)
 {
   ULONG display_id;
 
-  SD(SAGE_InfoLog("Getting best display ID (%dx%dx%d)", width, height, depth);)
   display_id = BestCModeIDTags(
     CYBRBIDTG_NominalWidth, width,
     CYBRBIDTG_NominalHeight, height,
     CYBRBIDTG_Depth, depth,
     TAG_DONE
   );
+  SD(SAGE_DebugLog("Getting best display ID (%dx%dx%d) => %d", width, height, depth, display_id);)
   if (display_id != INVALID_ID) {
     SD(SAGE_DebugLog("Found a suitable screenmode with ID 0x%X", display_id);)
     if (!IsCyberModeID(display_id)) {
       SD(SAGE_DebugLog("This is not a CyberGfx mode !");)
-      display_id = INVALID_ID;
-    SD(} else {
+      return INVALID_ID;
+    }
+    SD(
       SAGE_DebugLog("This is a CyberGfx mode ID");
       SAGE_DebugLog("Width is %d", GetCyberIDAttr(CYBRIDATTR_WIDTH, display_id));
       SAGE_DebugLog("Height is %d", GetCyberIDAttr(CYBRIDATTR_HEIGHT, display_id));
@@ -81,7 +82,6 @@ ULONG SAGE_GetBestdisplayID(LONG width, LONG height, LONG depth)
       SAGE_DebugLog("Bytes per pixel is %d", GetCyberIDAttr(CYBRIDATTR_BPPIX, display_id));
       SAGE_DumpPixelFormat(GetCyberIDAttr(CYBRIDATTR_PIXFMT, display_id));
     )
-    }
   }
   return display_id;
 }
@@ -437,7 +437,7 @@ BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONGBITS flags)
   SAGE_Screen *screen;
   struct BitMap *bitmap;
 
-  SD(SAGE_DebugLog("Opening a screen of %dx%dx%d", width, height, depth);)
+  SD(SAGE_DebugLog("* Opening a screen of %dx%dx%d", width, height, depth);)
   // Check for video device
   if (SageContext.SageVideo == NULL) {
     SAGE_SetError(SERR_NO_VIDEODEVICE);
@@ -464,14 +464,8 @@ BOOL SAGE_OpenScreen(LONG width, LONG height, LONG depth, LONGBITS flags)
   screen->backpen = 0;
   screen->event = NULL;
   screen->timer = NULL;
-  screen->back_color = 0;
-  if (depth == SBMP_DEPTH8) {
-    screen->front_color = 1;
-  } else if (depth == SBMP_DEPTH16) {
-    screen->front_color = 0xFFFF;
-  } else {
-    screen->front_color = 0xFFFFFF;
-  }
+  screen->back_color = 0x0;
+  screen->front_color = 0xFFFFFF;
   screen->flags = flags;
   // Attach the screen to the context
   SageContext.SageVideo->screen = screen;
@@ -608,7 +602,7 @@ BOOL SAGE_CloseScreen()
 {
   SAGE_Screen *screen;
   
-  SAGE_InfoLog("Closing the screen");
+  SAGE_DebugLog("* Closing the screen");
   screen = SAGE_GetScreen();
   if (screen == NULL) {
     SAGE_ErrorLog("Screen is NULL, this is not normal !");
@@ -690,6 +684,25 @@ BOOL SAGE_ClearScreen()
 }
 
 /**
+ * Fill full screen with a color
+ * 
+ * @param color Fill color in ARGB/CLUT
+ * 
+ * @return Operation success
+ */
+BOOL SAGE_FillScreen(ULONG color)
+{
+  SAGE_Screen *screen;
+  
+  screen = SAGE_GetScreen();
+  SAFE(if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return FALSE;
+  })
+  return SAGE_FillBitmap(screen->back_bitmap, 0, 0, screen->width, screen->height, SAGE_RemapColor(color));
+}
+
+/**
  * Set the screen clipping
  * 
  * @param left   Clip left
@@ -747,6 +760,32 @@ BOOL SAGE_ClearView()
 }
 
 /**
+ * Fill the active view clipping with a color
+ * 
+ * @param color Fill color
+ * 
+ * @return Operation success
+ */
+BOOL SAGE_FillView(ULONG color)
+{
+  SAGE_Screen *screen;
+  
+  screen = SAGE_GetScreen();
+  SAFE(if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return FALSE;
+  })
+  return SAGE_FillBitmap(
+    screen->back_bitmap,
+    screen->clipping.left,
+    screen->clipping.top,
+    (screen->clipping.right - screen->clipping.left) + 1,
+    (screen->clipping.bottom - screen->clipping.top) + 1,
+    SAGE_RemapColor(color)
+  );
+}
+
+/**
  * Clear a screen area
  * 
  * @param left   Area left
@@ -774,6 +813,37 @@ BOOL SAGE_ClearArea(ULONG left, ULONG top, ULONG width, ULONG height)
     return FALSE;
   }
   return SAGE_ClearBitmap(screen->back_bitmap, left, top, width, height);
+}
+
+/**
+ * Fill only a part of the screen with a color
+ * 
+ * @param left   Area left
+ * @param top    Area top
+ * @param width  Area width
+ * @param height Area height
+ * @param color  Fill color
+ * 
+ * @return Operation success
+ */
+BOOL SAGE_FillArea(ULONG left, ULONG top, ULONG width, ULONG height, ULONG color)
+{
+  SAGE_Screen *screen;
+  
+  screen = SAGE_GetScreen();
+  SAFE(if (screen == NULL) {
+    SAGE_SetError(SERR_NO_SCREEN);
+    return FALSE;
+  })
+  if ((left + width) == 0 || (left + width) > screen->width) {
+    SAGE_SetError(SERR_AREASIZE);
+    return FALSE;
+  }
+  if ((top + height) == 0 || (top + height) > screen->height) {
+    SAGE_SetError(SERR_AREASIZE);
+    return FALSE;
+  }
+  return SAGE_FillBitmap(screen->back_bitmap, left, top, width, height, SAGE_RemapColor(color));
 }
 
 /**
@@ -1137,7 +1207,7 @@ BOOL SAGE_RefreshColors(UWORD start, UWORD nbcolor)
  * Set a screen color
  *
  * @param index Color index
- * @param color Color ARGB value
+ * @param color Color value in ARGB format
  *
  * @return Operation success
  */
@@ -1163,7 +1233,7 @@ BOOL SAGE_SetColor(UWORD index, ULONG color)
  *
  * @param index Color index
  *
- * @return Color ARGB value
+ * @return Color value in ARGB format
  */
 ULONG SAGE_GetColor(UWORD index)
 {
@@ -1181,34 +1251,15 @@ ULONG SAGE_GetColor(UWORD index)
 }
 
 /**
- * Remap a 32bits color into screen pixel color format
+ * Remap an ARGB/CLUT color into screen pixel format
  *
- * @param color Color in ARGB format
+ * @param color Color in ARGB or CLUT format
  *
  * @return Remapped color
  */
 ULONG SAGE_RemapColor(ULONG color)
 {
-  ULONG alpha, red, green, blue;
-
-  alpha = (color >> 24) & 255L;
-  red = (color >> 16) & 255L;
-  green = (color >> 8) & 255L;
-  blue = color & 255L;
-  switch (SAGE_GetPixelFormat()) {
-    case PIXFMT_RGB16:
-      color = (((red & 248L) | (green >> 5)) << 8) | ((green << 3) & 224L) | (blue >> 3);
-      return (color << 16) | color;
-    case PIXFMT_RGB16PC:
-      color = ((((green << 3) & 224L) | (blue >> 3)) << 8) | (red & 248L) | (green >> 5);
-      return (color << 16) | color;
-    case PIXFMT_BGR24:
-      return (red << 16) | (green << 8) | blue;
-    case PIXFMT_RGBA32:
-      return (red << 24) | (green << 16) | (blue << 8) | alpha;
-    default:
-      return color;
-  }
+  return SAGE_RemapColorToPixFormat(color, SAGE_GetPixelFormat());
 }
 
 /**
@@ -1264,8 +1315,8 @@ ULONG *SAGE_GetColorMap(VOID)
 /**
  * Set the back and front color
  * 
- * @param back  Back color
- * @param front Front color
+ * @param back  Back color in ARGB/CLUT format
+ * @param front Front color in ARGB/CLUT format
  *
  * @return Operation success
  */
@@ -1278,8 +1329,8 @@ BOOL SAGE_SetDrawColor(ULONG back, ULONG front)
     SAGE_SetError(SERR_NO_SCREEN);
     return FALSE;
   })
-  screen->back_color = back;
-  screen->front_color = front;
+  screen->back_color = SAGE_RemapColor(back);
+  screen->front_color = SAGE_RemapColor(front);
   return TRUE;
 }
 

@@ -5,7 +5,7 @@
  * 3D entity management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 26/06/2024)
+ * @version 25.1 February 2025 (updated: 28/02/2025)
  */
 
 #include <string.h>
@@ -25,6 +25,12 @@
 #include <sage/sage_3dengine.h>
 
 #include <sage/sage_debug.h>
+
+/** Data for entity optimization */
+typedef struct {
+  UWORD new_index;
+  UWORD replaced_by;
+} SAGE_RemapVertex;
 
 /** Engine data */
 extern SAGE_3DWorld sage_world;
@@ -90,6 +96,21 @@ VOID SAGE_DumpEntity(SAGE_Entity *entity, UWORD mode)
     }
   }
 }
+
+VOID SAGE_DumpRemapVertex(SAGE_RemapVertex *remap, UWORD nb_vertices)
+{
+  UWORD idx;
+  
+  SAGE_DebugLog("** Dump remap vertex **");
+  for (idx = 0;idx < nb_vertices;idx++) {
+    if (remap[idx].replaced_by == idx) {
+      SAGE_DebugLog("- vertex #%d has new index %d", idx, remap[idx].new_index);
+    } else {
+      SAGE_DebugLog("- vertex #%d has new index %d and is replaced by %d", idx, remap[idx].new_index, remap[idx].replaced_by);
+    }
+  }
+}
+
 #endif
 
 /*****************************************************************************
@@ -112,9 +133,9 @@ SAGE_Entity *SAGE_CreateEntity(UWORD nb_vertices, UWORD nb_faces)
   if (entity != NULL) {
     entity->nb_vertices = nb_vertices;
     entity->nb_faces = nb_faces;
-    entity->vertices = (SAGE_Vertex *)SAGE_AllocMem(sizeof(SAGE_Vertex)*nb_vertices);
-    entity->faces = (SAGE_Face *)SAGE_AllocMem(sizeof(SAGE_Face)*nb_faces);
-    entity->normals = (SAGE_Vector *)SAGE_AllocMem(sizeof(SAGE_Vector)*nb_faces);
+    entity->vertices = (SAGE_Vertex *)SAGE_AllocMem(sizeof(SAGE_Vertex) * nb_vertices);
+    entity->faces = (SAGE_Face *)SAGE_AllocMem(sizeof(SAGE_Face) * nb_faces);
+    entity->normals = (SAGE_Vector *)SAGE_AllocMem(sizeof(SAGE_Vector) * nb_faces);
     if (entity->vertices != NULL && entity->faces != NULL && entity->normals != NULL) {
       return entity;
     }
@@ -124,23 +145,126 @@ SAGE_Entity *SAGE_CreateEntity(UWORD nb_vertices, UWORD nb_faces)
 }
 
 /**
- * Initialize an entity (calc radius/normals and remap colors)
+ * Initialize an entity (calc radius/normals)
  */
 VOID SAGE_InitEntity(SAGE_Entity *entity)
 {
-  UWORD idx;
-  ULONG color;
-
   SD(SAGE_DebugLog("Init entity");)
   if (entity != NULL) {
-    for (idx = 0;idx < entity->nb_faces;idx++) {
-      color = entity->faces[idx].color;
-      entity->faces[idx].color = SAGE_RemapColor(color);
-    }
     SAGE_SetEntityRadius(entity);
     SAGE_SetEntityNormals(entity);
   }
   SD(SAGE_DumpEntity(entity, S3DE_DEBUG_EALL);)
+}
+
+/**
+ * Compute an array for remapping entity vertices
+ */
+UWORD SAGE_ComputeRemapVertex(SAGE_Entity *entity, SAGE_RemapVertex *remap)
+{
+  UWORD vertice_idx, search_idx, new_index, replaced_by;
+  SAGE_Vertex *vertices;
+  
+  SD(SAGE_DebugLog("- Compute remap vertices");)
+  remap[0].new_index = 0;
+  remap[0].replaced_by = 0;
+  new_index = 1;
+  vertices = entity->vertices;
+  for (vertice_idx = 1; vertice_idx < entity->nb_vertices;vertice_idx++) {
+    SAGE_DebugLog(" . vertex #%d x=%f  y=%f  z=%f", vertice_idx, vertices[vertice_idx].x, vertices[vertice_idx].y, vertices[vertice_idx].z);
+    replaced_by = vertice_idx;
+    for (search_idx = 0;search_idx < vertice_idx;search_idx++) {
+      SAGE_DebugLog("  => compare to #%d x=%f  y=%f  z=%f", search_idx, vertices[search_idx].x, vertices[search_idx].y, vertices[search_idx].z);
+      if (vertices[vertice_idx].x == vertices[search_idx].x && vertices[vertice_idx].y == vertices[search_idx].y && vertices[vertice_idx].z == vertices[search_idx].z) {
+        SAGE_DebugLog("  => vertex #%d will be replaced by #%d", vertice_idx, search_idx);
+        replaced_by = search_idx;
+        break;
+      }
+    }
+    remap[vertice_idx].new_index = new_index;
+    remap[vertice_idx].replaced_by = replaced_by;
+    if (replaced_by == vertice_idx) {
+      SAGE_DebugLog("  => vertex #%d will have new index #%d", vertice_idx, new_index);
+      new_index++;
+    }
+  }
+  return new_index;
+}
+
+VOID SAGE_RemapEntity(SAGE_Entity *entity, SAGE_RemapVertex *remap, UWORD new_nb_vertices)
+{
+  SAGE_Vertex *old_vertices, *new_vertices;
+  SAGE_Face *faces;
+  UWORD vertice_idx, remap_idx, face_idx, new_index, replaced_by;
+
+  SD(SAGE_DebugLog("- Remap entity");)
+  new_vertices = (SAGE_Vertex *)SAGE_AllocMem(sizeof(SAGE_Vertex) * new_nb_vertices);
+  if (new_vertices != NULL) {
+    SD(SAGE_DebugLog(" * Remap vertices");)
+    remap_idx = 0;
+    old_vertices = entity->vertices;
+    for (vertice_idx = 0; vertice_idx < entity->nb_vertices;vertice_idx++) {
+      SAGE_DebugLog(" . old vertex #%d x=%f  y=%f  z=%f", vertice_idx, old_vertices[vertice_idx].x, old_vertices[vertice_idx].y, old_vertices[vertice_idx].z);
+      if (remap[vertice_idx].replaced_by == vertice_idx) {
+        new_vertices[remap_idx].x = old_vertices[vertice_idx].x;
+        new_vertices[remap_idx].y = old_vertices[vertice_idx].y;
+        new_vertices[remap_idx].z = old_vertices[vertice_idx].z;
+        SAGE_DebugLog(" =>  new vertex #%d x=%f  y=%f  z=%f", remap_idx, new_vertices[remap_idx].x, new_vertices[remap_idx].y, new_vertices[remap_idx].z);
+        remap_idx++;
+      }
+    }
+    entity->nb_vertices = new_nb_vertices;
+    entity->vertices = new_vertices;
+    SAGE_FreeMem(old_vertices);
+    SD(SAGE_DebugLog(" * Remap faces");)
+    faces = entity->faces;
+    for (face_idx = 0;face_idx < entity->nb_faces;face_idx++) {
+      replaced_by = remap[faces[face_idx].p1].replaced_by;
+      new_index = remap[replaced_by].new_index;
+      faces[face_idx].p1 = new_index;
+      SAGE_DebugLog(" . face #%d P1 is remaped to index %d", face_idx, new_index);
+      replaced_by = remap[faces[face_idx].p2].replaced_by;
+      new_index = remap[replaced_by].new_index;
+      faces[face_idx].p2 = new_index;
+      SAGE_DebugLog(" . face #%d P2 is remaped to index %d", face_idx, new_index);
+      replaced_by = remap[faces[face_idx].p3].replaced_by;
+      new_index = remap[replaced_by].new_index;
+      faces[face_idx].p3 = new_index;
+      SAGE_DebugLog(" . face #%d P1 is remaped to index %d", face_idx, new_index);
+      if (faces[face_idx].is_quad) {
+        replaced_by = remap[faces[face_idx].p4].replaced_by;
+        new_index = remap[replaced_by].new_index;
+        faces[face_idx].p4 = new_index;
+        SAGE_DebugLog(" . face #%d P1 is remaped to index %d", face_idx, new_index);
+      }
+    }
+  }
+}
+
+/**
+ * Optimize an entity, remove duplicate vertices
+ */
+BOOL SAGE_OptimizeEntity(SAGE_Entity *entity)
+{
+  SAGE_RemapVertex *remap;
+  UWORD new_index;
+  
+  SD(SAGE_DebugLog("Optimize entity");)
+  if (entity != NULL) {
+    remap = (SAGE_RemapVertex *)SAGE_AllocMem(sizeof(SAGE_RemapVertex) * entity->nb_vertices);
+    if (remap != NULL) {
+      new_index = SAGE_ComputeRemapVertex(entity, remap);
+      SD(SAGE_DumpRemapVertex(remap, entity->nb_vertices);)
+      if (new_index != entity->nb_vertices) {
+        SAGE_RemapEntity(entity, remap, new_index);
+      }
+      SAGE_FreeMem(remap);
+    } else {
+      return FALSE;
+    }
+  }
+  SD(SAGE_DumpEntity(entity, S3DE_DEBUG_EALL);)
+  return TRUE;
 }
 
 /**

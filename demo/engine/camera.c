@@ -5,10 +5,8 @@
  * Demo of 3D engine, camera view
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 1.0 January 2022
+ * @version 25.1 March 2025 (updated: 20/03/2025)
  */
-
-/** WARNING !!! this feature has bugs, don't use it for the moment */
 
 #include <stdlib.h>
 #include <math.h>
@@ -165,7 +163,7 @@ VOID _Restore(VOID)
 
 VOID _Update(VOID)
 {
-  SAGE_Event * event = NULL;
+  SAGE_Event *event = NULL;
 
   SAGE_EngineDebug(FALSE);
   while ((event = SAGE_GetEvent()) != NULL) {

@@ -1,0 +1,30 @@
+#----------------------------------------------------------
+# SAGE 3D runner makefile
+# Fabrice Labrador <fabrice.labrador@gmail.com>
+# V1.0 August 2024
+#----------------------------------------------------------
+
+# Build options
+OPT=CPU=68060 IDIR=libinclude: MATH=68882 NOICONS CODE=far DATA=far
+LIB=//lib/sage.lib
+
+# Files
+EXE=runner
+
+# Build all demos
+all: $(EXE) clean
+  @echo "** Build complete **"
+
+runner: runner.c $(LIB)
+  sc LINK runner.c $(OPT) $(LIB)
+
+# Clean files
+cleanall: clean cleanexe
+  @echo "** Clean complete **"
+
+cleanexe :
+  -@delete $(EXE)
+
+clean:
+  -@delete \#?.o
+  -@delete \#?.lnk

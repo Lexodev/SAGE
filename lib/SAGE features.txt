@@ -10,7 +10,7 @@
 - Integrated configuration file manager
 - Timer functions with microseconds precision
 - Thread support (wait, break, kill)
-- Support all RTG screen format with double or triple buffer
+- Support all RTG screen format with triple buffer
 - Support direct access to screen buffer
 - Support font and text rendering
 - Support mouse tracking and system events

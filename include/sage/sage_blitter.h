@@ -5,7 +5,7 @@
  * Blitting functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #ifndef _SAGE_BLITTER_H_
@@ -181,12 +181,10 @@ extern BOOL ASM SAGE_AMMXBlitCookieCut16Bits(
   REG(d0, UWORD lines),
   REG(d1, UWORD pixels),
   REG(d2, ULONG src_offset),
-  REG(d3, ULONG dst_offset),
-  REG(d4, ULONG color)
+  REG(d3, ULONG dst_offset)
 );
 
 /** External function for 16 bits bitmap transparent zoom copy using AMMX cookie cut instruction */
-/** WIP, DO NOT USE YET !!! */
 extern BOOL ASM SAGE_AMMXBlitCookieCutZoom16Bits(
   REG(a0, ULONG source),
   REG(d0, UWORD src_width),
@@ -195,8 +193,7 @@ extern BOOL ASM SAGE_AMMXBlitCookieCutZoom16Bits(
   REG(a1, ULONG destination),
   REG(d3, ULONG dst_width),
   REG(d4, ULONG dst_height),
-  REG(d5, ULONG dst_offset),
-  REG(d6, ULONG color)
+  REG(d5, ULONG dst_offset)
 );
 
 /** External function for 24 bits bitmap fill */
@@ -236,6 +233,39 @@ extern BOOL ASM SAGE_BlitTransparentCopy32Bits(
   REG(d2, ULONG src_offset),
   REG(d3, ULONG dst_offset),
   REG(d4, ULONG color)
+);
+
+/** External function for 32 bits bitmap transparent copy using AMMX */
+extern BOOL ASM SAGE_AMMXBlitTranspCopy32Bits(
+  REG(a0, ULONG source),
+  REG(a1, ULONG destination),
+  REG(d0, UWORD lines),
+  REG(d1, UWORD pixels),
+  REG(d2, ULONG src_offset),
+  REG(d3, ULONG dst_offset),
+  REG(d4, ULONG color)
+);
+
+/** External function for 32 bits bitmap transparent copy using AMMX cookie cut instruction */
+extern BOOL ASM SAGE_AMMXBlitCookieCut32Bits(
+  REG(a0, ULONG source),
+  REG(a1, ULONG destination),
+  REG(d0, UWORD lines),
+  REG(d1, UWORD pixels),
+  REG(d2, ULONG src_offset),
+  REG(d3, ULONG dst_offset)
+);
+
+/** External function for 32 bits bitmap transparent zoom copy using AMMX cookie cut instruction */
+extern BOOL ASM SAGE_AMMXBlitCookieCutZoom32Bits(
+  REG(a0, ULONG source),
+  REG(d0, UWORD src_width),
+  REG(d1, UWORD src_height),
+  REG(d2, ULONG src_offset),
+  REG(a1, ULONG destination),
+  REG(d3, ULONG dst_width),
+  REG(d4, ULONG dst_height),
+  REG(d5, ULONG dst_offset)
 );
 
 #endif

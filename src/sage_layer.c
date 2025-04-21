@@ -5,7 +5,7 @@
  * Layer management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage_debug.h>
@@ -134,6 +134,43 @@ BOOL SAGE_ReleaseLayer(UWORD index)
 }
 
 /**
+ * Clear a layer
+ * 
+ * @param index Layer index
+ * 
+ * @return Operation success
+ */
+BOOL SAGE_ClearLayer(UWORD index)
+{
+  SAGE_Layer *layer;
+
+  layer = SAGE_GetLayer(index);
+  SAFE(if (layer == NULL) {
+    return FALSE;
+  })
+  return SAGE_ClearBitmap(layer->bitmap, 0, 0, layer->bitmap->width, layer->bitmap->height);
+}
+
+/**
+ * Fill a layer with a color
+ * 
+ * @param index Layer index
+ * @param color Fill color in ARGB/CLUT format
+ * 
+ * @return Operation success
+ */
+BOOL SAGE_FillLayer(UWORD index, ULONG color)
+{
+  SAGE_Layer *layer;
+
+  layer = SAGE_GetLayer(index);
+  SAFE(if (layer == NULL) {
+    return FALSE;
+  })
+  return SAGE_FillBitmap(layer->bitmap, 0, 0, layer->bitmap->width, layer->bitmap->height, SAGE_RemapColor(color)); 
+}
+
+/**
  * Set a SAGE Layer view
  * 
  * @param index  Layer index
@@ -231,7 +268,7 @@ BOOL SAGE_SetLayerTransparency(UWORD index, ULONG color)
   if (layer == NULL) {
     return FALSE;
   }
-  return SAGE_SetBitmapTransparency(layer->bitmap, color);
+  return SAGE_SetBitmapTransparency(layer->bitmap, SAGE_RemapColor(color));
 }
 
 /**

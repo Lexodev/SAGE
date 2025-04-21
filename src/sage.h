@@ -4,7 +4,7 @@
  * SAGE (Simple Amiga Game Engine) project
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 26/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #ifndef _SAGE_H_
@@ -43,8 +43,8 @@
 #define SMOD_AUDIO            2L        // Need AHI lib
 #define SMOD_INPUT            4L        // Need lowlevel lib
 #define SMOD_INTERRUPTION     8L        // Also need lowlevel lib
-#define SMOD_3D               16L       // Need Warp3D lib (not yet available)
-#define SMOD_NETWORK          32L       // Need ixemul lib
+#define SMOD_NETWORK          16L       // Need ixemul lib
+#define SMOD_3D               32L       // Need Warp3D/Maggie3D lib
 #define SMOD_ALL              255L
 
 /** Initialize SAGE library */

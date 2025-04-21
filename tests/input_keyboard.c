@@ -5,7 +5,7 @@
  * SAGE_AppliLog input keyboard
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage.h>
@@ -26,13 +26,12 @@ void main(void)
     { SKEY_FR_SPACE, FALSE },
     { SKEY_FR_SHIFT, FALSE }
   };
-  BOOL finish;
+  BOOL finish = FALSE;
 
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   SAGE_AppliLog("* SAGE library INPUT SAGE_AppliLog (KEYBOARD) / %s", SAGE_GetVersion());
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   if (SAGE_Init(SMOD_INPUT)) {
-    finish = FALSE;
     while (!finish) {
       if (SAGE_ScanKeyboard(keys, NB_KEYS)) {
         if (keys[0].key_pressed) {

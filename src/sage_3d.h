@@ -5,7 +5,7 @@
  * 3D module management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 26/06/2024)
+ * @version 25.1 February 2025 (updated: 26/02/2025)
  */
 
 #ifndef _SAGE_3D_H_
@@ -56,6 +56,9 @@ BOOL SAGE_Free3DDevice(VOID);
 
 /** Define the render system */
 BOOL SAGE_Set3DRenderSystem(UWORD);
+
+/** Return the current 3D render system */
+UWORD SAGE_Get3DRenderSystem(VOID);
 
 /** Get current Warp3D context */
 W3D_Context *SAGE_GetW3DContext(VOID);

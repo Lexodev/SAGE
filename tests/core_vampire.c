@@ -5,7 +5,7 @@
  * Test Vampire presence
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #include <sage/sage.h>
@@ -18,13 +18,13 @@ void main(void)
   if (SAGE_Init(SMOD_NONE)) {
     if (SAGE_ApolloCore()) {
       SAGE_AppliLog("You have a 68080 inside !");
-      if (SAGE_VampireV4()) {
-        SAGE_AppliLog(" and it's a V4 model !");
-      } else {
-        SAGE_AppliLog(" and it's a V2 model !");
-      }
     } else {
       SAGE_AppliLog("You don't have a 68080.");
+    }
+    if (SAGE_VampireV4()) {
+      SAGE_AppliLog(" and it's a V4 model !");
+    } else {
+      SAGE_AppliLog(" and it's a V2 model !");
     }
   }
   SAGE_Exit();

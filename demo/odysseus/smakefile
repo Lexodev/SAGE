@@ -1,0 +1,30 @@
+#----------------------------------------------------------
+# SAGE 3D odysseus makefile
+# Fabrice Labrador <fabrice.labrador@gmail.com>
+# V1.0 August 2024
+#----------------------------------------------------------
+
+# Build options
+OPT=CPU=68060 IDIR=libinclude: MATH=68882 NOICONS CODE=far DATA=far
+LIB=//lib/sage.lib
+
+# Files
+EXE=odysseus
+
+# Build all demos
+all: $(EXE) clean
+  @echo "** Build complete **"
+
+odysseus: odysseus.c $(LIB)
+  sc LINK odysseus.c $(OPT) $(LIB)
+
+# Clean files
+cleanall: clean cleanexe
+  @echo "** Clean complete **"
+
+cleanexe :
+  -@delete $(EXE)
+
+clean:
+  -@delete \#?.o
+  -@delete \#?.lnk

@@ -5,7 +5,7 @@
  * 3D terrain management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 26/06/2024)
+ * @version 25.1 February 2025 (updated: 28/02/2025)
  */
 
 #ifndef _SAGE_3DTERRAIN_H_
@@ -36,7 +36,7 @@ typedef struct {
 
 typedef struct {
   UBYTE *heightmap;
-  ULONG color_map[SPIC_MAXCOLORS], remapped_cmap[SPIC_MAXCOLORS];
+  ULONG colors[SPIC_MAXCOLORS];
   UWORD size, nb_vertices, nb_zones;
   FLOAT cell_size, height_zoom;
   SAGE_Vertex *vertices;

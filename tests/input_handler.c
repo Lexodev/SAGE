@@ -5,14 +5,14 @@
  * Test input handler
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage.h>
 
 #define NB_KEYS     10
 
-BOOL finish = TRUE;
+BOOL finish = FALSE;
 WORD x_pos = 0, y_pos = 0;
 
 void key_esc(BOOL pressed)
@@ -104,7 +104,6 @@ void main(void)
     what_joyport(SINP_JOYPORT3);
     what_joyport(SINP_JOYPORT4);
     SAGE_AddJoyportHandler(SINP_JOYPORT2, joy_1);
-    finish = FALSE;
     SAGE_AppliLog("Start the main loop with x=%d and y=%d", x_pos, y_pos);
     while (!finish) {
       SAGE_HandleInputEvents();

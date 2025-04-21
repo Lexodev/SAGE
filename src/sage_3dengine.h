@@ -5,7 +5,7 @@
  * 3D engine functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 26/06/2024)
+ * @version 25.1 February 2025 (updated: 28/02/2025)
  */
 
 #ifndef _SAGE_3DENGINE_H_
@@ -49,7 +49,7 @@
 #define S3DE_LOD_L3           400.0                 // Distance of level 3 reduction
 
 #if _SAGE_DEBUG_MODE_ == 1
-#define SED(x)     if (engine_debug) { x }
+#define SED(x) if (engine_debug) { x }
 #else
 #define SED(x)
 #endif
@@ -92,7 +92,7 @@ VOID SAGE_RenderWorld(VOID);
 /** Get the engine metrics */
 SAGE_EngineMetrics *SAGE_GetEngineMetrics(VOID);
 
-/** Enable/Disable debug */
+/** Enable/Disable engin debug */
 VOID SAGE_EngineDebug(BOOL);
 
 #endif

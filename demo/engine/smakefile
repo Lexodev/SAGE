@@ -1,0 +1,39 @@
+#----------------------------------------------------------
+# SAGE 3D engine makefile
+# Fabrice Labrador <fabrice.labrador@gmail.com>
+# V1.0 August 2024
+#----------------------------------------------------------
+
+# Build options
+OPT=CPU=68060 IDIR=libinclude: MATH=68882 NOICONS CODE=far DATA=far
+LIB=//lib/sage.lib
+
+# Files
+EXE=camera entity skybox terrain
+
+# Build all demos
+all: $(EXE) clean
+  @echo "** Build complete **"
+
+camera: camera.c $(LIB)
+  sc LINK camera.c $(OPT) $(LIB)
+
+entity: entity.c $(LIB)
+  sc LINK entity.c $(OPT) $(LIB)
+
+skybox: skybox.c $(LIB)
+  sc LINK skybox.c $(OPT) $(LIB)
+
+terrain: terrain.c $(LIB)
+  sc LINK terrain.c $(OPT) $(LIB)
+
+# Clean files
+cleanall: clean cleanexe
+  @echo "** Clean complete **"
+
+cleanexe :
+  -@delete $(EXE)
+
+clean:
+  -@delete \#?.o
+  -@delete \#?.lnk

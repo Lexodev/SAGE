@@ -5,7 +5,7 @@
  * Bitmap management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #include <exec/exec.h>
@@ -23,6 +23,113 @@
 
 /** SAGE context */
 extern SAGE_Context SageContext;
+
+/********************************** DEBUG ONLY ********************************/
+
+/**
+ * Display the bitmap pixel format
+ *
+ * @var format Pixel format
+ */
+VOID SAGE_DumpPixelFormat(ULONG format)
+{
+  switch (format) {
+    case PIXFMT_CLUT:
+      SAGE_DebugLog(" Pixel format is LUT8 (%d)", format);
+      break;
+    case PIXFMT_RGB15:
+      SAGE_DebugLog(" Pixel format is RGB15 (%d)", format);
+      break;
+    case PIXFMT_RGB15PC:
+      SAGE_DebugLog(" Pixel format is RGB15PC (%d)", format);
+      break;
+    case PIXFMT_BGR15PC:
+      SAGE_DebugLog(" Pixel format is BGR15PC (%d)", format);
+      break;
+    case PIXFMT_RGB16:
+      SAGE_DebugLog(" Pixel format is RGB16 (%d)", format);
+      break;
+    case PIXFMT_RGB16PC:
+      SAGE_DebugLog(" Pixel format is RGB16PC (%d)", format);
+      break;
+    case PIXFMT_BGR16PC:
+      SAGE_DebugLog(" Pixel format is BGR16PC (%d)", format);
+      break;
+    case PIXFMT_RGB24:
+      SAGE_DebugLog(" Pixel format is RGB24 (%d)", format);
+      break;
+    case PIXFMT_BGR24:
+      SAGE_DebugLog(" Pixel format is BGR24 (%d)", format);
+      break;
+    case PIXFMT_ARGB32:
+      SAGE_DebugLog(" Pixel format is ARGB32 (%d)", format);
+      break;
+    case PIXFMT_ABGR32:
+      SAGE_DebugLog(" Pixel format is ABGR32 (%d)", format);
+      break;
+   case PIXFMT_RGBA32:
+      SAGE_DebugLog(" Pixel format is RGBA32 (%d)", format);
+      break;
+    case PIXFMT_BGRA32:
+      SAGE_DebugLog(" Pixel format is BGRA32 (%d)", format);
+      break;
+    case PIXFMT_DXT1:
+      SAGE_DebugLog(" Pixel format is DXT1 (%d)", format);
+      break;
+    default:
+      SAGE_DebugLog(" Pixel format %d is undefined", format);
+  }
+}
+
+/**
+ * Dump a system bitmap structure
+ *
+ * @var bitmap Bitmap pointer
+ */
+VOID SAGE_DumpSystemBitmap(struct BitMap *bitmap)
+{
+  SAGE_DebugLog("Dumping BitMap at 0x%X", bitmap);
+  SAGE_DebugLog(" BytesPerRow           %d", bitmap->BytesPerRow);
+  SAGE_DebugLog(" Rows                  %d", bitmap->Rows);
+  SAGE_DebugLog(" Depth                 %d", bitmap->Depth);
+  SAGE_DebugLog(
+      " Planes  0x%X 0x%X 0x%X 0x%X 0x%X 0x%X 0x%X 0x%X",
+      bitmap->Planes[0], bitmap->Planes[1], bitmap->Planes[2], bitmap->Planes[3],
+      bitmap->Planes[4], bitmap->Planes[5], bitmap->Planes[6], bitmap->Planes[7]
+  );
+  if (GetCyberMapAttr(bitmap, CYBRMATTR_ISCYBERGFX)) {
+    SAGE_DebugLog(" This is a CGX BitMap");
+    SAGE_DebugLog(" Width                 %d", GetCyberMapAttr(bitmap, CYBRMATTR_WIDTH));
+    SAGE_DebugLog(" Height                %d", GetCyberMapAttr(bitmap, CYBRMATTR_HEIGHT));
+    SAGE_DebugLog(" Depth                 %d", GetCyberMapAttr(bitmap, CYBRMATTR_DEPTH));
+    SAGE_DebugLog(" Bytes per row         %d", GetCyberMapAttr(bitmap, CYBRMATTR_XMOD));
+    SAGE_DebugLog(" Bytes per pixel       %d", GetCyberMapAttr(bitmap, CYBRMATTR_BPPIX));
+    SAGE_DumpPixelFormat(GetCyberMapAttr(bitmap, CYBRMATTR_PIXFMT));
+    SAGE_GetBitmapAddress(bitmap);
+  } else {
+    SAGE_DebugLog(" This is not a CGX BitMap !");
+  }
+}
+
+/**
+ * Dump a SAGE bitmap structure
+ *
+ * @var bitmap SAGE bitmap pointer
+ */
+VOID SAGE_DumpBitmap(SAGE_Bitmap *bitmap)
+{
+  SAGE_DebugLog("Dumping SAGE BitMap at 0x%X", bitmap);
+  SAGE_DebugLog(" Properties            %d", bitmap->properties);
+  SAGE_DebugLog(" Width                 %d", bitmap->width);
+  SAGE_DebugLog(" Height                %d", bitmap->height);
+  SAGE_DebugLog(" Depth                 %d", bitmap->depth);
+  SAGE_DebugLog(" Bytes per row         %d", bitmap->bpr);
+  SAGE_DebugLog(" Transparency          0x%08X", bitmap->transparency);
+  SAGE_DebugLog(" Pixel format          %s (%d)", SAGE_GetPixelFormatName(bitmap->pixformat), bitmap->pixformat);
+  SAGE_DebugLog(" Buffer                0x%X", bitmap->bitmap_buffer);
+}
+
+/********************************** DEBUG ONLY ********************************/
 
 /**
  * Return the full name of pixel format
@@ -212,6 +319,7 @@ SAGE_Bitmap *SAGE_AllocBitmap(ULONG width, ULONG height, ULONG depth, ULONG bpr,
     if (pixformat == PIXFMT_DXT1) {
       bitmap->properties |= SBMP_COMPRESSED;
     }
+    SD(SAGE_DebugLog("Allocating Bitmap %dx%dx%d (%d bpr)", bitmap->width, bitmap->height, bitmap->depth, bitmap->bpr);)
     bitmap->bitmap_buffer = NULL;
     bitmap->first_buffer = NULL;
     bitmap->second_buffer = NULL;
@@ -269,14 +377,14 @@ VOID SAGE_ReleaseBitmap(SAGE_Bitmap *bitmap)
 }
 
 /**
- * Remap the transparency color into bitmap pixel format
+ * Remap an ARGB/CLUT color into pixel format
  *
- * @param color     Transparency color in ARGB format or CLUT
- * @param pixformat The bitmap pixel format
+ * @param color     Color in ARGB or CLUT format
+ * @param pixformat The pixel format
  *
  * @return Remapped color
  */
-ULONG SAGE_RemapTransparencyColor(ULONG color, ULONG pixformat)
+ULONG SAGE_RemapColorToPixFormat(ULONG color, ULONG pixformat)
 {
   ULONG alpha, red, green, blue;
 
@@ -306,7 +414,7 @@ ULONG SAGE_RemapTransparencyColor(ULONG color, ULONG pixformat)
  * Define the bitmap transparency color
  *
  * @param bitmap SAGE bitmap pointer
- * @param color  Transparent color in ARGB format
+ * @param color  Transparent color
  *
  * @return Operation success
  */
@@ -317,15 +425,17 @@ BOOL SAGE_SetBitmapTransparency(SAGE_Bitmap *bitmap, ULONG color)
     return FALSE;
   })
   bitmap->properties |= SBMP_TRANSPARENT;
-  bitmap->transparency = SAGE_RemapTransparencyColor(color, bitmap->pixformat);
+  bitmap->transparency = color;
   if (bitmap->depth == SBMP_DEPTH8 && bitmap->transparency == 0x00) {
     bitmap->properties |= SBMP_FASTCOPY;        // Activate fast 8bits cookie cut AMMX operation
     SD(SAGE_DebugLog("Activate fast 8bits cookie cut AMMX operation");)
   } else if (bitmap->depth == SBMP_DEPTH16 && bitmap->transparency == 0xF81FF81F) {
     bitmap->properties |= SBMP_FASTCOPY;        // Activate fast 16bits cookie cut AMMX operation
     SD(SAGE_DebugLog("Activate fast 16bits cookie cut AMMX operation");)
+  } else if (bitmap->depth == SBMP_DEPTH32 && !(bitmap->transparency & 0x80000000)) {
+    bitmap->properties |= SBMP_FASTCOPY;        // Activate fast 32bits cookie cut AMMX operation
+    SD(SAGE_DebugLog("Activate fast 32bits cookie cut AMMX operation");)
   }
-  SD(SAGE_DumpBitmap(bitmap);)
   return TRUE;
 }
 
@@ -335,7 +445,7 @@ BOOL SAGE_SetBitmapTransparency(SAGE_Bitmap *bitmap, ULONG color)
  * @param bitmap SAGE bitmap pointer
  * @param left   Area left in pixel
  * @param top    Area top in pixel
- * @param width  Area width in pixel
+ * @param width  Area width in pixel (should be a multiple of 8)
  * @param height Area height in pixel
  * @param color  Filling color
  */
@@ -344,6 +454,7 @@ VOID SAGE_Fill8BitsBitmap(SAGE_Bitmap *bitmap, ULONG left, ULONG top, ULONG widt
   UBYTE *buffer;
   ULONG offset;
 
+  width &= 0xfffffff8;     // Be sure that width is a multiple of 8
   buffer = (UBYTE *)bitmap->bitmap_buffer;
   buffer += (left + (bitmap->width * top));
   offset = bitmap->width - width;
@@ -362,7 +473,7 @@ VOID SAGE_Fill8BitsBitmap(SAGE_Bitmap *bitmap, ULONG left, ULONG top, ULONG widt
  * @param bitmap SAGE bitmap pointer
  * @param left   Area left in pixel
  * @param top    Area top in pixel
- * @param width  Area width in pixel
+ * @param width  Area width in pixel (should be a multiple of 4)
  * @param height Area height in pixel
  * @param color  Filling color
  */
@@ -371,6 +482,7 @@ VOID SAGE_Fill16BitsBitmap(SAGE_Bitmap *bitmap, ULONG left, ULONG top, ULONG wid
   UWORD *buffer;
   ULONG offset;
 
+  width &= 0xfffffffc;     // Be sure that width is a multiple of 4
   buffer = (UWORD *)bitmap->bitmap_buffer;
   buffer += (left + (bitmap->width * top));
   offset = (bitmap->width - width) * 2;
@@ -389,7 +501,7 @@ VOID SAGE_Fill16BitsBitmap(SAGE_Bitmap *bitmap, ULONG left, ULONG top, ULONG wid
  * @param bitmap SAGE bitmap pointer
  * @param left   Area left in pixel
  * @param top    Area top in pixel
- * @param width  Area width in pixel
+ * @param width  Area width in pixel (should be a multiple of 2)
  * @param height Area height in pixel
  * @param color  Filling color
  */
@@ -397,6 +509,7 @@ VOID SAGE_Fill24BitsBitmap(SAGE_Bitmap *bitmap, ULONG left, ULONG top, ULONG wid
 {
   UBYTE *buffer, offset;
 
+  width &= 0xfffffffe;     // Be sure that width is a multiple of 2
   buffer = (UBYTE *)bitmap->bitmap_buffer;
   buffer += ((left * 3) + ((bitmap->width * 3) * top));
   offset = (bitmap->width - width) * 3;
@@ -415,7 +528,7 @@ VOID SAGE_Fill24BitsBitmap(SAGE_Bitmap *bitmap, ULONG left, ULONG top, ULONG wid
  * @param bitmap SAGE bitmap pointer
  * @param left   Area left in pixel
  * @param top    Area top in pixel
- * @param width  Area width in pixel
+ * @param width  Area width in pixel (should be a multiple of 2)
  * @param height Area height in pixel
  * @param color  Filling color
  */
@@ -423,9 +536,10 @@ VOID SAGE_Fill32BitsBitmap(SAGE_Bitmap *bitmap, ULONG left, ULONG top, ULONG wid
 {
   ULONG *buffer, offset;
 
+  width &= 0xfffffffe;     // Be sure that width is a multiple of 2
   buffer = (ULONG *)bitmap->bitmap_buffer;
   buffer += (left + (bitmap->width * top));
-  offset = bitmap->width - width;
+  offset = (bitmap->width - width) * 4;
   SAGE_BlitFill32Bits(
     (ULONG)buffer,
     (UWORD)height,
@@ -595,16 +709,17 @@ VOID SAGE_Blit16BitsBitmap(SAGE_Bitmap *source, ULONG left, ULONG top, ULONG wid
   if (source->properties & SBMP_TRANSPARENT) {
     if (SageContext.AmmxReady) {
       if (source->properties & SBMP_FASTCOPY) {
+        SD(SAGE_TraceLog("SAGE_AMMXBlitCookieCut16Bits");)
         SAGE_AMMXBlitCookieCut16Bits(
           (ULONG)src_buffer,
           (ULONG)dst_buffer,
           (UWORD)height,
           (UWORD)width,
           (ULONG)src_offset,
-          (ULONG)dst_offset,
-          (ULONG)source->transparency
+          (ULONG)dst_offset
         );
       } else {
+        SD(SAGE_TraceLog("SAGE_AMMXBlitTranspCopy16Bits");)
         SAGE_AMMXBlitTranspCopy16Bits(
           (ULONG)src_buffer,
           (ULONG)dst_buffer,
@@ -616,6 +731,7 @@ VOID SAGE_Blit16BitsBitmap(SAGE_Bitmap *source, ULONG left, ULONG top, ULONG wid
         );
       }
     } else {
+      SD(SAGE_TraceLog("SAGE_BlitTransparentCopy16Bits");)
       SAGE_BlitTransparentCopy16Bits(
         (ULONG)src_buffer,
         (ULONG)dst_buffer,
@@ -627,6 +743,7 @@ VOID SAGE_Blit16BitsBitmap(SAGE_Bitmap *source, ULONG left, ULONG top, ULONG wid
       );
     }
   } else {
+    SD(SAGE_TraceLog("SAGE_BlitCopy16Bits");)
     SAGE_BlitCopy16Bits(
       (ULONG)src_buffer,
       (ULONG)dst_buffer,
@@ -713,21 +830,48 @@ VOID SAGE_Blit32BitsBitmap(SAGE_Bitmap *source, ULONG left, ULONG top, ULONG wid
 
   src_buffer = (ULONG *)source->bitmap_buffer;
   src_buffer += (left + (source->width * top));
-  src_offset = source->width - width;
+  src_offset = (source->width - width) * 4;
   dst_buffer = (ULONG *)destination->bitmap_buffer;
   dst_buffer += (x_start + (destination->width * y_start));
   dst_offset = (destination->width - width) * 4;
   if (source->properties & SBMP_TRANSPARENT) {
-    SAGE_BlitTransparentCopy32Bits(
-      (ULONG)src_buffer,
-      (ULONG)dst_buffer,
-      (UWORD)height,
-      (UWORD)width,
-      (ULONG)src_offset,
-      (ULONG)dst_offset,
-      (ULONG)source->transparency
-    );
+    if (SageContext.AmmxReady) {
+      if (source->properties & SBMP_FASTCOPY) {
+        SD(SAGE_TraceLog("SAGE_AMMXBlitCookieCut32Bits");)
+        SAGE_AMMXBlitCookieCut32Bits(
+          (ULONG)src_buffer,
+          (ULONG)dst_buffer,
+          (UWORD)height,
+          (UWORD)width,
+          (ULONG)src_offset,
+          (ULONG)dst_offset
+        );
+      } else {
+        SD(SAGE_TraceLog("SAGE_AMMXBlitTranspCopy32Bits");)
+        SAGE_AMMXBlitTranspCopy32Bits(
+          (ULONG)src_buffer,
+          (ULONG)dst_buffer,
+          (UWORD)height,
+          (UWORD)width,
+          (ULONG)src_offset,
+          (ULONG)dst_offset,
+          (ULONG)source->transparency
+        );
+      }
+    } else {
+      SD(SAGE_TraceLog("SAGE_BlitTransparentCopy32Bits");)
+      SAGE_BlitTransparentCopy32Bits(
+        (ULONG)src_buffer,
+        (ULONG)dst_buffer,
+        (UWORD)height,
+        (UWORD)width,
+        (ULONG)src_offset,
+        (ULONG)dst_offset,
+        (ULONG)source->transparency
+      );
+    }
   } else {
+    SD(SAGE_TraceLog("SAGE_BlitCopy32Bits");)
     SAGE_BlitCopy32Bits(
       (ULONG)src_buffer,
       (ULONG)dst_buffer,
@@ -858,18 +1002,34 @@ VOID SAGE_Blit16BitsZoomedBitmap(SAGE_Bitmap *source, ULONG left, ULONG top, ULO
   dst_buffer += (x_start + (destination->width * y_start));
   dst_offset = (destination->width - z_width) * 2;
   if (source->properties & SBMP_TRANSPARENT) {
-    SAGE_BlitTranspZoomCopy16Bits(
-      (ULONG)src_buffer,
-      (ULONG)width,
-      (ULONG)height,
-      (ULONG)src_offset,
-      (ULONG)dst_buffer,
-      (ULONG)z_width,
-      (ULONG)z_height,
-      (ULONG)dst_offset,
-      (ULONG)source->transparency
-    );
+    if (SageContext.AmmxReady && source->properties & SBMP_FASTCOPY) {
+      SD(SAGE_TraceLog("SAGE_AMMXBlitCookieCutZoom16Bits");)
+      SAGE_AMMXBlitCookieCutZoom16Bits(
+        (ULONG)src_buffer,
+        (ULONG)width,
+        (ULONG)height,
+        (ULONG)src_offset,
+        (ULONG)dst_buffer,
+        (ULONG)z_width,
+        (ULONG)z_height,
+        (ULONG)dst_offset
+      );
+    } else {
+      SD(SAGE_TraceLog("SAGE_BlitTranspZoomCopy16Bits");)
+      SAGE_BlitTranspZoomCopy16Bits(
+        (ULONG)src_buffer,
+        (ULONG)width,
+        (ULONG)height,
+        (ULONG)src_offset,
+        (ULONG)dst_buffer,
+        (ULONG)z_width,
+        (ULONG)z_height,
+        (ULONG)dst_offset,
+        (ULONG)source->transparency
+      );
+    }
   } else {
+    SD(SAGE_TraceLog("SAGE_BlitZoomCopy16Bits");)
     SAGE_BlitZoomCopy16Bits(
       (ULONG)src_buffer,
       (ULONG)width,
@@ -884,7 +1044,7 @@ VOID SAGE_Blit16BitsZoomedBitmap(SAGE_Bitmap *source, ULONG left, ULONG top, ULO
 }
 
 /**
- * Copy a part of a bitmap into another bitmap wihout clipping
+ * Copy a part of a bitmap into another bitmap with zoom
  * Bitmaps should have the same pixel format
  * 
  * @param source      SAGE bitmap pointer
@@ -1428,110 +1588,3 @@ BOOL SAGE_RemapBitmap(SAGE_Bitmap *bitmap, ULONG *palette, ULONG pixformat)
   }
   return TRUE;
 }
-
-/********************************** DEBUG ONLY ********************************/
-
-/**
- * Display the bitmap pixel format
- *
- * @var format Pixel format
- */
-VOID SAGE_DumpPixelFormat(ULONG format)
-{
-  switch (format) {
-    case PIXFMT_CLUT:
-      SAGE_DebugLog(" Pixel format is LUT8 (%d)", format);
-      break;
-    case PIXFMT_RGB15:
-      SAGE_DebugLog(" Pixel format is RGB15 (%d)", format);
-      break;
-    case PIXFMT_RGB15PC:
-      SAGE_DebugLog(" Pixel format is RGB15PC (%d)", format);
-      break;
-    case PIXFMT_BGR15PC:
-      SAGE_DebugLog(" Pixel format is BGR15PC (%d)", format);
-      break;
-    case PIXFMT_RGB16:
-      SAGE_DebugLog(" Pixel format is RGB16 (%d)", format);
-      break;
-    case PIXFMT_RGB16PC:
-      SAGE_DebugLog(" Pixel format is RGB16PC (%d)", format);
-      break;
-    case PIXFMT_BGR16PC:
-      SAGE_DebugLog(" Pixel format is BGR16PC (%d)", format);
-      break;
-    case PIXFMT_RGB24:
-      SAGE_DebugLog(" Pixel format is RGB24 (%d)", format);
-      break;
-    case PIXFMT_BGR24:
-      SAGE_DebugLog(" Pixel format is BGR24 (%d)", format);
-      break;
-    case PIXFMT_ARGB32:
-      SAGE_DebugLog(" Pixel format is ARGB32 (%d)", format);
-      break;
-    case PIXFMT_ABGR32:
-      SAGE_DebugLog(" Pixel format is ABGR32 (%d)", format);
-      break;
-   case PIXFMT_RGBA32:
-      SAGE_DebugLog(" Pixel format is RGBA32 (%d)", format);
-      break;
-    case PIXFMT_BGRA32:
-      SAGE_DebugLog(" Pixel format is BGRA32 (%d)", format);
-      break;
-    case PIXFMT_DXT1:
-      SAGE_DebugLog(" Pixel format is DXT1 (%d)", format);
-      break;
-    default:
-      SAGE_DebugLog(" Pixel format %d is undefined", format);
-  }
-}
-
-/**
- * Dump a system bitmap structure
- *
- * @var bitmap Bitmap pointer
- */
-VOID SAGE_DumpSystemBitmap(struct BitMap *bitmap)
-{
-  SAGE_DebugLog("Dumping BitMap at 0x%X", bitmap);
-  SAGE_DebugLog(" BytesPerRow           %d", bitmap->BytesPerRow);
-  SAGE_DebugLog(" Rows                  %d", bitmap->Rows);
-  SAGE_DebugLog(" Depth                 %d", bitmap->Depth);
-  SAGE_DebugLog(
-      " Planes  0x%X 0x%X 0x%X 0x%X 0x%X 0x%X 0x%X 0x%X",
-      bitmap->Planes[0], bitmap->Planes[1], bitmap->Planes[2], bitmap->Planes[3],
-      bitmap->Planes[4], bitmap->Planes[5], bitmap->Planes[6], bitmap->Planes[7]
-  );
-  if (GetCyberMapAttr(bitmap, CYBRMATTR_ISCYBERGFX)) {
-    SAGE_DebugLog(" This is a CGX BitMap");
-    SAGE_DebugLog(" Width                 %d", GetCyberMapAttr(bitmap, CYBRMATTR_WIDTH));
-    SAGE_DebugLog(" Height                %d", GetCyberMapAttr(bitmap, CYBRMATTR_HEIGHT));
-    SAGE_DebugLog(" Depth                 %d", GetCyberMapAttr(bitmap, CYBRMATTR_DEPTH));
-    SAGE_DebugLog(" Bytes per row         %d", GetCyberMapAttr(bitmap, CYBRMATTR_XMOD));
-    SAGE_DebugLog(" Bytes per pixel       %d", GetCyberMapAttr(bitmap, CYBRMATTR_BPPIX));
-    SAGE_DumpPixelFormat(GetCyberMapAttr(bitmap, CYBRMATTR_PIXFMT));
-    SAGE_GetBitmapAddress(bitmap);
-  } else {
-    SAGE_DebugLog(" This is not a CGX BitMap !");
-  }
-}
-
-/**
- * Dump a SAGE bitmap structure
- *
- * @var bitmap SAGE bitmap pointer
- */
-VOID SAGE_DumpBitmap(SAGE_Bitmap *bitmap)
-{
-  SAGE_DebugLog("Dumping SAGE BitMap at 0x%X", bitmap);
-  SAGE_DebugLog(" Properties            %d", bitmap->properties);
-  SAGE_DebugLog(" Width                 %d", bitmap->width);
-  SAGE_DebugLog(" Height                %d", bitmap->height);
-  SAGE_DebugLog(" Depth                 %d", bitmap->depth);
-  SAGE_DebugLog(" Bytes per row         %d", bitmap->bpr);
-  SAGE_DebugLog(" Transparency          0x%08X", bitmap->transparency);
-  SAGE_DebugLog(" Pixel format          %s (%d)", SAGE_GetPixelFormatName(bitmap->pixformat), bitmap->pixformat);
-  SAGE_DebugLog(" Buffer                0x%X", bitmap->bitmap_buffer);
-}
-
-/********************************** DEBUG ONLY ********************************/

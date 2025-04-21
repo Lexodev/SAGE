@@ -5,19 +5,19 @@
  * Test event polling
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <sage/sage.h>
 
 #define SCREEN_WIDTH          640L
 #define SCREEN_HEIGHT         480L
-#define SCREEN_DEPTH          16L
+#define SCREEN_DEPTH          8L
 
 void main(void)
 {
   SAGE_Event *event = NULL;
-  BOOL finish;
+  BOOL finish = FALSE;
 
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   SAGE_AppliLog("* SAGE library VIDEO test (EVENT) / %s", SAGE_GetVersion());
@@ -25,7 +25,7 @@ void main(void)
   if (SAGE_Init(SMOD_VIDEO)) {
     SAGE_AppliLog("Opening screen");
     if (SAGE_OpenScreen(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_DEPTH, SSCR_NOFLAG)) {
-      finish = FALSE;
+      SAGE_PrintDirectText("PRESS ANY KEYS, CLICK MOUSE TO QUIT", 10, 10);
       while (!finish) {
         while ((event = SAGE_GetEvent()) != NULL) {
           SAGE_AppliLog(

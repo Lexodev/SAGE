@@ -5,7 +5,7 @@
  * 3D texture management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 26/06/2024)
+ * @version 25.1 February 2025 (updated: 26/02/2025)
  */
 
 #include <exec/types.h>
@@ -336,6 +336,22 @@ BOOL SAGE_ReleaseTexture(UWORD index)
 }
 
 /**
+ * Remove all textures from memory
+ * 
+ * @return Operation success
+ */
+BOOL SAGE_ClearTextures(VOID)
+{
+  UWORD index;
+
+  SD(SAGE_DebugLog("Clear textures (%d)", STEX_MAX_TEXTURES);)
+  for (index = 0;index < STEX_MAX_TEXTURES;index++) {
+    SAGE_ReleaseTexture(index);
+  }
+  return TRUE;
+}
+
+/**
  * Add a texture to the card memory
  *
  * @param index Texture index
@@ -419,7 +435,6 @@ BOOL SAGE_RemoveTexture(UWORD index)
   SAGE_3DDevice *device;
   SAGE_3DTexture *texture;
   
-  SD(SAGE_DebugLog("Remove texture #%d", index);)
   device = SageContext.Sage3D;
   if (device == NULL) {
     SAGE_SetError(SERR_NO_3DDEVICE);
@@ -428,13 +443,14 @@ BOOL SAGE_RemoveTexture(UWORD index)
   if (texture == NULL) {
     return FALSE;
   }
+  SD(SAGE_DebugLog("Remove texture #%d", index);)
   if (texture->w3dtex != NULL) {
-    SD(SAGE_DebugLog("Removing W3D texture #%d", index);)
+    SD(SAGE_DebugLog(" free W3D texture #%d", index);)
     W3D_FreeTexObj(device->w3d_context, texture->w3dtex);
     texture->w3dtex = NULL;
   }
   if (texture->m3dtex != NULL) {
-    SD(SAGE_DebugLog("Removing M3D texture #%d", index);)
+    SD(SAGE_DebugLog(" free M3D texture #%d", index);)
     M3D_FreeTexture(device->m3d_context, texture->m3dtex);
     texture->m3dtex = NULL;
   }
@@ -442,7 +458,7 @@ BOOL SAGE_RemoveTexture(UWORD index)
 }
 
 /**
- * Remove all textures from card memory and relesae ressources
+ * Remove all textures from card memory
  * 
  * @return Operation success
  */
@@ -452,7 +468,7 @@ BOOL SAGE_FlushTextures(VOID)
 
   SD(SAGE_DebugLog("Flush textures (%d)", STEX_MAX_TEXTURES);)
   for (index = 0;index < STEX_MAX_TEXTURES;index++) {
-    SAGE_ReleaseTexture(index);
+    SAGE_RemoveTexture(index);
   }
   return TRUE;
 }

@@ -5,7 +5,7 @@
  * Config file functions
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #include <sage/sage.h>
@@ -14,37 +14,39 @@ UBYTE my_buffer[256];
 
 void main(void)
 {
-  SAGE_Configuration * my_conf;
+  SAGE_Configuration *my_conf;
 
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   SAGE_AppliLog("* SAGE library CORE test (CONFIG) / %s", SAGE_GetVersion());
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   if (SAGE_Init(SMOD_NONE)) {
-    if (!SAGE_GetParameterFromFile("/data/test.ini", NULL, "loglevel", "ALL", my_buffer, 256)) {
+    SAGE_AppliLog("*** Read config parameters ***");
+    if (!SAGE_GetParameterFromFile("data/test.ini", NULL, "loglevel", "ALL", my_buffer, 256)) {
       SAGE_DisplayError();
     }
     SAGE_AppliLog("Test 1 : loglevel=%s", my_buffer);
-    if (!SAGE_GetParameterFromFile("/data/test.ini", "VIDEO", "resolution", "640x480", my_buffer, 256)) {
+    if (!SAGE_GetParameterFromFile("data/test.ini", "VIDEO", "resolution", "640x480", my_buffer, 256)) {
       SAGE_DisplayError();
     }
     SAGE_AppliLog("Test 2 : [VIDEO] resolution=%s", my_buffer);
-    if (!SAGE_GetParameterFromFile("/data/test.ini", "PATH", "sounds", NULL, my_buffer, 256)) {
+    if (!SAGE_GetParameterFromFile("data/test.ini", "PATH", "sounds", NULL, my_buffer, 256)) {
       SAGE_DisplayError();
     }
     SAGE_AppliLog("Test 3 : [PATH] sounds=%s", my_buffer);
-    if (!SAGE_GetParameterFromFile("/data/test.ini", "AUDIO", "sounds", "4", my_buffer, 256)) {
+    if (!SAGE_GetParameterFromFile("data/test.ini", "AUDIO", "sounds", "4", my_buffer, 256)) {
       SAGE_DisplayError();
     }
     SAGE_AppliLog("Test 4 : [AUDIO] sounds=%s", my_buffer);
-    if (!SAGE_GetParameterFromFile("/data/test.ini", "NETWORK", "server", NULL, my_buffer, 256)) {
+    if (!SAGE_GetParameterFromFile("data/test.ini", "NETWORK", "server", NULL, my_buffer, 256)) {
       SAGE_DisplayError();
     }
     SAGE_AppliLog("Test 5 : [NETWORK] server=%s", my_buffer);
-    if (!SAGE_GetParameterFromFile("/data/test.ini", NULL, "debug", "FALSE", my_buffer, 256)) {
+    if (!SAGE_GetParameterFromFile("data/test.ini", NULL, "debug", "FALSE", my_buffer, 256)) {
       SAGE_DisplayError();
     }
     SAGE_AppliLog("Test 6 : debug=%s", my_buffer);
-    if ((my_conf = SAGE_LoadConfigurationFile("/data/test.ini")) == NULL) {
+    SAGE_AppliLog("*** Load config file ***");
+    if ((my_conf = SAGE_LoadConfigurationFile("data/test.ini")) == NULL) {
       SAGE_DisplayError();
     } else {
       strcpy(my_buffer, SAGE_GetParameterValue(my_conf, "AUDIO", "sounds", "4"));
@@ -78,7 +80,7 @@ void main(void)
         SAGE_DisplayError();
       }
       SAGE_AppliLog("Saving configuration");
-      if (!SAGE_SaveConfigurationFile(my_conf, "test.cfg", "Config file de test")) {
+      if (!SAGE_SaveConfigurationFile(my_conf, "conf_test.cfg", "Config file de test")) {
         SAGE_DisplayError();
       }
     }

@@ -5,7 +5,7 @@
  * Picture management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 25/02/2025)
  */
 
 #include <dos/dos.h>
@@ -309,7 +309,7 @@ VOID SAGE_AutoRemapPicture(BOOL flag)
 BOOL SAGE_SetPictureTransparency(SAGE_Picture *picture, ULONG color)
 {
   if (picture != NULL) {
-    return SAGE_SetBitmapTransparency(picture->bitmap, color);
+    return SAGE_SetBitmapTransparency(picture->bitmap, SAGE_RemapColor(color));
   }
   SAGE_SetError(SERR_NULL_POINTER);
   return FALSE;

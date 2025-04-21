@@ -5,7 +5,7 @@
 ; Interruption server
 ; 
 ; @author Fabrice Labrador <fabrice.labrador@gmail.com>
-; @version 1.0 April 2020
+; @version 25.1 February 2025 (updated: 26/02/2025)
 ;--------------------------------------
 
 SINT_INTERRUPTS     EQU 8

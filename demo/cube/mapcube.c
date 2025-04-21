@@ -55,19 +55,19 @@ struct cube_object Cube = {
     { -10.0,-10.0,10.0 }
   },
   {
-    { 0,1,2,3, 1, 0,0,127,0,127,127,0,127 },
-    { 1,5,6,2, 2, 0,0,127,0,127,127,0,127 },
-    { 5,4,7,6, 3, 0,0,127,0,127,127,0,127 },
-    { 4,0,3,7, 4, 0,0,127,0,127,127,0,127 },
-    { 4,5,1,0, 5, 0,0,127,0,127,127,0,127 },
-    { 3,2,6,7, 6, 0,0,127,0,127,127,0,127 }
+    { 0,1,2,3, 0xff0001, 0,0,127,0,127,127,0,127 },
+    { 1,5,6,2, 0x0000ff, 0,0,127,0,127,127,0,127 },
+    { 5,4,7,6, 0x00ff03, 0,0,127,0,127,127,0,127 },
+    { 4,0,3,7, 0xff00ff, 0,0,127,0,127,127,0,127 },
+    { 4,5,1,0, 0xffff02, 0,0,127,0,127,127,0,127 },
+    { 3,2,6,7, 0x00ffff, 0,0,127,0,127,127,0,127 }
   }
 };
-struct cube_point transf[8];
-BOOL finish = FALSE;
+struct cube_point transf[CUBE_POINTS];
+BOOL finish = FALSE, textured = TRUE;
 
 // Controls
-#define KEY_NBR               15
+#define KEY_NBR               16
 #define KEY_UP                0
 #define KEY_DOWN              1
 #define KEY_LEFT              2
@@ -83,6 +83,7 @@ BOOL finish = FALSE;
 #define KEY_MOVELEFT          12
 #define KEY_MOVERIGHT         13
 #define KEY_D                 14
+#define KEY_T                 15
 
 UBYTE keyboard_state[KEY_NBR];
 
@@ -101,7 +102,8 @@ SAGE_KeyScan keys[KEY_NBR] = {
   { SKEY_FR_KPD2, FALSE },
   { SKEY_FR_KPD4, FALSE },
   { SKEY_FR_KPD6, FALSE },
-  { SKEY_FR_D, FALSE }
+  { SKEY_FR_D, FALSE },
+  { SKEY_FR_T, FALSE }
 };
 
 // Engine
@@ -252,13 +254,21 @@ VOID ScanKeyboard(VOID)
     keyboard_state[KEY_MOVELEFT] = keys[KEY_MOVELEFT].key_pressed;
     keyboard_state[KEY_MOVERIGHT] = keys[KEY_MOVERIGHT].key_pressed;
     keyboard_state[KEY_D] = keys[KEY_D].key_pressed;
+    keyboard_state[KEY_T] = keys[KEY_T].key_pressed;
   }
 }
 
 VOID _Update(VOID)
 {
+  SAGE_SetTraceDebug(FALSE);
   ScanKeyboard();
   if (keyboard_state[KEY_QUIT]) finish = TRUE;
+  if (keyboard_state[KEY_D]) {
+    SAGE_SetTraceDebug(TRUE);
+  }
+  if (keyboard_state[KEY_T]) {
+    if (textured) textured = FALSE; else textured= TRUE;
+  }
   if (keyboard_state[KEY_SPACE]) {
     Cube.anglex = 0.0;
     Cube.angley = 0.0;
@@ -347,8 +357,13 @@ VOID DrawCube(VOID)
 
   TransformPoints();
   triangle.type = S3DR_ELEM_TRIANGLE;
-  triangle.color = 0xff00ff;
+  if (textured) {
+    triangle.texture = TEX_VAMPIRE;
+  } else {
+    triangle.texture = STEX_USECOLOR;
+  }
   for (i = 0;i < CUBE_FACES;i++) {
+    triangle.color = Cube.faces[i].color;
     triangle.x1 = transf[Cube.faces[i].p1].x + (SCREEN_WIDTH/2);
     triangle.y1 = transf[Cube.faces[i].p1].y + (SCREEN_HEIGHT/2);
     triangle.z1 = transf[Cube.faces[i].p1].z;
@@ -364,7 +379,6 @@ VOID DrawCube(VOID)
     triangle.z3 = transf[Cube.faces[i].p3].z;
     triangle.u3 = Cube.faces[i].u3;
     triangle.v3 = Cube.faces[i].v3;
-    triangle.texture = TEX_VAMPIRE;
     if (((triangle.y1-triangle.y2)*(triangle.x2-triangle.x3)) < ((triangle.y2-triangle.y3)*(triangle.x1-triangle.x2))) {
       SAGE_Push3DElement(&triangle);
       triangle.x1 = transf[Cube.faces[i].p1].x + (SCREEN_WIDTH/2);
@@ -405,7 +419,7 @@ VOID _Render(VOID)
 
 void main(int argc, char **argv)
 {
-  SAGE_SetLogLevel(SLOG_WARNING);
+  //SAGE_SetLogLevel(SLOG_WARNING);
   SAGE_AppliLog("** SAGE library mapped 3D cube demo V1.0 **");
   SAGE_AppliLog("Initialize SAGE");
   if (SAGE_Init(SMOD_VIDEO|SMOD_INPUT|SMOD_3D|SMOD_INTERRUPTION)) {

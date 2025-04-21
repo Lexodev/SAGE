@@ -5,10 +5,12 @@
  * Test error display
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #include <sage/sage.h>
+
+#define CORE_ERROR_MAX    200
 
 void main(void)
 {
@@ -18,10 +20,10 @@ void main(void)
   SAGE_AppliLog("* SAGE library CORE test (ERROR) / %s", SAGE_GetVersion());
   SAGE_AppliLog("--------------------------------------------------------------------------------");
   if (SAGE_Init(SMOD_NONE)) {
-    for (i = 0;i < 100;i++) {
+    for (i = 0;i < CORE_ERROR_MAX;i++) {
       SAGE_AppliLog("Setting error %d", i);
       SAGE_SetError(i);
-      SAGE_AppliLog("Error code is %d and text is %s", SAGE_GetErrorCode(), SAGE_GetErrorString());
+      SAGE_AppliLog("Error code is => %d <= and text is => %s <=", SAGE_GetErrorCode(), SAGE_GetErrorString());
       SAGE_AppliLog("Display the error");
       SAGE_DisplayError();
       SAGE_AppliLog("----");

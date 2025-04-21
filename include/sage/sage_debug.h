@@ -5,20 +5,20 @@
  * Debug macro
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 July 2024 (updated: 01/07/2024)
+ * @version 25.1 February 2025 (updated: 24/02/2025)
  */
 
 #ifndef _SAGE_DEBUG_H_
 #define _SAGE_DEBUG_H_
 
 #if _SAGE_DEBUG_MODE_ == 1
-#define SD(x)     x
+#define SD(x) x
 #else
 #define SD(x)
 #endif
 
 #if _SAGE_SAFE_MODE_ == 1
-#define SAFE(x)   x
+#define SAFE(x) x
 #else
 #define SAFE(x)
 #endif

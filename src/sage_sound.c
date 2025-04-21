@@ -5,8 +5,8 @@
  * Sound management
  * 
  * @author Fabrice Labrador <fabrice.labrador@gmail.com>
- * @version 24.2 June 2024 (updated: 27/06/2024)
- */
+ * @version 25.1 February 2025 (updated: 25/02/2025)
+*/
 
 #include <datatypes/datatypes.h>
 #include <datatypes/soundclass.h>
@@ -277,10 +277,14 @@ BOOL SAGE_FreeSound(UWORD index)
  */
 BOOL SAGE_ClearSound()
 {
+  SAGE_Sound *sound;
   UWORD index;
 
   for (index = 0;index < SSND_MAX_SOUNDS;index++) {
-    SAGE_FreeSound(index);
+    sound = SAGE_RemoveSound(index);
+    if (sound != NULL) {
+      SAGE_ReleaseSound(sound);
+    }
   }
   return TRUE;
 }
