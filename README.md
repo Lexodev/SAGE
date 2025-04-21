@@ -5,8 +5,8 @@
 "sage_safe.lib" as safe mode activated (check for null pointer) and "sage.lib" is the full speed version with no debug and no check.</p>
 <p>"include" folder contains all SAGE includes, copy them in your include folder.</p>
 <p>"src" folder contains SAGE source code.</p>
-<p>"tests" folder contains test files of SAGE features</p>
-<p>"demo" folder contains some quick demos of SAGE features</p>
+<p>"tests" folder contains test files of SAGE features.</p>
+<p>"demo" folder contains some quick demos of SAGE features.</p>
 <p>"tutorial" folder contains 10 tutorials with source code to briefly explore the main features of SAGE.</p>
 <h4>2. How to compile tutorials and demos</h4>
 <p>To compile the tutorials or the demos you should have a C compiler (for sure), i'm using SAS/C V6.59 but any version above 6.5 should work, you also need an assign to the external libraries folder, you can find all the includes in the LibInclude repository, just clone it in the same directory where you clone this repo, then add an assign libinclude: to the folder. You should also have vasm in your path, all asm files are compiled with vasm.</p>
